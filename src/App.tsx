@@ -1,0 +1,54 @@
+/* Main App Component - Handles routing (using react-router-dom), query client and other providers - use this file to add all routes */
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { Toaster } from '@/components/ui/toaster'
+import { Toaster as Sonner } from '@/components/ui/sonner'
+import { TooltipProvider } from '@/components/ui/tooltip'
+import { AuthProvider } from '@/contexts/AuthContext'
+import ProtectedRoute from '@/components/ProtectedRoute'
+import Layout from '@/components/Layout'
+
+// Pages
+import Index from './pages/Index'
+import Fluxograma from './pages/Fluxograma'
+import Organograma from './pages/Organograma'
+import Login from './pages/Login'
+import Signup from './pages/Signup'
+import ForgotPassword from './pages/ForgotPassword'
+import ResetPassword from './pages/ResetPassword'
+import VerifyEmail from './pages/VerifyEmail'
+import ConfirmEmailChange from './pages/ConfirmEmailChange'
+import NotFound from './pages/NotFound'
+
+const App = () => (
+  <BrowserRouter>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <Routes>
+          {/* Public Authentication Routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/confirm-email-change" element={<ConfirmEmailChange />} />
+
+          {/* Protected Routes wrapped in ProtectedRoute + Corporate Layout */}
+          <Route element={<ProtectedRoute />}>
+            <Route element={<Layout />}>
+              <Route path="/" element={<Index />} />
+              <Route path="/fluxograma" element={<Fluxograma />} />
+              <Route path="/organograma" element={<Organograma />} />
+            </Route>
+          </Route>
+
+          {/* Fallback 404 */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </TooltipProvider>
+    </AuthProvider>
+  </BrowserRouter>
+)
+
+export default App

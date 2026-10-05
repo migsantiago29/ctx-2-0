@@ -1,0 +1,388 @@
+{
+  "generatedAt": "2026-10-05T18:22:20.370Z",
+  "collections": [
+    {
+      "name": "users",
+      "type": "auth",
+      "apiRules": {
+        "list": "id = @request.auth.id",
+        "view": "id = @request.auth.id",
+        "create": "",
+        "update": "id = @request.auth.id",
+        "delete": "id = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "name",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "avatar",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "area",
+          "type": "text",
+          "required": false,
+          "system": false
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX `idx_tokenKey__pb_users_auth_` ON `users` (`tokenKey`)",
+        "CREATE UNIQUE INDEX `idx_email__pb_users_auth_` ON `users` (`email`) WHERE `email` != ''"
+      ]
+    },
+    {
+      "name": "projetos_estrategicos",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "nome",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "descricao",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_projetos_estrategicos_nome ON projetos_estrategicos (nome)"
+      ]
+    },
+    {
+      "name": "metas",
+      "type": "base",
+      "apiRules": {
+        "list": "owner = @request.auth.id",
+        "view": "owner = @request.auth.id",
+        "create": "owner = @request.auth.id",
+        "update": "owner = @request.auth.id",
+        "delete": "owner = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "titulo",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "descricao",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "projeto",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "projetos_estrategicos"
+        },
+        {
+          "name": "owner",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["em andamento", "concluida", "atrasada"]
+        },
+        {
+          "name": "timeframe",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "progresso",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_metas_owner ON metas (owner)",
+        "CREATE INDEX idx_metas_projeto ON metas (projeto)",
+        "CREATE INDEX idx_metas_status ON metas (status)"
+      ]
+    },
+    {
+      "name": "indicadores",
+      "type": "base",
+      "apiRules": {
+        "list": "meta.owner = @request.auth.id",
+        "view": "meta.owner = @request.auth.id",
+        "create": "meta.owner = @request.auth.id",
+        "update": "meta.owner = @request.auth.id",
+        "delete": "meta.owner = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "meta",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "metas"
+        },
+        {
+          "name": "nome",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "valor_atual",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "valor_meta",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "tendencia",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["subindo", "descendo", "estavel"]
+        },
+        {
+          "name": "historico",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE INDEX idx_indicadores_meta ON indicadores (meta)"]
+    },
+    {
+      "name": "processos",
+      "type": "base",
+      "apiRules": {
+        "list": "meta.owner = @request.auth.id",
+        "view": "meta.owner = @request.auth.id",
+        "create": "meta.owner = @request.auth.id",
+        "update": "meta.owner = @request.auth.id",
+        "delete": "meta.owner = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "meta",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "metas"
+        },
+        {
+          "name": "nome",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["pendente", "concluido"]
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_processos_meta ON processos (meta)",
+        "CREATE INDEX idx_processos_status ON processos (status)"
+      ]
+    },
+    {
+      "name": "fluxograma",
+      "type": "base",
+      "apiRules": {
+        "list": "",
+        "view": "",
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "ordem",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "etapa",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "area",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "evidencia",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "subpassos",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE INDEX idx_fluxograma_ordem ON fluxograma (ordem)"]
+    },
+    {
+      "name": "areas",
+      "type": "base",
+      "apiRules": {
+        "list": "",
+        "view": "",
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "nome",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "descricao",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE UNIQUE INDEX idx_areas_nome ON areas (nome)"]
+    }
+  ]
+}

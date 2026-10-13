@@ -11,6 +11,8 @@ import Layout from '@/components/Layout'
 import Index from './pages/Index'
 import Fluxograma from './pages/Fluxograma'
 import Organograma from './pages/Organograma'
+import AdminImport from './pages/AdminImport'
+import RedefinirSenhaObrigatoria from './pages/RedefinirSenhaObrigatoria'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import ForgotPassword from './pages/ForgotPassword'
@@ -33,6 +35,7 @@ const App = () => (
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/confirm-email-change" element={<ConfirmEmailChange />} />
+          <Route path="/redefinir-senha-obrigatoria" element={<RedefinirSenhaObrigatoria />} />
 
           {/* Protected Routes wrapped in ProtectedRoute + Corporate Layout */}
           <Route element={<ProtectedRoute />}>
@@ -40,6 +43,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/fluxograma" element={<Fluxograma />} />
               <Route path="/organograma" element={<Organograma />} />
+              <Route path="/admin/import" element={<AdminImport />} />
             </Route>
           </Route>
 

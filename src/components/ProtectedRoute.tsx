@@ -19,5 +19,10 @@ export default function ProtectedRoute() {
     return <Navigate to="/login" replace />
   }
 
+  // Redirecionamento obrigatório para troca de senha se must_change_password estiver ativo
+  if (user.must_change_password) {
+    return <Navigate to="/redefinir-senha-obrigatoria" replace />
+  }
+
   return <Outlet />
 }

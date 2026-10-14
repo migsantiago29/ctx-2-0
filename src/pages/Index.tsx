@@ -366,6 +366,48 @@ export default function Index() {
                       </div>
                     )}
 
+                    {/* Indicadores listando nome e alvo (sem tendência/sparkline no card) */}
+                    {goal.indicadoresList && goal.indicadoresList.length > 0 && (
+                      <div className="pt-1 space-y-1.5 border-t border-[#222]">
+                        <span className="text-[10px] uppercase font-mono text-[#666] block">
+                          Indicadores ({goal.indicadoresList.length}):
+                        </span>
+                        <div className="space-y-1">
+                          {goal.indicadoresList.slice(0, 3).map((ind) => (
+                            <div
+                              key={ind.id}
+                              className="flex items-center justify-between text-xs gap-2 py-0.5"
+                            >
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                {ind.ordem && (
+                                  <span className="text-[10px] font-mono text-[#666]">
+                                    #{ind.ordem}
+                                  </span>
+                                )}
+                                <span className="text-[#D1D5DB] truncate text-[11px]">
+                                  {ind.nome}
+                                </span>
+                              </div>
+                              {ind.alvo ? (
+                                <span className="text-[11px] font-mono font-bold text-[#FFD400] shrink-0">
+                                  {ind.alvo}
+                                </span>
+                              ) : (
+                                <span className="text-[10px] text-[#666] italic shrink-0">
+                                  a definir
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                          {goal.indicadoresList.length > 3 && (
+                            <span className="text-[10px] text-[#666] block pt-0.5">
+                              +{goal.indicadoresList.length - 3} indicador(es) a mais
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Chips de processos vinculados no card */}
                     {goal.processosList && goal.processosList.length > 0 && (
                       <div className="pt-1">
@@ -373,7 +415,7 @@ export default function Index() {
                           Processos Vinculados ({goal.processosList.length}):
                         </span>
                         <div className="flex flex-wrap gap-1.5">
-                          {goal.processosList.slice(0, 4).map((proc) => (
+                          {goal.processosList.slice(0, 3).map((proc) => (
                             <button
                               key={proc.id}
                               type="button"
@@ -381,17 +423,21 @@ export default function Index() {
                                 e.stopPropagation()
                                 navigate(`/processos?codigo=${encodeURIComponent(proc.codigo)}`)
                               }}
-                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#181818] hover:bg-[#222] border border-[#2B2B2B] hover:border-[#FFD400]/60 text-[11px] text-[#D1D5DB] transition-colors"
+                              title={`${proc.codigo} - ${proc.nome}`}
+                              className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#181818] hover:bg-[#222] border border-[#2B2B2B] hover:border-[#FFD400]/60 text-[11px] text-[#D1D5DB] transition-colors max-w-full"
                             >
-                              <span className="font-mono text-[#FFD400] font-bold">
+                              <span className="font-mono text-[#FFD400] font-bold shrink-0">
                                 {proc.codigo}
                               </span>
-                              <ExternalLink className="w-2.5 h-2.5 text-[#666]" />
+                              <span className="truncate max-w-[120px] text-[10px] text-[#A3A3A3]">
+                                {proc.nome}
+                              </span>
+                              <ExternalLink className="w-2.5 h-2.5 text-[#666] shrink-0" />
                             </button>
                           ))}
-                          {goal.processosList.length > 4 && (
+                          {goal.processosList.length > 3 && (
                             <span className="text-[10px] text-[#666] self-center">
-                              +{goal.processosList.length - 4} mais
+                              +{goal.processosList.length - 3} mais
                             </span>
                           )}
                         </div>

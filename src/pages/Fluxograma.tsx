@@ -31,6 +31,7 @@ export default function Fluxograma() {
   const [areas, setAreas] = useState<Area[]>([])
   const [processos, setProcessos] = useState<Processo[]>([])
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([])
+  const [colaboradorLogado, setColaboradorLogado] = useState<Colaborador | null>(null)
   const [allMetas, setAllMetas] = useState<Meta[]>([])
   const [loading, setLoading] = useState(true)
   // Layout View Controls
@@ -50,14 +51,23 @@ export default function Fluxograma() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [areasRes, procsRes, colabsRes] = await Promise.all([
+        const [areasRes, procsRes, colabsRes, metasRes] = await Promise.all([
           pb.collection('areas').getFullList<Area>({ sort: 'ordem_no_fluxo' }),
           pb.collection('processos').getFullList<Processo>({ sort: 'codigo' }),
           pb.collection('colaboradores').getFullList<Colaborador>(),
+          pb
+            .collection('metas')
+            .getFullList<Meta>({
+              expand: 'projeto,projeto_secundario,responsaveis',
+              sort: 'codigo',
+            })
+            .catch(() => []),
         ])
 
         setAreas(areasRes)
         setProcessos(procsRes)
+        setColaboradores(colabsRes)
+        setAllMetas(metasRes)
 
         if (user) {
           const matched = colabsRes.find(
@@ -225,6 +235,46 @@ export default function Fluxograma() {
       sucessoras,
     }
   }, [selectedNode, layout.nodeMap])
+
+  // IDs de processos vinculados a metas do colaborador logado
+  const userGoalProcessIds = useMemo(() => {
+    if (!colaboradorLogado) return new Set<string>()
+    const set = new Set<string>()
+    allMetas.forEach((meta) => {
+      const resp = Array.isArray(meta.responsaveis) ? meta.responsaveis : []
+      if (resp.includes(colaboradorLogado.id)) {
+        const procs = Array.isArray(meta.processos_vinculados) ? meta.processos_vinculados : []
+        procs.forEach((pId) => set.add(pId))
+      }
+    })
+    return set
+  }, [allMetas, colaboradorLogado])
+
+  // Selecionar nó automaticamente caso venha o param "?codigo=..." na URL
+  useEffect(() => {
+    const targetCodigo = searchParams.get('codigo')?.trim().toUpperCase()
+    if (!targetCodigo || layout.nodes.length === 0) return
+
+    const matchedNode = layout.nodes.find((n) => n.codigo.toUpperCase() === targetCodigo)
+    if (matchedNode) {
+      setSelectedNode(matchedNode)
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect()
+        const targetX = rect.width / 2 - matchedNode.x * zoom
+        const targetY = rect.height / 2 - matchedNode.y * zoom
+        setPan({ x: targetX, y: targetY })
+      }
+    }
+  }, [searchParams, layout.nodes, zoom])
+
+  // Metas vinculadas ao processo selecionado (no drawer)
+  const metasDoProcessoSelecionado = useMemo(() => {
+    if (!selectedNode) return []
+    return allMetas.filter((meta) => {
+      const procs = Array.isArray(meta.processos_vinculados) ? meta.processos_vinculados : []
+      return procs.includes(selectedNode.id)
+    })
+  }, [selectedNode, allMetas])
 
   // Agrupamento por área para o modo lista (mobile / alternativo)
   const procsGroupedByArea = useMemo(() => {
@@ -594,6 +644,8 @@ export default function Fluxograma() {
               const isRelated = relatedNodeIds.has(node.id)
               const isAnySelected = selectedNode !== null
               const isUserArea = loggedUserArea && node.area.trim().toLowerCase() === loggedUserArea
+              const isUserGoalProc = userGoalProcessIds.has(node.id)
+              const hasYellowBorder = isUserArea || isUserGoalProc
 
               // Opacidade para destacar rota selecionada
               const opacity = isAnySelected ? (isRelated ? 1 : 0.22) : 1
@@ -625,8 +677,8 @@ export default function Fluxograma() {
                         <polygon
                           points="100,2 196,40 100,78 4,40"
                           fill="#171717"
-                          stroke={isSelected ? '#FFD400' : isUserArea ? '#FFD400' : '#EAB308'}
-                          strokeWidth={isSelected ? '3' : isUserArea ? '2.5' : '1.5'}
+                          stroke={isSelected ? '#FFD400' : hasYellowBorder ? '#FFD400' : '#EAB308'}
+                          strokeWidth={isSelected ? '3' : hasYellowBorder ? '2.5' : '1.5'}
                         />
                       </svg>
 
@@ -663,7 +715,7 @@ export default function Fluxograma() {
                   className={`bg-[#121212] border rounded-xl p-3 shadow-lg cursor-pointer transition-all duration-200 z-20 flex flex-col justify-between ${
                     isSelected
                       ? 'border-[#FFD400] ring-2 ring-[#FFD400]/60 scale-105 z-30'
-                      : isUserArea
+                      : hasYellowBorder
                         ? 'border-2 border-[#FFD400] hover:scale-102'
                         : 'border-[#262626] hover:border-[#FFD400]/60 hover:scale-102'
                   }`}
@@ -766,36 +818,43 @@ export default function Fluxograma() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                  {procs.map((node) => (
-                    <div
-                      key={node.id}
-                      onClick={() => setSelectedNode(node)}
-                      className={`p-3 rounded-xl border bg-[#161616] cursor-pointer hover:border-[#FFD400] transition-colors flex flex-col justify-between ${
-                        selectedNode?.id === node.id
-                          ? 'border-[#FFD400] ring-1 ring-[#FFD400]'
-                          : 'border-[#262626]'
-                      }`}
-                    >
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="font-mono font-bold text-xs text-[#FFD400]">
-                            {node.codigo}
-                          </span>
-                          {node.isDecision && (
-                            <span className="text-[10px] font-semibold text-amber-400 bg-amber-400/10 px-1.5 py-0.2 rounded">
-                              Decisão
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs font-medium text-white line-clamp-2">{node.nome}</p>
-                      </div>
+                  {procs.map((node) => {
+                    const isUserGoalProc = userGoalProcessIds.has(node.id)
+                    const hasYellowBorder = isUserLane || isUserGoalProc
 
-                      <div className="mt-3 pt-2 border-t border-[#222] flex items-center justify-between text-[10px] text-[#9CA3AF]">
-                        <span>&larr; {node.etapasAnterioresIds.length} anteriores</span>
-                        <span>&rarr; {node.etapasSucessorasIds.length} sucessores</span>
+                    return (
+                      <div
+                        key={node.id}
+                        onClick={() => setSelectedNode(node)}
+                        className={`p-3 rounded-xl border bg-[#161616] cursor-pointer hover:border-[#FFD400] transition-colors flex flex-col justify-between ${
+                          selectedNode?.id === node.id
+                            ? 'border-[#FFD400] ring-1 ring-[#FFD400]'
+                            : hasYellowBorder
+                              ? 'border-[#FFD400]'
+                              : 'border-[#262626]'
+                        }`}
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="font-mono font-bold text-xs text-[#FFD400]">
+                              {node.codigo}
+                            </span>
+                            {node.isDecision && (
+                              <span className="text-[10px] font-semibold text-amber-400 bg-amber-400/10 px-1.5 py-0.2 rounded">
+                                Decisão
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs font-medium text-white line-clamp-2">{node.nome}</p>
+                        </div>
+
+                        <div className="mt-3 pt-2 border-t border-[#222] flex items-center justify-between text-[10px] text-[#9CA3AF]">
+                          <span>&larr; {node.etapasAnterioresIds.length} anteriores</span>
+                          <span>&rarr; {node.etapasSucessorasIds.length} sucessores</span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             )
@@ -923,19 +982,71 @@ export default function Fluxograma() {
                 )}
               </div>
 
-              {/* RESERVA: Metas vinculadas (Etapa 2) */}
+              {/* Metas vinculadas a este processo */}
               <div className="space-y-3 pt-2 border-t border-[#262626]">
-                <h4 className="text-xs uppercase tracking-wider font-bold text-[#9CA3AF] flex items-center gap-2">
-                  <Target className="w-4 h-4 text-[#FFD400]" />
-                  Metas Vinculadas
-                </h4>
-                <div className="p-4 rounded-xl bg-[#141414] border border-dashed border-[#262626] text-center space-y-1">
-                  <p className="text-xs font-semibold text-white">Vínculo de Metas & Indicadores</p>
-                  <p className="text-[11px] text-[#9CA3AF]">
-                    As metas e projetos estratégicos atrelados a este processo serão carregados na{' '}
-                    <strong className="text-[#FFD400]">Etapa 2</strong>.
-                  </p>
+                <div className="flex items-center justify-between pb-1 border-b border-[#262626]">
+                  <h4 className="text-xs uppercase tracking-wider font-bold text-white flex items-center gap-2">
+                    <Target className="w-4 h-4 text-[#FFD400]" />
+                    Metas Vinculadas ({metasDoProcessoSelecionado.length})
+                  </h4>
                 </div>
+
+                {metasDoProcessoSelecionado.length > 0 ? (
+                  <div className="space-y-2.5">
+                    {metasDoProcessoSelecionado.map((meta) => {
+                      const respNames = (meta.expand?.responsaveis || [])
+                        .map((r) => r.nome)
+                        .join(', ')
+
+                      return (
+                        <div
+                          key={meta.id}
+                          className="p-3.5 rounded-xl bg-[#161616] border border-[#262626] space-y-2"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-mono text-xs px-2 py-0.5 rounded bg-[#1C1C1C] border border-[#333] text-[#FFD400] font-bold">
+                                {meta.codigo}
+                              </span>
+                              {meta.expand?.projeto && (
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#FFD400] text-black font-extrabold">
+                                  {meta.expand.projeto.nome}
+                                </span>
+                              )}
+                              {meta.expand?.projeto_secundario && (
+                                <span className="text-[10px] px-2 py-0.5 rounded-full border border-[#FFD400]/70 text-[#FFD400] font-bold bg-transparent">
+                                  {meta.expand.projeto_secundario.nome}
+                                </span>
+                              )}
+                            </div>
+                            {meta.trimestre && (
+                              <span className="text-[10px] font-mono text-[#9CA3AF]">
+                                {meta.trimestre}
+                              </span>
+                            )}
+                          </div>
+
+                          <h5 className="text-xs font-bold text-white leading-snug">
+                            {meta.titulo}
+                          </h5>
+
+                          {respNames && (
+                            <div className="flex items-center gap-1.5 text-[11px] text-[#9CA3AF] pt-1 border-t border-[#222]">
+                              <Users className="w-3 h-3 text-[#FFD400] shrink-0" />
+                              <span className="truncate">
+                                Responsável(is): <strong className="text-white">{respNames}</strong>
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-lg bg-[#161616] border border-[#262626] text-xs text-[#9CA3AF]">
+                    Nenhuma meta diretamente vinculada a este processo.
+                  </div>
+                )}
               </div>
             </div>
 

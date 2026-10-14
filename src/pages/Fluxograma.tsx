@@ -31,8 +31,10 @@ import {
   type ProcessNode,
   type DiagramLayout,
   type EdgeConnection,
+  type Swimlane,
   NODE_WIDTH,
   NODE_HEIGHT,
+  LANE_HEADER_WIDTH,
 } from '@/lib/diagramLayout'
 
 /**
@@ -845,7 +847,7 @@ export default function Fluxograma() {
         </div>
       )}
 
-      {/* MODO 1: DIAGRAMA INTERATIVO FLUIDO E-D (SEM RAIAS, CURVAS BEZIER SUAVES) */}
+      {/* MODO 1: DIAGRAMA INTERATIVO COM RAIAS HORIZONTAIS POR ÁREA */}
       {viewMode === 'diagram' && layout.nodes.length > 0 && (
         <div
           ref={containerRef}
@@ -868,9 +870,105 @@ export default function Fluxograma() {
             }}
             className="absolute top-0 left-0"
           >
+            {/* CAMADA DE RAIAS HORIZONTAIS (SWIMLANES POR ÁREA) */}
+            <div className="absolute inset-0 pointer-events-none z-0">
+              {layout.lanes.map((lane) => {
+                const isUserLane =
+                  loggedUserArea && lane.nome.trim().toLowerCase() === loggedUserArea
+                const isSelectedArea =
+                  selectedAreaFilter !== 'all' &&
+                  lane.nome.trim().toLowerCase() === selectedAreaFilter.trim().toLowerCase()
+                const isMilestoneLane = lane.nome.trim().toLowerCase() === 'milestone'
+
+                return (
+                  <div
+                    key={lane.id}
+                    style={{
+                      position: 'absolute',
+                      top: lane.y,
+                      left: 40,
+                      width: layout.width - 80,
+                      height: lane.height,
+                    }}
+                    className={`rounded-2xl border transition-all duration-300 ${
+                      isMilestoneLane
+                        ? 'bg-[#181404]/60 border-[#FFD400]/40 ring-1 ring-[#FFD400]/20'
+                        : isUserLane
+                          ? 'bg-[#15140e]/70 border-[#FFD400]/50 shadow-lg'
+                          : isSelectedArea
+                            ? 'bg-[#161616] border-[#FFD400]/60'
+                            : 'bg-[#0d0d0d]/85 border-[#202020]'
+                    }`}
+                  >
+                    {/* Cabeçalho da Raia (Nome da área no início da raia horizontal) */}
+                    <div
+                      style={{
+                        position: 'absolute',
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: LANE_HEADER_WIDTH,
+                      }}
+                      className={`flex flex-col justify-center px-4 rounded-l-2xl border-r ${
+                        isMilestoneLane
+                          ? 'bg-[#221c05] border-[#FFD400]/40'
+                          : isUserLane
+                            ? 'bg-[#1c1806] border-[#FFD400]/40'
+                            : 'bg-[#131313] border-[#222]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span
+                          className={`font-mono text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                            isMilestoneLane
+                              ? 'bg-[#FFD400] text-black'
+                              : isUserLane
+                                ? 'bg-[#FFD400] text-black'
+                                : 'bg-[#222] text-[#9CA3AF]'
+                          }`}
+                        >
+                          {String(lane.ordem).padStart(2, '0')}
+                        </span>
+                        {isMilestoneLane && (
+                          <span className="text-[9px] font-extrabold uppercase tracking-wider text-[#FFD400] px-1.5 py-0.5 rounded bg-[#FFD400]/10 border border-[#FFD400]/30">
+                            Marcos
+                          </span>
+                        )}
+                        {isUserLane && !isMilestoneLane && (
+                          <span className="text-[9px] font-bold uppercase text-[#FFD400] px-1 py-0.5 rounded bg-[#FFD400]/10 border border-[#FFD400]/30">
+                            Sua Área
+                          </span>
+                        )}
+                      </div>
+
+                      <h3
+                        title={lane.nome}
+                        className={`text-sm font-extrabold leading-tight tracking-tight truncate ${
+                          isMilestoneLane
+                            ? 'text-[#FFD400]'
+                            : isUserLane
+                              ? 'text-white'
+                              : 'text-[#E5E7EB]'
+                        }`}
+                      >
+                        {lane.nome}
+                      </h3>
+
+                      <span className="text-[10px] font-mono text-[#737373] mt-1">
+                        {lane.nodeCount} {lane.nodeCount === 1 ? 'processo' : 'processos'}
+                      </span>
+                    </div>
+
+                    {/* Linha guia horizontal suave da raia */}
+                    <div className="absolute top-1/2 left-[220px] right-4 h-px bg-white/[0.03] pointer-events-none" />
+                  </div>
+                )
+              })}
+            </div>
+
             {/* SVG Background Layer para Conexões Suaves (Curvas Bézier) */}
             <svg
-              className="absolute inset-0 pointer-events-none"
+              className="absolute inset-0 pointer-events-none z-10"
               width={layout.width}
               height={layout.height}
               style={{ overflow: 'visible' }}
@@ -916,17 +1014,11 @@ export default function Fluxograma() {
                 </marker>
               </defs>
 
-              {/* Grid sutil de pontos ao fundo */}
-              <pattern id="flow-grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                <circle cx="2" cy="2" r="1" fill="#1C1C1C" />
-              </pattern>
-              <rect width={layout.width} height={layout.height} fill="url(#flow-grid)" />
-
-              {/* Renderização de TODAS as Conexões / Arestas Fluidas */}
+              {/* Renderização de TODAS as Conexões / Arestas Fluidas (inclusive entre raias) */}
               {layout.edges.map((edge) => {
                 const isSelectedEdge = activeConnectionIds.has(edge.id)
                 const isAnySelected = selectedNode !== null
-                const opacity = isAnySelected ? (isSelectedEdge ? 1 : 0.1) : 0.65
+                const opacity = isAnySelected ? (isSelectedEdge ? 1 : 0.08) : 0.65
                 const strokeColor = edge.isBackward
                   ? '#FF9900'
                   : isSelectedEdge
@@ -987,7 +1079,7 @@ export default function Fluxograma() {
               })}
             </svg>
 
-            {/* NÓS DO DIAGRAMA (Caixas Fluidas com área visível e sem corte de texto) */}
+            {/* NÓS DO DIAGRAMA (Caixas nas raias ou Losangos para Milestone e Decisão) */}
             {layout.nodes.map((node) => {
               const isSelected = selectedNode?.id === node.id
               const isRelated = relatedNodeIds.has(node.id)
@@ -1000,6 +1092,7 @@ export default function Fluxograma() {
 
               const isDraggingThis = draggingNodeId === node.id
               const hasYellowBorder = isUserArea || isUserGoalProc
+              const isMilestone = node.isMilestone
 
               // Opacidade para destacar rota selecionada ou filtro de área
               let opacity = 1
@@ -1016,11 +1109,12 @@ export default function Fluxograma() {
                   : 'cursor-grab'
                 : 'cursor-pointer'
 
-              // Se for ponto de decisão (ex.: O01), renderiza como LOSANGO
-              if (node.isDecision) {
+              // CASO 1: PROCESSOS DO GRUPO "MILESTONE" -> RENDERIZADOS EM LOSANGO (DIAMOND)
+              if (isMilestone) {
                 return (
                   <div
                     key={node.id}
+                    title={`${node.codigo} - ${node.nome} (${node.area})`}
                     onMouseDown={(e) => handleNodeMouseDown(e, node)}
                     onTouchStart={(e) => handleNodeTouchStart(e, node)}
                     onClick={(e) => {
@@ -1035,7 +1129,104 @@ export default function Fluxograma() {
                       width: node.width,
                       height: node.height,
                       opacity,
-                      transition: isDraggingThis ? 'none' : 'box-shadow 0.2s ease',
+                      transition: isDraggingThis
+                        ? 'none'
+                        : 'box-shadow 0.2s ease, transform 0.2s ease',
+                    }}
+                    className={`${cursorClass} z-20 flex items-center justify-center ${
+                      isDraggingThis
+                        ? 'z-40 scale-105 shadow-2xl ring-2 ring-[#FFD400]'
+                        : isSelected
+                          ? 'scale-105 z-30'
+                          : isEditMode
+                            ? 'hover:scale-102 hover:ring-1 hover:ring-[#FFD400]/70'
+                            : 'hover:scale-102'
+                    }`}
+                  >
+                    <div className="relative w-full h-full flex items-center justify-center">
+                      <svg
+                        viewBox={`0 0 ${node.width} ${node.height}`}
+                        className="w-full h-full drop-shadow-xl"
+                      >
+                        <polygon
+                          points={`${node.width / 2},4 ${node.width - 6},${node.height / 2} ${node.width / 2},${node.height - 4} 6,${node.height / 2}`}
+                          fill="#181507"
+                          stroke={
+                            isDraggingThis
+                              ? '#FFD400'
+                              : isSelected
+                                ? '#FFD400'
+                                : isEditMode
+                                  ? '#FFD400'
+                                  : hasYellowBorder
+                                    ? '#FFD400'
+                                    : '#EAB308'
+                          }
+                          strokeWidth={
+                            isDraggingThis
+                              ? '3.5'
+                              : isSelected
+                                ? '3'
+                                : isEditMode
+                                  ? '2.2'
+                                  : hasYellowBorder
+                                    ? '2.8'
+                                    : '2'
+                          }
+                          strokeDasharray={isEditMode ? '4,2' : 'none'}
+                        />
+                      </svg>
+
+                      {/* Conteúdo textual centralizado no losango de Milestone */}
+                      <div className="absolute inset-0 px-9 py-2.5 flex flex-col items-center justify-center text-center pointer-events-none">
+                        <div className="flex items-center gap-1.5 justify-center mb-0.5">
+                          <span className="font-mono font-black text-xs text-[#FFD400] tracking-wider">
+                            {node.codigo}
+                          </span>
+                          <span className="text-[9px] uppercase font-extrabold text-black bg-[#FFD400] px-1.5 py-0.2 rounded shadow-sm">
+                            Milestone
+                          </span>
+                          {isEditMode && <Move className="w-3 h-3 text-[#FFD400] opacity-80" />}
+                        </div>
+                        <p
+                          title={node.nome}
+                          className="text-[12px] font-bold text-white line-clamp-2 leading-tight drop-shadow-sm"
+                        >
+                          {node.nome}
+                        </p>
+                        <span className="text-[9px] font-mono text-[#A3A3A3] mt-0.5">
+                          &larr; {node.etapasAnterioresIds.length} | &rarr;{' '}
+                          {node.etapasSucessorasIds.length}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )
+              }
+
+              // CASO 2: PONTO DE DECISÃO CONDICIONAL (ex.: O01) -> RENDERIZADO COMO LOSANGO COM SIM/NÃO
+              if (node.isDecision) {
+                return (
+                  <div
+                    key={node.id}
+                    title={`${node.codigo} - ${node.nome} (${node.area})`}
+                    onMouseDown={(e) => handleNodeMouseDown(e, node)}
+                    onTouchStart={(e) => handleNodeTouchStart(e, node)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (hasMovedDuringDragRef.current) return
+                      setSelectedNode(node)
+                    }}
+                    style={{
+                      position: 'absolute',
+                      left: node.x,
+                      top: node.y,
+                      width: node.width,
+                      height: node.height,
+                      opacity,
+                      transition: isDraggingThis
+                        ? 'none'
+                        : 'box-shadow 0.2s ease, transform 0.2s ease',
                     }}
                     className={`${cursorClass} z-20 flex items-center justify-center ${
                       isDraggingThis
@@ -1081,7 +1272,7 @@ export default function Fluxograma() {
                         />
                       </svg>
 
-                      {/* Conteúdo textual centralizado no losango com código, área e nome */}
+                      {/* Conteúdo textual centralizado no losango de Decisão */}
                       <div className="absolute inset-0 px-8 py-3 flex flex-col items-center justify-center text-center pointer-events-none">
                         <div className="flex items-center gap-1.5 justify-center mb-0.5">
                           <span className="font-mono font-black text-xs text-[#FFD400]">
@@ -1104,10 +1295,11 @@ export default function Fluxograma() {
                 )
               }
 
-              // Caixa padrão retangular com dimensões aprimoradas para caber o texto completo
+              // CASO 3: CAIXA PADRÃO RETANGULAR 260×110px COM CÓDIGO, ÁREA E NOME COMPLETO
               return (
                 <div
                   key={node.id}
+                  title={`${node.codigo} - ${node.nome} (${node.area})`}
                   onMouseDown={(e) => handleNodeMouseDown(e, node)}
                   onTouchStart={(e) => handleNodeTouchStart(e, node)}
                   onClick={(e) => {
@@ -1122,7 +1314,9 @@ export default function Fluxograma() {
                     width: node.width,
                     height: node.height,
                     opacity,
-                    transition: isDraggingThis ? 'none' : 'box-shadow 0.2s ease',
+                    transition: isDraggingThis
+                      ? 'none'
+                      : 'box-shadow 0.2s ease, transform 0.2s ease',
                   }}
                   className={`bg-[#121212] border rounded-xl p-3 shadow-lg ${cursorClass} z-20 flex flex-col justify-between ${
                     isDraggingThis

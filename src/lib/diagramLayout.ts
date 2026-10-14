@@ -7,6 +7,7 @@ export interface ProcessNode {
   area: string
   observacao?: string
   isDecision: boolean
+  isMilestone: boolean
   decisionLabels?: { sim?: string; nao?: string }
   etapasAnterioresIds: string[]
   etapasSucessorasIds: string[]
@@ -16,6 +17,7 @@ export interface ProcessNode {
   y: number
   width: number
   height: number
+  laneIndex: number
 }
 
 export interface EdgeConnection {
@@ -26,16 +28,26 @@ export interface EdgeConnection {
   fromY: number
   toX: number
   toY: number
-  isBackward: boolean // retorno / ciclo de correção
+  isBackward: boolean // retorno / ciclo de correção ou para trás no X
   label?: string // "Sim" | "Não" | undefined
-  // Direções dos terminais para roteamento suave
   fromSide: 'right' | 'left' | 'top' | 'bottom'
   toSide: 'right' | 'left' | 'top' | 'bottom'
+}
+
+export interface Swimlane {
+  id: string
+  nome: string
+  tipo?: string
+  ordem: number
+  y: number
+  height: number
+  nodeCount: number
 }
 
 export interface DiagramLayout {
   nodes: ProcessNode[]
   edges: EdgeConnection[]
+  lanes: Swimlane[]
   width: number
   height: number
   nodeMap: Map<string, ProcessNode>
@@ -46,10 +58,49 @@ export interface DiagramLayout {
 // Dimensões aprimoradas para acomodar texto completo com folga e sem truncamento
 export const NODE_WIDTH = 260
 export const NODE_HEIGHT = 110
-const HORIZONTAL_GAP = 120
-const VERTICAL_GAP = 40
-const CANVAS_PADDING_X = 80
-const CANVAS_PADDING_Y = 80
+export const LANE_HEADER_WIDTH = 220
+export const HORIZONTAL_GAP = 70
+export const LANE_PADDING_Y = 24
+export const LANE_GAP = 28
+export const CANVAS_PADDING_X = 40
+export const CANVAS_PADDING_Y = 40
+
+/**
+ * Extrai o prefixo de letras e o sufixo numérico de um código de processo
+ * Ex.: "V01" -> { prefix: "V", num: 1 }
+ *      "ADM12" -> { prefix: "ADM", num: 12 }
+ *      "ML09" -> { prefix: "ML", num: 9 }
+ */
+export function parseCodigoNumber(codigo: string): { prefix: string; num: number } {
+  const match = codigo.trim().match(/^([A-Za-z]+)(\d+)$/)
+  if (match) {
+    return {
+      prefix: match[1].toUpperCase(),
+      num: parseInt(match[2], 10),
+    }
+  }
+  const fallbackNum = codigo.match(/\d+/)
+  return {
+    prefix: codigo.replace(/\d+/g, '').toUpperCase(),
+    num: fallbackNum ? parseInt(fallbackNum[0], 10) : 999999,
+  }
+}
+
+/**
+ * Comparador para ordenação numérica do sufixo do código (V01, V02... V10, V11...)
+ */
+export function compareCodigosNumericos(a: string, b: string): number {
+  const parsedA = parseCodigoNumber(a)
+  const parsedB = parseCodigoNumber(b)
+  if (parsedA.prefix !== parsedB.prefix) {
+    const prefixDiff = parsedA.prefix.localeCompare(parsedB.prefix)
+    if (prefixDiff !== 0) return prefixDiff
+  }
+  if (parsedA.num !== parsedB.num) {
+    return parsedA.num - parsedB.num
+  }
+  return a.localeCompare(b, undefined, { numeric: true })
+}
 
 /**
  * Analisa se um processo possui instrução condicional de decisão (ex.: "Se Não → X; Se Sim → Y")
@@ -80,9 +131,22 @@ export function parseDecision(obs?: string): {
 }
 
 /**
- * Calcula layout DAG unificado e fluido, da esquerda para a direita (início ao fim do fluxo).
- * Sem divisão em raias horizontais (swimlanes desconsideradas na geometria visual),
- * agrupando e ordenando logicamente etapa a etapa.
+ * Verifica se um processo pertence ao grupo Milestone
+ */
+export function isMilestoneProcess(areaName?: string, codigo?: string): boolean {
+  if (areaName && areaName.trim().toLowerCase() === 'milestone') return true
+  if (codigo && codigo.trim().toUpperCase().startsWith('ML')) return true
+  return false
+}
+
+/**
+ * Calcula layout de Fluxograma baseado em Raias Horizontais (Swimlanes) por área da empresa.
+ * - Cada área ocupa uma faixa horizontal (swimlane), ordenada pelo campo ordem_no_fluxo da coleção 'areas'.
+ * - O nome da área fica no início da raia (cabeçalho à esquerda).
+ * - Dentro de cada raia, os blocos de processos seguem a ordem 01, 02, 03, 04... da esquerda para a direita.
+ * - Processos do grupo 'Milestone' são identificados para renderização em losango.
+ * - Setas conectam os processos entre etapas anteriores e sucessoras, inclusive cruzando raias.
+ * - Posições salvas customizadas pelo administrador prevalecem caso existam.
  */
 export function computeDiagramLayout(
   rawAreas: Area[],
@@ -93,6 +157,7 @@ export function computeDiagramLayout(
     return {
       nodes: [],
       edges: [],
+      lanes: [],
       width: 1200,
       height: 800,
       nodeMap: new Map(),
@@ -101,165 +166,109 @@ export function computeDiagramLayout(
     }
   }
 
-  // Mapa de ordem macro das áreas como guia de desempate e afinidade de fluxo
-  const areaOrderMap = new Map<string, number>()
-  rawAreas.forEach((a) => {
-    areaOrderMap.set(a.nome.trim().toLowerCase(), a.ordem_no_fluxo || 99)
+  // 1. Organizar áreas ordenadas por ordem_no_fluxo
+  const sortedAreas = [...rawAreas].sort((a, b) => {
+    const ordA = a.ordem_no_fluxo ?? 999
+    const ordB = b.ordem_no_fluxo ?? 999
+    if (ordA !== ordB) return ordA - ordB
+    return a.nome.localeCompare(b.nome)
   })
 
-  // Mapear processos por ID e por Código
-  const procById = new Map<string, Processo>()
-  const procByCodigo = new Map<string, Processo>()
+  // Agrupar processos por área (normalizando nome)
+  const procsByArea = new Map<string, Processo[]>()
   rawProcessos.forEach((p) => {
-    procById.set(p.id, p)
-    procByCodigo.set(p.codigo.trim().toUpperCase(), p)
-  })
-
-  // 1. Identificar ciclos de retorno conhecidos ou com código anterior para tratá-los como backward
-  // Por exemplo, em retornos (ex.: O02 -> V03, ou links de feedback), o rank não deve explodir
-  const isDirectCycle = (fromId: string, toId: string): boolean => {
-    const fromP = procById.get(fromId)
-    const toP = procById.get(toId)
-    if (!fromP || !toP) return false
-    // Se toP tem fromP explicitamente em suas sucessoras também
-    if (toP.etapas_sucessoras?.includes(fromId)) return true
-    return false
-  }
-
-  // 2. Ranking topológico de colunas (0 = nós de entrada sem dependência anterior ou iniciais)
-  const rankMap = new Map<string, number>()
-  rawProcessos.forEach((p) => {
-    // Se não tem etapas anteriores, rank base 0
-    rankMap.set(p.id, 0)
-  })
-
-  // Relaxamento iterativo de ranking (Longest Path DAG) com quebra de ciclos
-  let changed = true
-  let iterations = 0
-  const MAX_ITERATIONS = 35
-
-  while (changed && iterations < MAX_ITERATIONS) {
-    changed = false
-    iterations++
-    for (const p of rawProcessos) {
-      const currentRank = rankMap.get(p.id) || 0
-      const sucessoras = p.etapas_sucessoras || []
-      for (const sucId of sucessoras) {
-        if (!procById.has(sucId)) continue
-        if (isDirectCycle(p.id, sucId)) continue
-
-        const sucRank = rankMap.get(sucId) || 0
-        if (sucRank <= currentRank) {
-          // Detectar se não é retorno de correção explícito pelo código
-          // (ex.: O02 voltando para V03)
-          const sucProc = procById.get(sucId)!
-          const pAreaOrder = areaOrderMap.get((p.area || '').trim().toLowerCase()) || 99
-          const sucAreaOrder = areaOrderMap.get((sucProc.area || '').trim().toLowerCase()) || 99
-
-          // Se a sucessora for de uma área muito anterior e houver loop, tratamos como backward
-          const isAreaBackjump = sucAreaOrder < pAreaOrder - 2
-
-          if (!isAreaBackjump && currentRank + 1 < 50) {
-            rankMap.set(sucId, currentRank + 1)
-            changed = true
-          }
-        }
-      }
+    const areaName = (p.area || 'Outros').trim()
+    if (!procsByArea.has(areaName)) {
+      procsByArea.set(areaName, [])
     }
-  }
-
-  // Agrupar processos por coluna/rank
-  const procsByCol = new Map<number, Processo[]>()
-  rawProcessos.forEach((p) => {
-    const col = rankMap.get(p.id) || 0
-    if (!procsByCol.has(col)) procsByCol.set(col, [])
-    procsByCol.get(col)!.push(p)
+    procsByArea.get(areaName)!.push(p)
   })
 
-  // Encontrar coluna máxima
-  let maxCol = 0
-  for (const col of procsByCol.keys()) {
-    if (col > maxCol) maxCol = col
-  }
+  // Ordenar processos dentro de cada área por código numérico crescente (01, 02, 03...)
+  procsByArea.forEach((procList) => {
+    procList.sort((a, b) => compareCodigosNumericos(a.codigo, b.codigo))
+  })
 
-  // 3. Ordenação vertical (Y) dentro de cada coluna para minimizar cruzamento de arestas
-  // Ordena com base em:
-  // a) Área (ordem_no_fluxo da área como bloco lógico)
-  // b) Média do Y/índice das etapas anteriores (barycenter heuristic)
-  // c) Código do processo
-  const colNodeOrder = new Map<number, Processo[]>()
-  const previousYMap = new Map<string, number>()
+  // Lista definitiva de áreas a exibir como raias:
+  // Primeiro as áreas cadastradas (filtrando apenas as que possuem processos ou todas as ordenadas)
+  // Seguidas de eventuais áreas presentes nos processos que não constam na coleção areas
+  const laneAreas: {
+    id: string
+    nome: string
+    tipo?: string
+    ordem: number
+    processos: Processo[]
+  }[] = []
+  const registeredAreaNames = new Set<string>()
 
-  for (let c = 0; c <= maxCol; c++) {
-    const procs = procsByCol.get(c) || []
+  sortedAreas.forEach((area) => {
+    const trimmedNome = area.nome.trim()
+    registeredAreaNames.add(trimmedNome.toLowerCase())
+    const procs = procsByArea.get(trimmedNome) || []
+    if (procs.length > 0) {
+      laneAreas.push({
+        id: area.id,
+        nome: trimmedNome,
+        tipo: area.tipo,
+        ordem: area.ordem_no_fluxo ?? 999,
+        processos: procs,
+      })
+    }
+  })
 
-    procs.sort((a, b) => {
-      // 1. Ordem macro da área
-      const areaA = areaOrderMap.get((a.area || '').trim().toLowerCase()) ?? 99
-      const areaB = areaOrderMap.get((b.area || '').trim().toLowerCase()) ?? 99
-      if (areaA !== areaB) return areaA - areaB
+  // Áreas extras presentes nos processos que não constam na tabela oficial de áreas
+  procsByArea.forEach((procs, areaName) => {
+    if (!registeredAreaNames.has(areaName.toLowerCase()) && procs.length > 0) {
+      laneAreas.push({
+        id: `extra-${areaName}`,
+        nome: areaName,
+        tipo: 'área',
+        ordem: 999,
+        processos: procs,
+      })
+    }
+  })
 
-      // 2. Baricentro das etapas anteriores (quem vem do topo fica no topo)
-      let baryA = 0
-      let countA = 0
-      for (const antId of a.etapas_anteriores || []) {
-        if (previousYMap.has(antId)) {
-          baryA += previousYMap.get(antId)!
-          countA++
-        }
-      }
-      const avgA = countA > 0 ? baryA / countA : 0
-
-      let baryB = 0
-      let countB = 0
-      for (const antId of b.etapas_anteriores || []) {
-        if (previousYMap.has(antId)) {
-          baryB += previousYMap.get(antId)!
-          countB++
-        }
-      }
-      const avgB = countB > 0 ? baryB / countB : 0
-
-      if (avgA !== avgB) return avgA - avgB
-
-      // 3. Código alfanumérico estável
-      return a.codigo.localeCompare(b.codigo, undefined, { numeric: true })
-    })
-
-    colNodeOrder.set(c, procs)
-
-    // Armazenar índice estimado para guiar as próximas colunas
-    procs.forEach((p, idx) => {
-      previousYMap.set(p.id, idx)
-    })
-  }
-
-  // 4. Determinar número máximo de linhas para dimensionamento
-  let maxRows = 1
-  for (const procs of colNodeOrder.values()) {
-    if (procs.length > maxRows) maxRows = procs.length
-  }
-
-  // 5. Instanciar nós com coordenadas no espaço contínuo da esquerda para a direita
+  // 2. Determinar layout de raias e posicionamento horizontal (da esquerda para a direita)
+  const lanes: Swimlane[] = []
   const nodes: ProcessNode[] = []
   const nodeMap = new Map<string, ProcessNode>()
 
-  for (let col = 0; col <= maxCol; col++) {
-    const procs = colNodeOrder.get(col) || []
-    const colCount = procs.length
+  let currentY = CANVAS_PADDING_Y
+  let maxColCount = 0
 
-    // Centralização vertical suave na coluna para distribuir os nós harmoniosamente
-    // Colunas com poucos nós não ficam presas ao topo absoluto se puderem ser centralizadas suavemente
-    const colVerticalOffset = 0 // Alinhamento consistente a partir do topo
+  laneAreas.forEach((laneItem, laneIdx) => {
+    const count = laneItem.processos.length
+    if (count > maxColCount) maxColCount = count
 
-    procs.forEach((proc, row) => {
+    const laneHeight = NODE_HEIGHT + LANE_PADDING_Y * 2
+    lanes.push({
+      id: laneItem.id,
+      nome: laneItem.nome,
+      tipo: laneItem.tipo,
+      ordem: laneItem.ordem,
+      y: currentY,
+      height: laneHeight,
+      nodeCount: count,
+    })
+
+    const nodeY = currentY + LANE_PADDING_Y
+
+    laneItem.processos.forEach((proc, colIndex) => {
       const decisionInfo = parseDecision(proc.observacao)
+      const milestone = isMilestoneProcess(proc.area, proc.codigo)
 
-      // Se houver posição customizada salva pelo admin (por ID ou por Código), usa ela; senão fallback para automático
+      // Início horizontal das caixas após o cabeçalho da raia
+      const autoX =
+        CANVAS_PADDING_X +
+        LANE_HEADER_WIDTH +
+        HORIZONTAL_GAP +
+        colIndex * (NODE_WIDTH + HORIZONTAL_GAP)
+      const autoY = nodeY
+
+      // Se houver posição customizada salva pelo admin (por ID ou por Código), usa ela
       const customPos =
         customPositions?.get(proc.id) || customPositions?.get(proc.codigo.trim().toUpperCase())
-      const autoX = CANVAS_PADDING_X + col * (NODE_WIDTH + HORIZONTAL_GAP)
-      const autoY = CANVAS_PADDING_Y + colVerticalOffset + row * (NODE_HEIGHT + VERTICAL_GAP)
 
       const finalX = customPos ? customPos.x : autoX
       const finalY = customPos ? customPos.y : autoY
@@ -271,26 +280,30 @@ export function computeDiagramLayout(
         area: proc.area,
         observacao: proc.observacao,
         isDecision: decisionInfo.isDecision,
+        isMilestone: milestone,
         decisionLabels: decisionInfo.labels,
         etapasAnterioresIds: proc.etapas_anteriores || [],
         etapasSucessorasIds: proc.etapas_sucessoras || [],
-        col,
-        row,
+        col: colIndex,
+        row: laneIdx,
         x: finalX,
         y: finalY,
         width: NODE_WIDTH,
         height: NODE_HEIGHT,
+        laneIndex: laneIdx,
       }
 
       nodes.push(nodeObj)
       nodeMap.set(proc.id, nodeObj)
     })
-  }
 
-  // 6. Construir conexões / arestas com portas inteligentes
+    currentY += laneHeight + LANE_GAP
+  })
+
+  // 3. Construir conexões / arestas com portas inteligentes
   // Regra padrão: do lado direito (Right) da origem para o lado esquerdo (Left) do destino
-  // Em caso de retorno/ciclo (toNode.col <= fromNode.col):
-  //   - Se o destino estiver à esquerda, sair pela esquerda/base e entrar pelo topo/direita com curva elegante
+  // Em caso de retorno / ciclo / destino à esquerda (toNode.x <= fromNode.x):
+  // curvas suaves inteligentes pelo topo ou pela base para evitar sobreposição
   const edges: EdgeConnection[] = []
 
   nodes.forEach((fromNode) => {
@@ -298,8 +311,7 @@ export function computeDiagramLayout(
       const toNode = nodeMap.get(toId)
       if (!toNode) return
 
-      // Retorno se o destino estiver em coluna anterior ou igual
-      const isBackward = toNode.col <= fromNode.col || toNode.x <= fromNode.x
+      const isBackward = toNode.x <= fromNode.x + 30
 
       // Identificar rótulo Sim / Não se origem for decisão
       let label: string | undefined = undefined
@@ -326,10 +338,9 @@ export function computeDiagramLayout(
 
       if (isBackward) {
         // Conexão de retorno / ciclo de correção:
-        // Se toNode estiver no mesmo X/coluna (empilhado verticalmente):
         if (Math.abs(toNode.x - fromNode.x) < 40) {
           if (toNode.y > fromNode.y) {
-            // De cima para baixo na mesma coluna
+            // De cima para baixo no mesmo alinhamento
             fromX = fromNode.x + fromNode.width / 2
             fromY = fromNode.y + fromNode.height
             toX = toNode.x + toNode.width / 2
@@ -337,7 +348,7 @@ export function computeDiagramLayout(
             fromSide = 'bottom'
             toSide = 'top'
           } else {
-            // De baixo para cima na mesma coluna (arco pela direita)
+            // De baixo para cima (arco pela direita)
             fromX = fromNode.x + fromNode.width
             fromY = fromNode.y + fromNode.height / 2
             toX = toNode.x + toNode.width
@@ -346,8 +357,7 @@ export function computeDiagramLayout(
             toSide = 'right'
           }
         } else {
-          // Retorno para uma coluna anterior:
-          // Sai pelo topo ou base da caixa e entra pelo topo ou base da caixa destino
+          // Retorno para posição à esquerda:
           const goViaTop = fromNode.y < toNode.y
           if (goViaTop) {
             fromX = fromNode.x + fromNode.width / 2
@@ -367,7 +377,7 @@ export function computeDiagramLayout(
         }
       } else {
         // Fluxo progressivo natural (Esquerda -> Direita):
-        // Conexão padrão DIREITA da origem para ESQUERDA do destino!
+        // Saída pela direita da caixa de origem, entrada pela esquerda da caixa de destino
         fromX = fromNode.x + fromNode.width
         fromY = fromNode.y + fromNode.height / 2
         toX = toNode.x
@@ -392,7 +402,7 @@ export function computeDiagramLayout(
     })
   })
 
-  // Determinar dimensões totais levando em conta nós customizados que podem ter sido arrastados para posições maiores
+  // 4. Determinar dimensões totais do canvas
   let maxX = 0
   let maxY = 0
   nodes.forEach((n) => {
@@ -400,19 +410,26 @@ export function computeDiagramLayout(
     if (n.y + n.height > maxY) maxY = n.y + n.height
   })
 
-  const autoTotalWidth = CANVAS_PADDING_X * 2 + (maxCol + 1) * (NODE_WIDTH + HORIZONTAL_GAP)
-  const autoTotalHeight = CANVAS_PADDING_Y * 2 + maxRows * (NODE_HEIGHT + VERTICAL_GAP) + 100
+  const autoTotalWidth =
+    CANVAS_PADDING_X * 2 +
+    LANE_HEADER_WIDTH +
+    HORIZONTAL_GAP +
+    maxColCount * (NODE_WIDTH + HORIZONTAL_GAP) +
+    200
 
-  const totalWidth = Math.max(autoTotalWidth, maxX + CANVAS_PADDING_X, 1800)
-  const totalHeight = Math.max(autoTotalHeight, maxY + CANVAS_PADDING_Y, 1000)
+  const autoTotalHeight = currentY + CANVAS_PADDING_Y
+
+  const totalWidth = Math.max(autoTotalWidth, maxX + CANVAS_PADDING_X + 150, 2400)
+  const totalHeight = Math.max(autoTotalHeight, maxY + CANVAS_PADDING_Y + 100, 1200)
 
   return {
     nodes,
     edges,
+    lanes,
     width: totalWidth,
     height: totalHeight,
     nodeMap,
-    totalCols: maxCol + 1,
-    totalRows: maxRows,
+    totalCols: maxColCount,
+    totalRows: lanes.length,
   }
 }

@@ -25,6 +25,9 @@ interface RejectedItem {
     | 'Colaboradores'
     | 'Processos (1ª passada)'
     | 'Processos (2ª passada)'
+    | 'Projetos Estratégicos'
+    | 'Metas'
+    | 'Indicadores'
   linha?: number
   codigo?: string
   motivo: string
@@ -43,11 +46,26 @@ interface ValidationReport {
     processosExpected: number
     conexoes: number
     conexoesExpected: number
+    projetos: number
+    projetosExpected: number
+    metas: number
+    metasExpected: number
+    indicadores: number
+    indicadoresExpected: number
+    vinculosMetaResponsavel: number
+    vinculosMetaResponsavelExpected: number
+    vinculosMetaProcesso: number
+    vinculosMetaProcessoExpected: number
   }
   checks: {
     williamCheck: boolean | null
     o01Check: boolean | null
     rh05Check: boolean | null
+    mt38ResponsaveisCheck: boolean | null
+    miguelMetasCheck: boolean | null
+    williamSemMetasCheck: boolean | null
+    pauloEmilioSponsorCheck: boolean | null
+    todasMetasComResponsavelEProjetoCheck: boolean | null
   }
   errors: RejectedItem[]
 }
@@ -93,10 +111,13 @@ async function runWithRetry<T>(
 export default function AdminImport() {
   const { user } = useAuth()
 
-  // Arquivos selecionados
+  // Arquivos selecionados (Etapa 1 e Etapa 2)
   const [fileAreas, setFileAreas] = useState<File | null>(null)
   const [fileColabs, setFileColabs] = useState<File | null>(null)
   const [fileProcs, setFileProcs] = useState<File | null>(null)
+  const [fileProjetos, setFileProjetos] = useState<File | null>(null)
+  const [fileMetas, setFileMetas] = useState<File | null>(null)
+  const [fileIndicadores, setFileIndicadores] = useState<File | null>(null)
 
   // Estados de processamento
   const [importing, setImporting] = useState(false)
@@ -129,15 +150,65 @@ export default function AdminImport() {
     }
   }, [user])
 
+  // Converte data dd/mm/aaaa para string ISO ou compatível com PocketBase
+  const parseBrazilianDate = (dateStr?: string): string | null => {
+    if (!dateStr) return null
+    const clean = dateStr.trim()
+    if (!clean) return null
+    // dd/mm/aaaa
+    const parts = clean.split('/')
+    if (parts.length === 3) {
+      const dia = parseInt(parts[0], 10)
+      const mes = parseInt(parts[1], 10)
+      const ano = parseInt(parts[2], 10)
+      if (dia > 0 && mes > 0 && ano > 1900) {
+        const d = new Date(Date.UTC(ano, mes - 1, dia, 12, 0, 0))
+        return d.toISOString()
+      }
+    }
+    // Caso venha em outro formato ISO
+    const fallback = new Date(clean)
+    if (!isNaN(fallback.getTime())) {
+      return fallback.toISOString()
+    }
+    return null
+  }
+
+  // Divide múltiplos códigos separados por ponto-e-vírgula ou vírgula
+  const splitCodes = (val?: unknown): string[] => {
+    if (val === undefined || val === null) return []
+    const str = String(val).trim()
+    if (!str) return []
+    return str
+      .split(/[;,]/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0)
+  }
+
   // Função auxiliar para re-calcular checagens e contagens finais do banco
   const refreshValidationReportCounts = async (
     currentErrors: RejectedItem[],
   ): Promise<ValidationReport> => {
-    const [freshAreas, freshColabs, freshUsers, allProcs] = await Promise.all([
+    const [
+      freshAreas,
+      freshColabs,
+      freshUsers,
+      allProcs,
+      freshProjetos,
+      freshMetas,
+      freshIndicadores,
+    ] = await Promise.all([
       runWithRetry(() => pb.collection('areas').getFullList()),
       runWithRetry(() => pb.collection('colaboradores').getFullList<Colaborador>()),
       runWithRetry(() => pb.collection('users').getFullList<UserProfile>()),
       runWithRetry(() => pb.collection('processos').getFullList()),
+      runWithRetry(() => pb.collection('projetos_estrategicos').getFullList()),
+      runWithRetry(() =>
+        pb
+          .collection('metas')
+          .getFullList({ expand: 'responsaveis,projeto,projeto_secundario,processos_vinculados' }),
+      ),
+      runWithRetry(() => pb.collection('indicadores').getFullList({ expand: 'meta' })),
     ])
 
     const procMapByCodigo = new Map<string, string>()
@@ -177,6 +248,71 @@ export default function AdminImport() {
       rh05Check = ant.length === 0 && suc.length === 0
     }
 
+    // Contagem de vínculos da Etapa 2
+    let vinculosMetaResponsavel = 0
+    let vinculosMetaProcesso = 0
+    for (const m of freshMetas) {
+      const resp = (m.responsaveis as string[]) || []
+      vinculosMetaResponsavel += resp.length
+      const procs = (m.processos_vinculados as string[]) || []
+      vinculosMetaProcesso += procs.length
+    }
+
+    // Conferências específicas da Etapa 2:
+    // 1. MT38 tem Rafael e Mahara como responsáveis
+    let mt38ResponsaveisCheck: boolean | null = null
+    const mt38 = freshMetas.find((m) => (m.codigo || '').toUpperCase() === 'MT38')
+    if (mt38) {
+      const respIds = (mt38.responsaveis as string[]) || []
+      const rafael = freshColabs.find((c) => c.codigo?.toLowerCase() === 'rafael')
+      const mahara = freshColabs.find((c) => c.codigo?.toLowerCase() === 'mahara')
+      mt38ResponsaveisCheck =
+        !!rafael && !!mahara && respIds.includes(rafael.id) && respIds.includes(mahara.id)
+    }
+
+    // 2. Miguel é responsável por MT52 a MT55
+    let miguelMetasCheck: boolean | null = null
+    const miguel = freshColabs.find((c) => c.codigo?.toLowerCase() === 'miguel')
+    if (miguel) {
+      const expectedMiguelCodes = ['MT52', 'MT53', 'MT54', 'MT55']
+      const metasMiguel = freshMetas.filter((m) =>
+        expectedMiguelCodes.includes((m.codigo || '').toUpperCase()),
+      )
+      miguelMetasCheck =
+        metasMiguel.length === 4 &&
+        metasMiguel.every((m) => ((m.responsaveis as string[]) || []).includes(miguel.id))
+    }
+
+    // 3. William (sem_metas) não tem metas
+    let williamSemMetasCheck: boolean | null = null
+    if (william) {
+      const metasDoWilliam = freshMetas.filter((m) =>
+        ((m.responsaveis as string[]) || []).includes(william.id),
+      )
+      williamSemMetasCheck = metasDoWilliam.length === 0
+    }
+
+    // 4. Paulo Emílio é sponsor de P2 e P5
+    let pauloEmilioSponsorCheck: boolean | null = null
+    const pauloEmilio = freshColabs.find((c) => c.codigo?.toLowerCase() === 'paulo-emilio')
+    if (pauloEmilio) {
+      const p2 = freshProjetos.find((p) => (p.codigo || '').toUpperCase() === 'P2')
+      const p5 = freshProjetos.find((p) => (p.codigo || '').toUpperCase() === 'P5')
+      pauloEmilioSponsorCheck =
+        !!p2 && !!p5 && p2.sponsor === pauloEmilio.id && p5.sponsor === pauloEmilio.id
+    }
+
+    // 5. Nenhuma meta sem responsável ou sem projeto principal
+    let todasMetasComResponsavelEProjetoCheck: boolean | null = null
+    if (freshMetas.length > 0) {
+      todasMetasComResponsavelEProjetoCheck = freshMetas.every((m) => {
+        const hasProjeto = !!m.projeto
+        const hasResponsaveis =
+          Array.isArray(m.responsaveis) && (m.responsaveis as string[]).length > 0
+        return hasProjeto && hasResponsaveis
+      })
+    }
+
     return {
       counts: {
         areas: freshAreas.length,
@@ -189,11 +325,26 @@ export default function AdminImport() {
         processosExpected: 181,
         conexoes: totalConexoes,
         conexoesExpected: 217,
+        projetos: freshProjetos.length,
+        projetosExpected: 5,
+        metas: freshMetas.length,
+        metasExpected: 80,
+        indicadores: freshIndicadores.length,
+        indicadoresExpected: 225,
+        vinculosMetaResponsavel,
+        vinculosMetaResponsavelExpected: 84,
+        vinculosMetaProcesso,
+        vinculosMetaProcessoExpected: 86,
       },
       checks: {
         williamCheck: william ? !!william.sem_metas : null,
         o01Check,
         rh05Check,
+        mt38ResponsaveisCheck,
+        miguelMetasCheck,
+        williamSemMetasCheck,
+        pauloEmilioSponsorCheck,
+        todasMetasComResponsavelEProjetoCheck,
       },
       errors: currentErrors,
     }
@@ -201,10 +352,14 @@ export default function AdminImport() {
 
   // Função principal de importação
   const handleStartImport = async () => {
-    if (!fileAreas || !fileColabs || !fileProcs) {
+    const hasEtapa1 = !!(fileAreas || fileColabs || fileProcs)
+    const hasEtapa2 = !!(fileProjetos || fileMetas || fileIndicadores)
+
+    if (!hasEtapa1 && !hasEtapa2) {
       toast({
-        title: 'Arquivos pendentes',
-        description: 'Selecione os 3 arquivos CSV antes de iniciar a importação.',
+        title: 'Nenhum arquivo selecionado',
+        description:
+          'Selecione pelo menos um arquivo da Etapa 1 ou da Etapa 2 para iniciar a importação.',
         variant: 'destructive',
       })
       return
@@ -217,379 +372,760 @@ export default function AdminImport() {
     const errors: RejectedItem[] = []
 
     try {
-      // 1. Ler os três arquivos texto
-      const areasText = await fileAreas.text()
-      const colabsText = await fileColabs.text()
-      const procsText = await fileProcs.text()
+      // Mapas globais compartilhados para resolução de códigos
+      const [initAreas, initColabs, initUsers, initProcs, initProjs] = await Promise.all([
+        runWithRetry(() => pb.collection('areas').getFullList()),
+        runWithRetry(() => pb.collection('colaboradores').getFullList<Colaborador>()),
+        runWithRetry(() => pb.collection('users').getFullList<UserProfile>()),
+        runWithRetry(() => pb.collection('processos').getFullList()),
+        runWithRetry(() => pb.collection('projetos_estrategicos').getFullList()),
+      ])
 
-      const parsedAreas = parseCsv(areasText)
-      const parsedColabs = parseCsv(colabsText)
-      const parsedProcs = parseCsv(procsText)
-
-      // ==========================================================
-      // PASSO 1: IMPORTAR ÁREAS
-      // ==========================================================
-      setCurrentStep('Importando Áreas...')
-      setProgressMsg('Processando registros de áreas...')
-
-      // Carregar áreas já existentes para idempotência
-      const existingAreas = await runWithRetry(() => pb.collection('areas').getFullList())
-      const areaMapByName = new Map<string, string>() // nome -> id
-      for (const a of existingAreas) {
-        const aNome = (a?.nome ?? '').trim().toLowerCase()
-        if (aNome) areaMapByName.set(aNome, a.id)
-      }
-
-      for (let i = 0; i < parsedAreas.rows.length; i++) {
-        const row = parsedAreas.rows[i]
-        const nome = (row?.nome ?? '').trim()
-        if (!nome) {
-          // Se toda a linha estiver em branco, ignorar silenciosamente ou avisar
-          const hasAnyData = Object.values(row || {}).some((v) => (v ?? '').trim() !== '')
-          if (!hasAnyData) continue
-
-          errors.push({
-            etapa: 'Áreas',
-            linha: i + 2,
-            motivo: 'Nome da área vazio ou ausente na planilha',
-          })
-          continue
-        }
-
-        const ordem = parseInt((row.ordem_no_fluxo ?? '0').trim() || '0', 10) || 0
-        const tipoRaw = (row.tipo ?? '').trim().toLowerCase()
-        const tipo =
-          tipoRaw.includes('grupo') || tipoRaw.includes('marco') ? 'grupo de processos' : 'área'
-
-        const areaPayload = {
-          nome,
-          ordem_no_fluxo: ordem,
-          tipo,
-        }
-
-        try {
-          const key = nome.toLowerCase()
-          if (areaMapByName.has(key)) {
-            const id = areaMapByName.get(key)!
-            await runWithRetry(() => pb.collection('areas').update(id, areaPayload))
-          } else {
-            const created = await runWithRetry(() => pb.collection('areas').create(areaPayload))
-            areaMapByName.set(key, created.id)
-          }
-        } catch (err: unknown) {
-          const msg = getErrorMessage(err)
-          errors.push({
-            etapa: 'Áreas',
-            linha: i + 2,
-            codigo: nome,
-            motivo: msg,
-            payload: areaPayload,
-          })
-        }
-        await sleep(30)
-      }
-
-      // Re-consultar áreas para obter IDs atualizados
-      const freshAreas = await runWithRetry(() => pb.collection('areas').getFullList())
-      const areaIdMap = new Map<string, string>()
-      freshAreas.forEach((a) => {
+      const areaIdMap = new Map<string, string>() // nome.toLowerCase() -> id
+      initAreas.forEach((a) => {
         const aNome = (a?.nome ?? '').trim().toLowerCase()
         if (aNome) areaIdMap.set(aNome, a.id)
       })
 
-      // ==========================================================
-      // PASSO 2: IMPORTAR COLABORADORES E USUÁRIOS
-      // ==========================================================
-      setCurrentStep('Importando Colaboradores & Logins...')
-      setProgressMsg('Criando contas de usuário e registros de colaboradores...')
-
-      const existingUsers = await runWithRetry(() =>
-        pb.collection('users').getFullList<UserProfile>(),
-      )
       const userMapByEmail = new Map<string, UserProfile>()
-      existingUsers.forEach((u) => {
+      initUsers.forEach((u) => {
         const uEmail = (u?.email ?? '').trim().toLowerCase()
         if (uEmail) userMapByEmail.set(uEmail, u)
       })
 
-      const existingColabs = await runWithRetry(() =>
-        pb.collection('colaboradores').getFullList<Colaborador>(),
-      )
-      const colabMapByCodigo = new Map<string, string>()
-      existingColabs.forEach((c) => {
+      const colabMapByCodigo = new Map<string, string>() // codigo.toLowerCase() -> id
+      initColabs.forEach((c) => {
         const cCod = (c?.codigo ?? '').trim().toLowerCase()
         if (cCod) colabMapByCodigo.set(cCod, c.id)
       })
 
-      for (let i = 0; i < parsedColabs.rows.length; i++) {
-        const row = parsedColabs.rows[i]
-        const codigo = (row?.codigo ?? '').trim()
-        const nome = (row?.nome ?? '').trim()
-        const cargo = (row?.cargo ?? '').trim()
-        const areaNome = (row?.area ?? '').trim()
-        const email = (row?.email ?? '').trim().toLowerCase()
-        const semMetasRaw = (row?.sem_metas ?? '').trim().toLowerCase()
-        const sem_metas = semMetasRaw === 'sim' || semMetasRaw === 'true'
+      const procMapByCodigo = new Map<string, string>() // codigo.toUpperCase() -> id
+      initProcs.forEach((p) => {
+        const cod = (p?.codigo ?? '').trim().toUpperCase()
+        if (cod) procMapByCodigo.set(cod, p.id)
+      })
 
-        if (!codigo || !nome || !email) {
-          // Se for uma linha vazia, ignorar
-          const hasAnyData = Object.values(row || {}).some((v) => (v ?? '').trim() !== '')
-          if (!hasAnyData) continue
+      const projMapByCodigo = new Map<string, string>() // codigo.toUpperCase() -> id
+      initProjs.forEach((pr) => {
+        const cod = (pr?.codigo ?? '').trim().toUpperCase()
+        if (cod) projMapByCodigo.set(cod, pr.id)
+      })
 
-          errors.push({
-            etapa: 'Colaboradores',
-            linha: i + 2,
-            codigo: codigo || nome || '(sem código)',
-            motivo: 'Campos obrigatórios ausentes (código, nome ou e-mail)',
-            payload: { codigo, nome, email, cargo, areaNome },
-          })
-          continue
+      // ==========================================================
+      // PASSO 1: IMPORTAR ÁREAS (se arquivo fornecido)
+      // ==========================================================
+      if (fileAreas) {
+        setCurrentStep('Importando Áreas...')
+        setProgressMsg('Processando registros de áreas...')
+
+        const areasText = await fileAreas.text()
+        const parsedAreas = parseCsv(areasText)
+
+        for (let i = 0; i < parsedAreas.rows.length; i++) {
+          const row = parsedAreas.rows[i]
+          const nome = (row?.nome ?? '').trim()
+          if (!nome) {
+            const hasAnyData = Object.values(row || {}).some((v) => (v ?? '').trim() !== '')
+            if (!hasAnyData) continue
+            errors.push({
+              etapa: 'Áreas',
+              linha: i + 2,
+              motivo: 'Nome da área vazio ou ausente na planilha',
+            })
+            continue
+          }
+
+          const ordem = parseInt((row.ordem_no_fluxo ?? '0').trim() || '0', 10) || 0
+          const tipoRaw = (row.tipo ?? '').trim().toLowerCase()
+          const tipo =
+            tipoRaw.includes('grupo') || tipoRaw.includes('marco') ? 'grupo de processos' : 'área'
+
+          const areaPayload = {
+            nome,
+            ordem_no_fluxo: ordem,
+            tipo,
+          }
+
+          try {
+            const key = nome.toLowerCase()
+            if (areaIdMap.has(key)) {
+              const id = areaIdMap.get(key)!
+              await runWithRetry(() => pb.collection('areas').update(id, areaPayload))
+            } else {
+              const created = await runWithRetry(() => pb.collection('areas').create(areaPayload))
+              areaIdMap.set(key, created.id)
+            }
+          } catch (err: unknown) {
+            const msg = getErrorMessage(err)
+            errors.push({
+              etapa: 'Áreas',
+              linha: i + 2,
+              codigo: nome,
+              motivo: msg,
+              payload: areaPayload,
+            })
+          }
+          await sleep(30)
         }
 
-        // 1. Criar ou sincronizar conta de usuário via endpoint server-side privilegiado
-        let userId = ''
-        const existingUser = userMapByEmail.get(email)
+        // Re-sincronizar mapa de áreas
+        const freshAreas = await runWithRetry(() => pb.collection('areas').getFullList())
+        freshAreas.forEach((a) => {
+          const aNome = (a?.nome ?? '').trim().toLowerCase()
+          if (aNome) areaIdMap.set(aNome, a.id)
+        })
+      }
 
-        try {
-          const userSyncPayload = {
-            email,
+      // ==========================================================
+      // PASSO 2: IMPORTAR COLABORADORES E USUÁRIOS (se arquivo fornecido)
+      // ==========================================================
+      if (fileColabs) {
+        setCurrentStep('Importando Colaboradores & Logins...')
+        setProgressMsg('Criando contas de usuário e registros de colaboradores...')
+
+        const colabsText = await fileColabs.text()
+        const parsedColabs = parseCsv(colabsText)
+
+        for (let i = 0; i < parsedColabs.rows.length; i++) {
+          const row = parsedColabs.rows[i]
+          const codigo = (row?.codigo ?? '').trim()
+          const nome = (row?.nome ?? '').trim()
+          const cargo = (row?.cargo ?? '').trim()
+          const areaNome = (row?.area ?? '').trim()
+          const email = (row?.email ?? '').trim().toLowerCase()
+          const semMetasRaw = (row?.sem_metas ?? '').trim().toLowerCase()
+          const sem_metas = semMetasRaw === 'sim' || semMetasRaw === 'true'
+
+          if (!codigo || !nome || !email) {
+            const hasAnyData = Object.values(row || {}).some((v) => (v ?? '').trim() !== '')
+            if (!hasAnyData) continue
+            errors.push({
+              etapa: 'Colaboradores',
+              linha: i + 2,
+              codigo: codigo || nome || '(sem código)',
+              motivo: 'Campos obrigatórios ausentes (código, nome ou e-mail)',
+              payload: { codigo, nome, email, cargo, areaNome },
+            })
+            continue
+          }
+
+          let userId = ''
+          const existingUser = userMapByEmail.get(email)
+
+          try {
+            const userSyncPayload = {
+              email,
+              nome,
+              cargo,
+              area: areaNome,
+              role: email === 'miguel.santiago@ctxcenografia.com.br' ? 'admin' : 'colaborador',
+              password: 'CTX@2027',
+              must_change_password: email === 'miguel.santiago@ctxcenografia.com.br' ? false : true,
+              update_password: !existingUser,
+            }
+
+            const syncRes = await runWithRetry(() =>
+              pb.send<{ success: boolean; user: UserProfile }>('/backend/v1/ctx/sync-user', {
+                method: 'POST',
+                body: userSyncPayload,
+              }),
+            )
+
+            if (syncRes && syncRes.user) {
+              userId = syncRes.user.id
+              userMapByEmail.set(email, syncRes.user)
+            }
+          } catch (err: unknown) {
+            const msg = getErrorMessage(err)
+            errors.push({
+              etapa: 'Usuários/Login',
+              linha: i + 2,
+              codigo,
+              motivo: `${email}: ${msg}`,
+              payload: { email, nome, cargo, area: areaNome },
+            })
+          }
+
+          const areaId = areaIdMap.get(areaNome.toLowerCase()) || null
+
+          const colabPayload = {
+            codigo,
             nome,
             cargo,
-            area: areaNome,
-            role: email === 'miguel.santiago@ctxcenografia.com.br' ? 'admin' : 'colaborador',
-            password: 'CTX@2027',
-            must_change_password: email === 'miguel.santiago@ctxcenografia.com.br' ? false : true,
-            update_password: !existingUser, // não sobrescreve senha se já existia
+            area: areaId,
+            email,
+            sem_metas,
+            usuario: userId || existingUser?.id || null,
           }
 
-          const syncRes = await runWithRetry(() =>
-            pb.send<{ success: boolean; user: UserProfile }>('/backend/v1/ctx/sync-user', {
-              method: 'POST',
-              body: userSyncPayload,
-            }),
-          )
-
-          if (syncRes && syncRes.user) {
-            userId = syncRes.user.id
-            userMapByEmail.set(email, syncRes.user)
+          try {
+            const colabKey = codigo.toLowerCase()
+            if (colabMapByCodigo.has(colabKey)) {
+              const colabId = colabMapByCodigo.get(colabKey)!
+              await runWithRetry(() => pb.collection('colaboradores').update(colabId, colabPayload))
+            } else {
+              const created = await runWithRetry(() =>
+                pb.collection('colaboradores').create(colabPayload),
+              )
+              colabMapByCodigo.set(colabKey, created.id)
+            }
+          } catch (err: unknown) {
+            const msg = getErrorMessage(err)
+            errors.push({
+              etapa: 'Colaboradores',
+              linha: i + 2,
+              codigo,
+              motivo: msg,
+              payload: colabPayload,
+            })
           }
-        } catch (err: unknown) {
-          const msg = getErrorMessage(err)
-          errors.push({
-            etapa: 'Usuários/Login',
-            linha: i + 2,
+
+          await sleep(40)
+        }
+
+        // Re-sincronizar colaboradores
+        const freshColabs = await runWithRetry(() =>
+          pb.collection('colaboradores').getFullList<Colaborador>(),
+        )
+        freshColabs.forEach((c) => {
+          const cCod = (c?.codigo ?? '').trim().toLowerCase()
+          if (cCod) colabMapByCodigo.set(cCod, c.id)
+        })
+      }
+
+      // ==========================================================
+      // PASSO 3: IMPORTAR PROCESSOS (DUAS PASSADAS) (se arquivo fornecido)
+      // ==========================================================
+      if (fileProcs) {
+        setCurrentStep('Importando Processos — 1ª Passada...')
+        setProgressMsg('Criando todos os registros de processos (com espaçamento e retry)...')
+
+        const procsText = await fileProcs.text()
+        const parsedProcs = parseCsv(procsText)
+
+        for (let i = 0; i < parsedProcs.rows.length; i++) {
+          const row = parsedProcs.rows[i]
+          const codigo = (row?.codigo ?? '').trim().toUpperCase()
+          const nome = (row?.nome ?? '').trim()
+          const area = (row?.area ?? '').trim()
+          const observacao = (row?.observacao ?? '').trim()
+
+          if (!codigo || !nome || !area) {
+            const hasAnyData = Object.values(row || {}).some((v) => (v ?? '').trim() !== '')
+            if (!hasAnyData) continue
+
+            errors.push({
+              etapa: 'Processos (1ª passada)',
+              linha: i + 2,
+              codigo: codigo || '(sem código)',
+              motivo: 'Campos obrigatórios ausentes (código, nome ou área)',
+              payload: { codigo, nome, area, observacao },
+            })
+            continue
+          }
+
+          const payload = {
             codigo,
-            motivo: `${email}: ${msg}`,
-            payload: { email, nome, cargo, area: areaNome },
-          })
+            nome,
+            area,
+            observacao,
+          }
+
+          try {
+            if (procMapByCodigo.has(codigo)) {
+              const id = procMapByCodigo.get(codigo)!
+              // Preserva etapas_anteriores/etapas_sucessoras existentes na atualização
+              await runWithRetry(() => pb.collection('processos').update(id, payload), {
+                maxAttempts: 6,
+                initialDelayMs: 500,
+              })
+            } else {
+              const created = await runWithRetry(() => pb.collection('processos').create(payload), {
+                maxAttempts: 6,
+                initialDelayMs: 500,
+              })
+              procMapByCodigo.set(codigo, created.id)
+            }
+          } catch (err: unknown) {
+            const msg = getErrorMessage(err)
+            errors.push({
+              etapa: 'Processos (1ª passada)',
+              linha: i + 2,
+              codigo,
+              motivo: msg,
+              payload,
+            })
+          }
+
+          await sleep(60)
+          if (i % 20 === 0) {
+            setProgressMsg(`Processos 1ª passada: ${i + 1}/${parsedProcs.rows.length} gravados...`)
+          }
         }
 
-        // 2. Criar ou atualizar registro em colaboradores
-        const areaId = areaIdMap.get(areaNome.toLowerCase()) || null
+        // Atualizar lista completa de IDs de processos antes da 2ª passada
+        const updatedProcs = await runWithRetry(() => pb.collection('processos').getFullList())
+        updatedProcs.forEach((p) => {
+          const cod = (p?.codigo ?? '').trim().toUpperCase()
+          if (cod) procMapByCodigo.set(cod, p.id)
+        })
 
-        const colabPayload = {
-          codigo,
-          nome,
-          cargo,
-          area: areaId,
-          email,
-          sem_metas,
-          usuario: userId || existingUser?.id || null,
-        }
+        // 2ª passada: resolver relações etapas_anteriores e etapas_sucessoras
+        setCurrentStep('Importando Processos — 2ª Passada (Conexões)...')
+        setProgressMsg('Resolvendo vínculos entre etapas com espaçamento e retry anti-429...')
 
-        try {
-          const colabKey = codigo.toLowerCase()
-          if (colabMapByCodigo.has(colabKey)) {
-            const colabId = colabMapByCodigo.get(colabKey)!
-            await runWithRetry(() => pb.collection('colaboradores').update(colabId, colabPayload))
-          } else {
-            const created = await runWithRetry(() =>
-              pb.collection('colaboradores').create(colabPayload),
+        for (let i = 0; i < parsedProcs.rows.length; i++) {
+          const row = parsedProcs.rows[i]
+          const codigo = (row?.codigo ?? '').trim().toUpperCase()
+          if (!codigo) continue
+
+          const procId = procMapByCodigo.get(codigo)
+          if (!procId) continue
+
+          const anterioresCodes = splitCodes(row.etapas_anteriores).map((s) => s.toUpperCase())
+          const sucessorasCodes = splitCodes(row.etapas_sucessoras).map((s) => s.toUpperCase())
+
+          const anterioresIds: string[] = []
+          for (const cod of anterioresCodes) {
+            const id = procMapByCodigo.get(cod)
+            if (id) {
+              anterioresIds.push(id)
+            } else {
+              errors.push({
+                etapa: 'Processos (2ª passada)',
+                linha: i + 2,
+                codigo,
+                motivo: `Referência a etapa anterior inexistente: "${cod}"`,
+              })
+            }
+          }
+
+          const sucessorasIds: string[] = []
+          for (const cod of sucessorasCodes) {
+            const id = procMapByCodigo.get(cod)
+            if (id) {
+              sucessorasIds.push(id)
+            } else {
+              errors.push({
+                etapa: 'Processos (2ª passada)',
+                linha: i + 2,
+                codigo,
+                motivo: `Referência a etapa sucessora inexistente: "${cod}"`,
+              })
+            }
+          }
+
+          try {
+            await runWithRetry(
+              () =>
+                pb.collection('processos').update(procId, {
+                  etapas_anteriores: anterioresIds,
+                  etapas_sucessoras: sucessorasIds,
+                }),
+              { maxAttempts: 6, initialDelayMs: 500 },
             )
-            colabMapByCodigo.set(colabKey, created.id)
-          }
-        } catch (err: unknown) {
-          const msg = getErrorMessage(err)
-          errors.push({
-            etapa: 'Colaboradores',
-            linha: i + 2,
-            codigo,
-            motivo: msg,
-            payload: colabPayload,
-          })
-        }
-
-        // Throttling entre colaboradores
-        await sleep(40)
-      }
-
-      // ==========================================================
-      // PASSO 3: IMPORTAR PROCESSOS (DUAS PASSADAS)
-      // ==========================================================
-      setCurrentStep('Importando Processos — 1ª Passada...')
-      setProgressMsg('Criando todos os registros de processos (com espaçamento e retry)...')
-
-      const existingProcs = await runWithRetry(() => pb.collection('processos').getFullList())
-      const procMapByCodigo = new Map<string, string>() // codigo -> id
-      existingProcs.forEach((p) => {
-        const cod = (p?.codigo ?? '').trim().toUpperCase()
-        if (cod) procMapByCodigo.set(cod, p.id)
-      })
-
-      // 1ª passada: criar/atualizar campos base
-      for (let i = 0; i < parsedProcs.rows.length; i++) {
-        const row = parsedProcs.rows[i]
-        const codigo = (row?.codigo ?? '').trim().toUpperCase()
-        const nome = (row?.nome ?? '').trim()
-        const area = (row?.area ?? '').trim()
-        const observacao = (row?.observacao ?? '').trim()
-
-        if (!codigo || !nome || !area) {
-          const hasAnyData = Object.values(row || {}).some((v) => (v ?? '').trim() !== '')
-          if (!hasAnyData) continue
-
-          errors.push({
-            etapa: 'Processos (1ª passada)',
-            linha: i + 2,
-            codigo: codigo || '(sem código)',
-            motivo: 'Campos obrigatórios ausentes (código, nome ou área)',
-            payload: { codigo, nome, area, observacao },
-          })
-          continue
-        }
-
-        const payload = {
-          codigo,
-          nome,
-          area,
-          observacao,
-        }
-
-        try {
-          if (procMapByCodigo.has(codigo)) {
-            const id = procMapByCodigo.get(codigo)!
-            await runWithRetry(() => pb.collection('processos').update(id, payload), {
-              maxAttempts: 6,
-              initialDelayMs: 500,
-            })
-          } else {
-            const created = await runWithRetry(() => pb.collection('processos').create(payload), {
-              maxAttempts: 6,
-              initialDelayMs: 500,
-            })
-            procMapByCodigo.set(codigo, created.id)
-          }
-        } catch (err: unknown) {
-          const msg = getErrorMessage(err)
-          errors.push({
-            etapa: 'Processos (1ª passada)',
-            linha: i + 2,
-            codigo,
-            motivo: msg,
-            payload,
-          })
-        }
-
-        // Throttling de 60ms por processo para não estourar o rate-limit do backend
-        await sleep(60)
-        if (i % 20 === 0) {
-          setProgressMsg(`Processos 1ª passada: ${i + 1}/${parsedProcs.rows.length} gravados...`)
-        }
-      }
-
-      // Atualizar lista completa de IDs de processos antes da 2ª passada
-      const updatedProcs = await runWithRetry(() => pb.collection('processos').getFullList())
-      updatedProcs.forEach((p) => {
-        const cod = (p?.codigo ?? '').trim().toUpperCase()
-        if (cod) procMapByCodigo.set(cod, p.id)
-      })
-
-      // 2ª passada: resolver relações etapas_anteriores e etapas_sucessoras
-      setCurrentStep('Importando Processos — 2ª Passada (Conexões)...')
-      setProgressMsg('Resolvendo vínculos entre etapas com espaçamento e retry anti-429...')
-
-      for (let i = 0; i < parsedProcs.rows.length; i++) {
-        const row = parsedProcs.rows[i]
-        const codigo = (row?.codigo ?? '').trim().toUpperCase()
-        if (!codigo) continue
-
-        const procId = procMapByCodigo.get(codigo)
-        if (!procId) continue
-
-        const parseCodes = (str?: unknown): string[] => {
-          if (str === undefined || str === null) return []
-          const text = String(str).trim()
-          if (!text) return []
-          // Trata delimitadores ';' ou ',' e múltiplos espaços
-          return text
-            .split(/[;,]/)
-            .map((s) => (s ?? '').trim().toUpperCase())
-            .filter((s) => s.length > 0)
-        }
-
-        const anterioresCodes = parseCodes(row.etapas_anteriores)
-        const sucessorasCodes = parseCodes(row.etapas_sucessoras)
-
-        const anterioresIds: string[] = []
-        for (const cod of anterioresCodes) {
-          const id = procMapByCodigo.get(cod)
-          if (id) {
-            anterioresIds.push(id)
-          } else {
+          } catch (err: unknown) {
+            const msg = getErrorMessage(err)
             errors.push({
               etapa: 'Processos (2ª passada)',
               linha: i + 2,
               codigo,
-              motivo: `Referência a etapa anterior inexistente: "${cod}"`,
+              motivo: msg,
+              payload: {
+                procId,
+                anterioresIds,
+                sucessorasIds,
+              },
             })
           }
-        }
 
-        const sucessorasIds: string[] = []
-        for (const cod of sucessorasCodes) {
-          const id = procMapByCodigo.get(cod)
-          if (id) {
-            sucessorasIds.push(id)
-          } else {
+          await sleep(65)
+          if (i % 20 === 0) {
+            setProgressMsg(
+              `Processos 2ª passada: ${i + 1}/${parsedProcs.rows.length} conexões sincronizadas...`,
+            )
+          }
+        }
+      }
+
+      // ==========================================================
+      // PASSO 4: IMPORTAR PROJETOS ESTRATÉGICOS (Etapa 2)
+      // ==========================================================
+      if (fileProjetos) {
+        setCurrentStep('Importando Projetos Estratégicos...')
+        setProgressMsg('Processando projetos estratégicos e vínculos com sponsors...')
+
+        const projsText = await fileProjetos.text()
+        const parsedProjs = parseCsv(projsText)
+
+        for (let i = 0; i < parsedProjs.rows.length; i++) {
+          const row = parsedProjs.rows[i]
+          const codigo = (row?.codigo ?? '').trim().toUpperCase()
+          const nome = (row?.nome ?? '').trim()
+          const descricao = (row?.descricao ?? '').trim()
+          const sponsorCode = (row?.sponsor ?? '').trim().toLowerCase()
+
+          if (!codigo || !nome) {
+            const hasAnyData = Object.values(row || {}).some((v) => (v ?? '').trim() !== '')
+            if (!hasAnyData) continue
             errors.push({
-              etapa: 'Processos (2ª passada)',
+              etapa: 'Projetos Estratégicos',
+              linha: i + 2,
+              codigo: codigo || '(sem código)',
+              motivo: 'Campos obrigatórios ausentes (código ou nome)',
+              payload: { codigo, nome, descricao, sponsorCode },
+            })
+            continue
+          }
+
+          let sponsorId: string | null = null
+          if (sponsorCode) {
+            sponsorId = colabMapByCodigo.get(sponsorCode) || null
+            if (!sponsorId) {
+              errors.push({
+                etapa: 'Projetos Estratégicos',
+                linha: i + 2,
+                codigo,
+                motivo: `Sponsor não encontrado no cadastro de colaboradores: "${sponsorCode}"`,
+              })
+            }
+          }
+
+          const payload = {
+            codigo,
+            nome,
+            descricao,
+            sponsor: sponsorId,
+          }
+
+          try {
+            if (projMapByCodigo.has(codigo)) {
+              const id = projMapByCodigo.get(codigo)!
+              await runWithRetry(() => pb.collection('projetos_estrategicos').update(id, payload), {
+                maxAttempts: 6,
+                initialDelayMs: 400,
+              })
+            } else {
+              const created = await runWithRetry(
+                () => pb.collection('projetos_estrategicos').create(payload),
+                { maxAttempts: 6, initialDelayMs: 400 },
+              )
+              projMapByCodigo.set(codigo, created.id)
+            }
+          } catch (err: unknown) {
+            const msg = getErrorMessage(err)
+            errors.push({
+              etapa: 'Projetos Estratégicos',
               linha: i + 2,
               codigo,
-              motivo: `Referência a etapa sucessora inexistente: "${cod}"`,
+              motivo: msg,
+              payload,
             })
+          }
+          await sleep(50)
+        }
+
+        // Re-sincronizar projetos
+        const freshProjs = await runWithRetry(() =>
+          pb.collection('projetos_estrategicos').getFullList(),
+        )
+        freshProjs.forEach((pr) => {
+          const cod = (pr?.codigo ?? '').trim().toUpperCase()
+          if (cod) projMapByCodigo.set(cod, pr.id)
+        })
+      }
+
+      // ==========================================================
+      // PASSO 5: IMPORTAR METAS (Etapa 2)
+      // ==========================================================
+      const metaMapByCodigo = new Map<string, string>() // codigo.toUpperCase() -> id
+      const existingMetas = await runWithRetry(() => pb.collection('metas').getFullList())
+      existingMetas.forEach((m) => {
+        const cod = (m?.codigo ?? '').trim().toUpperCase()
+        if (cod) metaMapByCodigo.set(cod, m.id)
+      })
+
+      if (fileMetas) {
+        setCurrentStep('Importando Metas...')
+        setProgressMsg('Processando 80 metas, responsáveis, projetos e processos vinculados...')
+
+        const metasText = await fileMetas.text()
+        const parsedMetas = parseCsv(metasText)
+
+        for (let i = 0; i < parsedMetas.rows.length; i++) {
+          const row = parsedMetas.rows[i]
+          const codigo = (row?.codigo ?? '').trim().toUpperCase()
+          const titulo = (row?.titulo ?? '').trim()
+          const descricao = (row?.descricao ?? '').trim()
+          const respRaw = row?.responsaveis ?? ''
+          const projPrincCode = (row?.projeto_principal ?? '').trim().toUpperCase()
+          const projSecCode = (row?.projeto_secundario ?? '').trim().toUpperCase()
+          const periodicidade = (row?.periodicidade ?? '').trim()
+          const prazoRaw = row?.prazo ?? ''
+          const trimestre = (row?.trimestre ?? '').trim()
+          const procsVincRaw = row?.processos_vinculados ?? ''
+          const valorAlvoRaw = (row?.valor_alvo_a_definir ?? '').trim().toLowerCase()
+          const valor_alvo_a_definir = valorAlvoRaw === 'sim' || valorAlvoRaw === 'true'
+
+          if (!codigo || !titulo) {
+            const hasAnyData = Object.values(row || {}).some((v) => (v ?? '').trim() !== '')
+            if (!hasAnyData) continue
+            errors.push({
+              etapa: 'Metas',
+              linha: i + 2,
+              codigo: codigo || '(sem código)',
+              motivo: 'Campos obrigatórios ausentes (código ou título)',
+              payload: { codigo, titulo },
+            })
+            continue
+          }
+
+          // Resolver projeto principal
+          const projetoId = projMapByCodigo.get(projPrincCode) || null
+          if (!projetoId) {
+            errors.push({
+              etapa: 'Metas',
+              linha: i + 2,
+              codigo,
+              motivo: `Projeto principal não encontrado: "${projPrincCode}"`,
+            })
+          }
+
+          // Resolver projeto secundário (opcional)
+          let projetoSecundarioId: string | null = null
+          if (projSecCode) {
+            projetoSecundarioId = projMapByCodigo.get(projSecCode) || null
+            if (!projetoSecundarioId) {
+              errors.push({
+                etapa: 'Metas',
+                linha: i + 2,
+                codigo,
+                motivo: `Projeto secundário inexistente: "${projSecCode}"`,
+              })
+            }
+          }
+
+          // Resolver responsáveis (múltiplos via colaboradores.codigo)
+          const respCodes = splitCodes(respRaw).map((s) => s.toLowerCase())
+          const responsaveisIds: string[] = []
+          for (const rc of respCodes) {
+            const cid = colabMapByCodigo.get(rc)
+            if (cid) {
+              responsaveisIds.push(cid)
+            } else {
+              errors.push({
+                etapa: 'Metas',
+                linha: i + 2,
+                codigo,
+                motivo: `Responsável (colaborador) inexistente: "${rc}"`,
+              })
+            }
+          }
+          if (respCodes.length > 0 && responsaveisIds.length === 0) {
+            errors.push({
+              etapa: 'Metas',
+              linha: i + 2,
+              codigo,
+              motivo: 'Meta sem nenhum responsável válido resolvido',
+            })
+          }
+
+          // Resolver processos vinculados (múltiplos via processos.codigo)
+          const procCodes = splitCodes(procsVincRaw).map((s) => s.toUpperCase())
+          const processosVinculadosIds: string[] = []
+          for (const pc of procCodes) {
+            const pid = procMapByCodigo.get(pc)
+            if (pid) {
+              processosVinculadosIds.push(pid)
+            } else {
+              errors.push({
+                etapa: 'Metas',
+                linha: i + 2,
+                codigo,
+                motivo: `Processo vinculado inexistente: "${pc}"`,
+              })
+            }
+          }
+
+          // Converter prazo
+          const prazoIso = parseBrazilianDate(prazoRaw)
+
+          const payload: Record<string, unknown> = {
+            codigo,
+            titulo,
+            descricao,
+            projeto: projetoId,
+            projeto_secundario: projetoSecundarioId,
+            responsaveis: responsaveisIds,
+            periodicidade,
+            prazo: prazoIso,
+            trimestre,
+            processos_vinculados: processosVinculadosIds,
+            valor_alvo_a_definir,
+            status: 'sem atualização',
+            // progresso fica vazio/opcional conforme regra da Etapa 2
+          }
+
+          try {
+            if (metaMapByCodigo.has(codigo)) {
+              const id = metaMapByCodigo.get(codigo)!
+              await runWithRetry(() => pb.collection('metas').update(id, payload), {
+                maxAttempts: 6,
+                initialDelayMs: 400,
+              })
+            } else {
+              const created = await runWithRetry(() => pb.collection('metas').create(payload), {
+                maxAttempts: 6,
+                initialDelayMs: 400,
+              })
+              metaMapByCodigo.set(codigo, created.id)
+            }
+          } catch (err: unknown) {
+            const msg = getErrorMessage(err)
+            errors.push({
+              etapa: 'Metas',
+              linha: i + 2,
+              codigo,
+              motivo: msg,
+              payload,
+            })
+          }
+
+          await sleep(50)
+          if (i % 20 === 0) {
+            setProgressMsg(`Metas: ${i + 1}/${parsedMetas.rows.length} processadas...`)
           }
         }
 
-        try {
-          await runWithRetry(
-            () =>
-              pb.collection('processos').update(procId, {
-                etapas_anteriores: anterioresIds,
-                etapas_sucessoras: sucessorasIds,
-              }),
-            { maxAttempts: 6, initialDelayMs: 500 },
-          )
-        } catch (err: unknown) {
-          const msg = getErrorMessage(err)
-          errors.push({
-            etapa: 'Processos (2ª passada)',
-            linha: i + 2,
-            codigo,
-            motivo: msg,
-            payload: {
-              procId,
-              anterioresIds,
-              sucessorasIds,
-            },
-          })
+        // Re-sincronizar metas
+        const freshMetas = await runWithRetry(() => pb.collection('metas').getFullList())
+        freshMetas.forEach((m) => {
+          const cod = (m?.codigo ?? '').trim().toUpperCase()
+          if (cod) metaMapByCodigo.set(cod, m.id)
+        })
+      }
+
+      // ==========================================================
+      // PASSO 6: IMPORTAR INDICADORES (Etapa 2)
+      // "Indicadores de uma meta são SUBSTITUÍDOS pelos do arquivo na reimportação"
+      // ==========================================================
+      if (fileIndicadores) {
+        setCurrentStep('Importando Indicadores...')
+        setProgressMsg('Processando indicadores e associando às metas correspondentes...')
+
+        const indText = await fileIndicadores.text()
+        const parsedInd = parseCsv(indText)
+
+        // Agrupar linhas de indicadores por meta (ex.: MT1 -> [ind1, ind2, ...])
+        const indByMetaCode = new Map<string, typeof parsedInd.rows>()
+        for (let i = 0; i < parsedInd.rows.length; i++) {
+          const row = parsedInd.rows[i]
+          const metaCode = (row?.meta ?? '').trim().toUpperCase()
+          if (!metaCode) {
+            const hasAnyData = Object.values(row || {}).some((v) => (v ?? '').trim() !== '')
+            if (!hasAnyData) continue
+            errors.push({
+              etapa: 'Indicadores',
+              linha: i + 2,
+              codigo: '(sem meta)',
+              motivo: 'Coluna meta ausente ou em branco',
+            })
+            continue
+          }
+          if (!indByMetaCode.has(metaCode)) indByMetaCode.set(metaCode, [])
+          indByMetaCode.get(metaCode)!.push(row)
         }
 
-        // Throttling de 65ms na 2ª passada para proteger o backend contra 429
-        await sleep(65)
-        if (i % 20 === 0) {
-          setProgressMsg(
-            `Processos 2ª passada: ${i + 1}/${parsedProcs.rows.length} conexões sincronizadas...`,
-          )
+        // Para garantir substituição limpa dos indicadores da meta,
+        // carregamos os indicadores atuais do banco
+        const freshInds = await runWithRetry(() => pb.collection('indicadores').getFullList())
+        const existingIndsByMetaId = new Map<string, string[]>() // metaId -> [indId, ...]
+        freshInds.forEach((ind) => {
+          const mId = ind.meta
+          if (mId) {
+            if (!existingIndsByMetaId.has(mId)) existingIndsByMetaId.set(mId, [])
+            existingIndsByMetaId.get(mId)!.push(ind.id)
+          }
+        })
+
+        let indCounter = 0
+        const totalRows = parsedInd.rows.length
+
+        for (const [metaCode, rows] of indByMetaCode.entries()) {
+          const metaId = metaMapByCodigo.get(metaCode)
+          if (!metaId) {
+            rows.forEach((r, idx) => {
+              errors.push({
+                etapa: 'Indicadores',
+                codigo: `${metaCode} - ${(r.nome || '').substring(0, 20)}`,
+                motivo: `Meta não encontrada para o código: "${metaCode}"`,
+                payload: r,
+              })
+            })
+            continue
+          }
+
+          // Se a meta já possuía indicadores gravados anteriormente, apagamos para substituir pelos do arquivo
+          const oldIds = existingIndsByMetaId.get(metaId) || []
+          for (const oldId of oldIds) {
+            try {
+              await runWithRetry(() => pb.collection('indicadores').delete(oldId), {
+                maxAttempts: 5,
+              })
+            } catch {
+              /* intentionally ignored */
+            }
+            await sleep(15)
+          }
+          // Limpa do mapa para não re-deletar
+          existingIndsByMetaId.delete(metaId)
+
+          // Criar os novos indicadores
+          for (let rIdx = 0; rIdx < rows.length; rIdx++) {
+            const row = rows[rIdx]
+            const nome = (row?.nome ?? '').trim()
+            const ordem =
+              parseInt((row?.ordem ?? `${rIdx + 1}`).trim() || `${rIdx + 1}`, 10) || rIdx + 1
+            const alvo = (row?.alvo ?? '').trim()
+
+            if (!nome) {
+              errors.push({
+                etapa: 'Indicadores',
+                codigo: `${metaCode} (ordem ${ordem})`,
+                motivo: 'Nome do indicador vazio',
+              })
+              continue
+            }
+
+            const payload = {
+              meta: metaId,
+              nome,
+              ordem,
+              alvo,
+              // valor_atual, valor_meta, tendencia, historico ficam opcionais e vazios
+            }
+
+            try {
+              await runWithRetry(() => pb.collection('indicadores').create(payload), {
+                maxAttempts: 6,
+                initialDelayMs: 400,
+              })
+            } catch (err: unknown) {
+              const msg = getErrorMessage(err)
+              errors.push({
+                etapa: 'Indicadores',
+                codigo: `${metaCode} - ${nome.substring(0, 25)}`,
+                motivo: msg,
+                payload,
+              })
+            }
+
+            indCounter++
+            await sleep(40)
+            if (indCounter % 25 === 0) {
+              setProgressMsg(`Indicadores: ${indCounter}/${totalRows} salvos...`)
+            }
+          }
         }
       }
 
@@ -638,11 +1174,13 @@ export default function AdminImport() {
 
     try {
       // Carregar mapas em tempo real
-      const [areas, colabs, users, procs] = await Promise.all([
+      const [areas, colabs, users, procs, projs, metas] = await Promise.all([
         runWithRetry(() => pb.collection('areas').getFullList()),
         runWithRetry(() => pb.collection('colaboradores').getFullList<Colaborador>()),
         runWithRetry(() => pb.collection('users').getFullList<UserProfile>()),
         runWithRetry(() => pb.collection('processos').getFullList()),
+        runWithRetry(() => pb.collection('projetos_estrategicos').getFullList()),
+        runWithRetry(() => pb.collection('metas').getFullList()),
       ])
 
       const areaIdMap = new Map<string, string>()
@@ -667,6 +1205,18 @@ export default function AdminImport() {
       procs.forEach((p) => {
         const pCod = (p?.codigo ?? '').trim().toUpperCase()
         if (pCod) procMapByCodigo.set(pCod, p.id)
+      })
+
+      const projMapByCodigo = new Map<string, string>()
+      projs.forEach((pr) => {
+        const prCod = (pr?.codigo ?? '').trim().toUpperCase()
+        if (prCod) projMapByCodigo.set(prCod, pr.id)
+      })
+
+      const metaMapByCodigo = new Map<string, string>()
+      metas.forEach((m) => {
+        const mCod = (m?.codigo ?? '').trim().toUpperCase()
+        if (mCod) metaMapByCodigo.set(mCod, m.id)
       })
 
       for (let i = 0; i < itemsToRetry.length; i++) {
@@ -771,6 +1321,37 @@ export default function AdminImport() {
                 }),
               { maxAttempts: 6 },
             )
+          } else if (item.etapa === 'Projetos Estratégicos') {
+            const p = item.payload as Record<string, unknown> | undefined
+            const codigo = (item.codigo ?? (p?.codigo as string) ?? '').trim().toUpperCase()
+            if (!codigo) throw new Error('Código do projeto ausente')
+
+            const existingId = projMapByCodigo.get(codigo)
+            if (existingId && p) {
+              await runWithRetry(() => pb.collection('projetos_estrategicos').update(existingId, p))
+            } else if (p) {
+              const created = await runWithRetry(() =>
+                pb.collection('projetos_estrategicos').create(p),
+              )
+              projMapByCodigo.set(codigo, created.id)
+            }
+          } else if (item.etapa === 'Metas') {
+            const p = item.payload as Record<string, unknown> | undefined
+            const codigo = (item.codigo ?? (p?.codigo as string) ?? '').trim().toUpperCase()
+            if (!codigo) throw new Error('Código da meta ausente')
+
+            const existingId = metaMapByCodigo.get(codigo)
+            if (existingId && p) {
+              await runWithRetry(() => pb.collection('metas').update(existingId, p))
+            } else if (p) {
+              const created = await runWithRetry(() => pb.collection('metas').create(p))
+              metaMapByCodigo.set(codigo, created.id)
+            }
+          } else if (item.etapa === 'Indicadores') {
+            const p = item.payload as Record<string, unknown> | undefined
+            if (p) {
+              await runWithRetry(() => pb.collection('indicadores').create(p))
+            }
           }
 
           await sleep(60)
@@ -871,21 +1452,23 @@ export default function AdminImport() {
           Importação de Dados & Gestão de Acessos
         </h1>
         <p className="text-sm text-[#9CA3AF] mt-1">
-          Área restrita à diretoria e administração CTX. Faça o upload das planilhas de Áreas,
-          Colaboradores e Processos para popular o ambiente em tempo real.
+          Área restrita à diretoria e administração CTX. Faça o upload das planilhas da Etapa 1
+          (Áreas, Colaboradores, Processos) e Etapa 2 (Projetos, Metas, Indicadores) para popular o
+          ambiente em tempo real.
         </p>
       </div>
 
-      {/* SEÇÃO 1: UPLOAD DAS 3 PLANILHAS */}
+      {/* SEÇÃO 1: UPLOADS EM CASCATA */}
       <div className="bg-[#111111] border border-[#262626] rounded-2xl p-6 md:p-8 space-y-6 shadow-xl">
         <div className="flex items-center justify-between border-b border-[#262626] pb-4">
           <div>
             <h2 className="text-lg font-bold text-white flex items-center gap-2">
               <UploadCloud className="w-5 h-5 text-[#FFD400]" />
-              Importação em Cascata (Ordem Obrigatória)
+              Importação em Cascata (Etapa 1 &amp; Etapa 2)
             </h2>
             <p className="text-xs text-[#9CA3AF] mt-0.5">
-              1. Áreas &rarr; 2. Colaboradores &rarr; 3. Processos (duas passadas para vínculos)
+              1. Áreas &rarr; 2. Colaboradores &rarr; 3. Processos &rarr; 4. Projetos &rarr; 5.
+              Metas &rarr; 6. Indicadores
             </p>
           </div>
           <span className="text-[11px] font-mono uppercase bg-[#1C1C1C] border border-[#262626] text-[#FFD400] px-3 py-1 rounded-full">
@@ -893,137 +1476,283 @@ export default function AdminImport() {
           </span>
         </div>
 
-        {/* 3 Dropzones / File Pickers */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* 1. Áreas */}
-          <div
-            className={`p-5 rounded-xl border-2 border-dashed transition-all flex flex-col justify-between ${
-              fileAreas
-                ? 'border-[#22C55E]/60 bg-[#22C55E]/5'
-                : 'border-[#262626] bg-[#141414] hover:border-[#FFD400]/40'
-            }`}
-          >
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <span className="w-6 h-6 rounded-full bg-[#FFD400] text-black font-black text-xs flex items-center justify-center">
-                  1
-                </span>
-                {fileAreas ? (
-                  <CheckCircle2 className="w-5 h-5 text-[#22C55E]" />
-                ) : (
-                  <FileSpreadsheet className="w-5 h-5 text-[#9CA3AF]" />
-                )}
+        {/* Uploads em Cascata: Etapa 1 e Etapa 2 */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono font-bold text-[#9CA3AF] uppercase tracking-wider">
+              Etapa 1: Estrutura Base
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* 1. Áreas */}
+            <div
+              className={`p-5 rounded-xl border-2 border-dashed transition-all flex flex-col justify-between ${
+                fileAreas
+                  ? 'border-[#22C55E]/60 bg-[#22C55E]/5'
+                  : 'border-[#262626] bg-[#141414] hover:border-[#FFD400]/40'
+              }`}
+            >
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="w-6 h-6 rounded-full bg-[#FFD400] text-black font-black text-xs flex items-center justify-center">
+                    1
+                  </span>
+                  {fileAreas ? (
+                    <CheckCircle2 className="w-5 h-5 text-[#22C55E]" />
+                  ) : (
+                    <FileSpreadsheet className="w-5 h-5 text-[#9CA3AF]" />
+                  )}
+                </div>
+                <h3 className="text-sm font-bold text-white">01_areas</h3>
+                <p className="text-[11px] text-[#9CA3AF] mt-1">
+                  Colunas: <span className="font-mono text-white">nome, ordem_no_fluxo, tipo</span>
+                </p>
               </div>
-              <h3 className="text-sm font-bold text-white">01_areas</h3>
-              <p className="text-[11px] text-[#9CA3AF] mt-1">
-                Colunas: <span className="font-mono text-white">nome, ordem_no_fluxo, tipo</span>
-              </p>
+
+              <div className="mt-4 pt-3 border-t border-[#262626]/80">
+                <input
+                  type="file"
+                  id="file-areas"
+                  accept=".csv"
+                  onChange={(e) => setFileAreas(e.target.files?.[0] || null)}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="file-areas"
+                  className="w-full py-2 px-3 bg-[#1F1F1F] hover:bg-[#2A2A2A] text-white text-xs font-semibold rounded-lg border border-[#333] transition-colors flex items-center justify-center gap-1.5 cursor-pointer truncate"
+                >
+                  {fileAreas ? fileAreas.name : 'Selecionar 01_areas.csv'}
+                </label>
+              </div>
             </div>
 
-            <div className="mt-4 pt-3 border-t border-[#262626]/80">
-              <input
-                type="file"
-                id="file-areas"
-                accept=".csv"
-                onChange={(e) => setFileAreas(e.target.files?.[0] || null)}
-                className="hidden"
-              />
-              <label
-                htmlFor="file-areas"
-                className="w-full py-2 px-3 bg-[#1F1F1F] hover:bg-[#2A2A2A] text-white text-xs font-semibold rounded-lg border border-[#333] transition-colors flex items-center justify-center gap-1.5 cursor-pointer truncate"
-              >
-                {fileAreas ? fileAreas.name : 'Selecionar arquivo CSV'}
-              </label>
+            {/* 2. Colaboradores */}
+            <div
+              className={`p-5 rounded-xl border-2 border-dashed transition-all flex flex-col justify-between ${
+                fileColabs
+                  ? 'border-[#22C55E]/60 bg-[#22C55E]/5'
+                  : 'border-[#262626] bg-[#141414] hover:border-[#FFD400]/40'
+              }`}
+            >
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="w-6 h-6 rounded-full bg-[#FFD400] text-black font-black text-xs flex items-center justify-center">
+                    2
+                  </span>
+                  {fileColabs ? (
+                    <CheckCircle2 className="w-5 h-5 text-[#22C55E]" />
+                  ) : (
+                    <FileSpreadsheet className="w-5 h-5 text-[#9CA3AF]" />
+                  )}
+                </div>
+                <h3 className="text-sm font-bold text-white">02_colaboradores</h3>
+                <p className="text-[11px] text-[#9CA3AF] mt-1">
+                  Colunas:{' '}
+                  <span className="font-mono text-white">
+                    codigo, nome, cargo, area, email, sem_metas
+                  </span>
+                </p>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-[#262626]/80">
+                <input
+                  type="file"
+                  id="file-colabs"
+                  accept=".csv"
+                  onChange={(e) => setFileColabs(e.target.files?.[0] || null)}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="file-colabs"
+                  className="w-full py-2 px-3 bg-[#1F1F1F] hover:bg-[#2A2A2A] text-white text-xs font-semibold rounded-lg border border-[#333] transition-colors flex items-center justify-center gap-1.5 cursor-pointer truncate"
+                >
+                  {fileColabs ? fileColabs.name : 'Selecionar 02_colaboradores.csv'}
+                </label>
+              </div>
+            </div>
+
+            {/* 3. Processos */}
+            <div
+              className={`p-5 rounded-xl border-2 border-dashed transition-all flex flex-col justify-between ${
+                fileProcs
+                  ? 'border-[#22C55E]/60 bg-[#22C55E]/5'
+                  : 'border-[#262626] bg-[#141414] hover:border-[#FFD400]/40'
+              }`}
+            >
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="w-6 h-6 rounded-full bg-[#FFD400] text-black font-black text-xs flex items-center justify-center">
+                    3
+                  </span>
+                  {fileProcs ? (
+                    <CheckCircle2 className="w-5 h-5 text-[#22C55E]" />
+                  ) : (
+                    <FileSpreadsheet className="w-5 h-5 text-[#9CA3AF]" />
+                  )}
+                </div>
+                <h3 className="text-sm font-bold text-white">04_processos</h3>
+                <p className="text-[11px] text-[#9CA3AF] mt-1">
+                  Colunas:{' '}
+                  <span className="font-mono text-white">
+                    codigo, nome, area, etapas_anteriores, etapas_sucessoras
+                  </span>
+                </p>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-[#262626]/80">
+                <input
+                  type="file"
+                  id="file-procs"
+                  accept=".csv"
+                  onChange={(e) => setFileProcs(e.target.files?.[0] || null)}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="file-procs"
+                  className="w-full py-2 px-3 bg-[#1F1F1F] hover:bg-[#2A2A2A] text-white text-xs font-semibold rounded-lg border border-[#333] transition-colors flex items-center justify-center gap-1.5 cursor-pointer truncate"
+                >
+                  {fileProcs ? fileProcs.name : 'Selecionar 04_processos.csv'}
+                </label>
+              </div>
             </div>
           </div>
 
-          {/* 2. Colaboradores */}
-          <div
-            className={`p-5 rounded-xl border-2 border-dashed transition-all flex flex-col justify-between ${
-              fileColabs
-                ? 'border-[#22C55E]/60 bg-[#22C55E]/5'
-                : 'border-[#262626] bg-[#141414] hover:border-[#FFD400]/40'
-            }`}
-          >
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <span className="w-6 h-6 rounded-full bg-[#FFD400] text-black font-black text-xs flex items-center justify-center">
-                  2
-                </span>
-                {fileColabs ? (
-                  <CheckCircle2 className="w-5 h-5 text-[#22C55E]" />
-                ) : (
-                  <FileSpreadsheet className="w-5 h-5 text-[#9CA3AF]" />
-                )}
-              </div>
-              <h3 className="text-sm font-bold text-white">02_colaboradores</h3>
-              <p className="text-[11px] text-[#9CA3AF] mt-1">
-                Colunas:{' '}
-                <span className="font-mono text-white">
-                  codigo, nome, cargo, area, email, sem_metas, tem_login
-                </span>
-              </p>
-            </div>
-
-            <div className="mt-4 pt-3 border-t border-[#262626]/80">
-              <input
-                type="file"
-                id="file-colabs"
-                accept=".csv"
-                onChange={(e) => setFileColabs(e.target.files?.[0] || null)}
-                className="hidden"
-              />
-              <label
-                htmlFor="file-colabs"
-                className="w-full py-2 px-3 bg-[#1F1F1F] hover:bg-[#2A2A2A] text-white text-xs font-semibold rounded-lg border border-[#333] transition-colors flex items-center justify-center gap-1.5 cursor-pointer truncate"
-              >
-                {fileColabs ? fileColabs.name : 'Selecionar arquivo CSV'}
-              </label>
-            </div>
+          <div className="flex items-center gap-2 pt-2">
+            <span className="text-xs font-mono font-bold text-[#FFD400] uppercase tracking-wider">
+              Etapa 2: Metas, Projetos & Indicadores
+            </span>
           </div>
 
-          {/* 3. Processos */}
-          <div
-            className={`p-5 rounded-xl border-2 border-dashed transition-all flex flex-col justify-between ${
-              fileProcs
-                ? 'border-[#22C55E]/60 bg-[#22C55E]/5'
-                : 'border-[#262626] bg-[#141414] hover:border-[#FFD400]/40'
-            }`}
-          >
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <span className="w-6 h-6 rounded-full bg-[#FFD400] text-black font-black text-xs flex items-center justify-center">
-                  3
-                </span>
-                {fileProcs ? (
-                  <CheckCircle2 className="w-5 h-5 text-[#22C55E]" />
-                ) : (
-                  <FileSpreadsheet className="w-5 h-5 text-[#9CA3AF]" />
-                )}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* 4. Projetos Estratégicos */}
+            <div
+              className={`p-5 rounded-xl border-2 border-dashed transition-all flex flex-col justify-between ${
+                fileProjetos
+                  ? 'border-[#22C55E]/60 bg-[#22C55E]/5'
+                  : 'border-[#262626] bg-[#141414] hover:border-[#FFD400]/40'
+              }`}
+            >
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="w-6 h-6 rounded-full bg-[#FFD400] text-black font-black text-xs flex items-center justify-center">
+                    4
+                  </span>
+                  {fileProjetos ? (
+                    <CheckCircle2 className="w-5 h-5 text-[#22C55E]" />
+                  ) : (
+                    <FileSpreadsheet className="w-5 h-5 text-[#9CA3AF]" />
+                  )}
+                </div>
+                <h3 className="text-sm font-bold text-white">03_projetos_estrategicos</h3>
+                <p className="text-[11px] text-[#9CA3AF] mt-1">
+                  Colunas:{' '}
+                  <span className="font-mono text-white">codigo, nome, descricao, sponsor</span>
+                </p>
               </div>
-              <h3 className="text-sm font-bold text-white">04_processos</h3>
-              <p className="text-[11px] text-[#9CA3AF] mt-1">
-                Colunas:{' '}
-                <span className="font-mono text-white">
-                  codigo, nome, area, etapas_anteriores, etapas_sucessoras, observacao
-                </span>
-              </p>
+
+              <div className="mt-4 pt-3 border-t border-[#262626]/80">
+                <input
+                  type="file"
+                  id="file-projetos"
+                  accept=".csv"
+                  onChange={(e) => setFileProjetos(e.target.files?.[0] || null)}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="file-projetos"
+                  className="w-full py-2 px-3 bg-[#1F1F1F] hover:bg-[#2A2A2A] text-white text-xs font-semibold rounded-lg border border-[#333] transition-colors flex items-center justify-center gap-1.5 cursor-pointer truncate"
+                >
+                  {fileProjetos ? fileProjetos.name : 'Selecionar 03_projetos_estrategicos.csv'}
+                </label>
+              </div>
             </div>
 
-            <div className="mt-4 pt-3 border-t border-[#262626]/80">
-              <input
-                type="file"
-                id="file-procs"
-                accept=".csv"
-                onChange={(e) => setFileProcs(e.target.files?.[0] || null)}
-                className="hidden"
-              />
-              <label
-                htmlFor="file-procs"
-                className="w-full py-2 px-3 bg-[#1F1F1F] hover:bg-[#2A2A2A] text-white text-xs font-semibold rounded-lg border border-[#333] transition-colors flex items-center justify-center gap-1.5 cursor-pointer truncate"
-              >
-                {fileProcs ? fileProcs.name : 'Selecionar arquivo CSV'}
-              </label>
+            {/* 5. Metas */}
+            <div
+              className={`p-5 rounded-xl border-2 border-dashed transition-all flex flex-col justify-between ${
+                fileMetas
+                  ? 'border-[#22C55E]/60 bg-[#22C55E]/5'
+                  : 'border-[#262626] bg-[#141414] hover:border-[#FFD400]/40'
+              }`}
+            >
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="w-6 h-6 rounded-full bg-[#FFD400] text-black font-black text-xs flex items-center justify-center">
+                    5
+                  </span>
+                  {fileMetas ? (
+                    <CheckCircle2 className="w-5 h-5 text-[#22C55E]" />
+                  ) : (
+                    <FileSpreadsheet className="w-5 h-5 text-[#9CA3AF]" />
+                  )}
+                </div>
+                <h3 className="text-sm font-bold text-white">05_metas</h3>
+                <p className="text-[11px] text-[#9CA3AF] mt-1">
+                  Colunas:{' '}
+                  <span className="font-mono text-white">
+                    codigo, titulo, responsaveis, projeto_principal, prazo...
+                  </span>
+                </p>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-[#262626]/80">
+                <input
+                  type="file"
+                  id="file-metas"
+                  accept=".csv"
+                  onChange={(e) => setFileMetas(e.target.files?.[0] || null)}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="file-metas"
+                  className="w-full py-2 px-3 bg-[#1F1F1F] hover:bg-[#2A2A2A] text-white text-xs font-semibold rounded-lg border border-[#333] transition-colors flex items-center justify-center gap-1.5 cursor-pointer truncate"
+                >
+                  {fileMetas ? fileMetas.name : 'Selecionar 05_metas.csv'}
+                </label>
+              </div>
+            </div>
+
+            {/* 6. Indicadores */}
+            <div
+              className={`p-5 rounded-xl border-2 border-dashed transition-all flex flex-col justify-between ${
+                fileIndicadores
+                  ? 'border-[#22C55E]/60 bg-[#22C55E]/5'
+                  : 'border-[#262626] bg-[#141414] hover:border-[#FFD400]/40'
+              }`}
+            >
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="w-6 h-6 rounded-full bg-[#FFD400] text-black font-black text-xs flex items-center justify-center">
+                    6
+                  </span>
+                  {fileIndicadores ? (
+                    <CheckCircle2 className="w-5 h-5 text-[#22C55E]" />
+                  ) : (
+                    <FileSpreadsheet className="w-5 h-5 text-[#9CA3AF]" />
+                  )}
+                </div>
+                <h3 className="text-sm font-bold text-white">06_indicadores</h3>
+                <p className="text-[11px] text-[#9CA3AF] mt-1">
+                  Colunas: <span className="font-mono text-white">meta, ordem, nome, alvo</span>
+                </p>
+              </div>
+
+              <div className="mt-4 pt-3 border-t border-[#262626]/80">
+                <input
+                  type="file"
+                  id="file-indicadores"
+                  accept=".csv"
+                  onChange={(e) => setFileIndicadores(e.target.files?.[0] || null)}
+                  className="hidden"
+                />
+                <label
+                  htmlFor="file-indicadores"
+                  className="w-full py-2 px-3 bg-[#1F1F1F] hover:bg-[#2A2A2A] text-white text-xs font-semibold rounded-lg border border-[#333] transition-colors flex items-center justify-center gap-1.5 cursor-pointer truncate"
+                >
+                  {fileIndicadores ? fileIndicadores.name : 'Selecionar 06_indicadores.csv'}
+                </label>
+              </div>
             </div>
           </div>
         </div>
@@ -1033,17 +1762,26 @@ export default function AdminImport() {
           <div className="text-xs text-[#9CA3AF] space-y-1">
             <p className="flex items-center gap-1.5 text-white font-medium">
               <ShieldAlert className="w-4 h-4 text-[#FFD400]" />
-              Garantia de Idempotência
+              Garantia de Idempotência e Reimportação Segura
             </p>
             <p>
-              Executar esta importação mais de uma vez não duplicará registros nem quebrará
-              conexões.
+              Atualiza registros pelo código sem duplicar. Reimportar colaboradores ou processos não
+              desfaz vínculos de metas existentes. Indicadores de uma meta são substituídos com
+              precisão.
             </p>
           </div>
 
           <button
             onClick={handleStartImport}
-            disabled={importing || !fileAreas || !fileColabs || !fileProcs}
+            disabled={
+              importing ||
+              (!fileAreas &&
+                !fileColabs &&
+                !fileProcs &&
+                !fileProjetos &&
+                !fileMetas &&
+                !fileIndicadores)
+            }
             className="w-full sm:w-auto px-6 py-3 bg-[#FFD400] hover:bg-[#E5BE00] text-black font-extrabold rounded-lg text-sm flex items-center justify-center gap-2 transition-all shadow-md shadow-[#FFD400]/20 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
           >
             {importing ? (
@@ -1053,7 +1791,7 @@ export default function AdminImport() {
               </>
             ) : (
               <>
-                <span>Executar Importação Completa</span>
+                <span>Executar Importação dos Arquivos</span>
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
@@ -1087,131 +1825,271 @@ export default function AdminImport() {
             </div>
           </div>
 
-          {/* Cards de Contagem */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            {/* Áreas */}
-            <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] space-y-1">
-              <span className="text-[11px] uppercase tracking-wider text-[#9CA3AF] font-semibold">
-                Áreas
-              </span>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-black text-white">{report.counts.areas}</span>
-                <span className="text-xs font-mono text-[#9CA3AF]">
-                  / {report.counts.areasExpected} esp.
+          {/* Cards de Contagem — Etapa 1 e Etapa 2 */}
+          <div className="space-y-3">
+            <span className="text-xs font-mono font-bold text-[#9CA3AF] uppercase">
+              Contagens da Estrutura Geral
+            </span>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              {/* Áreas */}
+              <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] space-y-1">
+                <span className="text-[11px] uppercase tracking-wider text-[#9CA3AF] font-semibold">
+                  Áreas
+                </span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-white">{report.counts.areas}</span>
+                  <span className="text-xs font-mono text-[#9CA3AF]">
+                    / {report.counts.areasExpected} esp.
+                  </span>
+                </div>
+                <span
+                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                    report.counts.areas === report.counts.areasExpected
+                      ? 'bg-[#22C55E]/15 text-[#22C55E]'
+                      : 'bg-[#FFD400]/15 text-[#FFD400]'
+                  }`}
+                >
+                  {report.counts.areas === report.counts.areasExpected ? '100% OK' : 'Ajustado'}
                 </span>
               </div>
-              <span
-                className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                  report.counts.areas === report.counts.areasExpected
-                    ? 'bg-[#22C55E]/15 text-[#22C55E]'
-                    : 'bg-[#FFD400]/15 text-[#FFD400]'
-                }`}
-              >
-                {report.counts.areas === report.counts.areasExpected ? '100% OK' : 'Ajustado'}
-              </span>
+
+              {/* Colaboradores */}
+              <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] space-y-1">
+                <span className="text-[11px] uppercase tracking-wider text-[#9CA3AF] font-semibold">
+                  Colaboradores
+                </span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-white">
+                    {report.counts.colaboradores}
+                  </span>
+                  <span className="text-xs font-mono text-[#9CA3AF]">
+                    / {report.counts.colaboradoresExpected} esp.
+                  </span>
+                </div>
+                <span
+                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                    report.counts.colaboradores === report.counts.colaboradoresExpected
+                      ? 'bg-[#22C55E]/15 text-[#22C55E]'
+                      : 'bg-[#FFD400]/15 text-[#FFD400]'
+                  }`}
+                >
+                  {report.counts.colaboradores === report.counts.colaboradoresExpected
+                    ? '100% OK'
+                    : 'Ajustado'}
+                </span>
+              </div>
+
+              {/* Contas de Login */}
+              <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] space-y-1">
+                <span className="text-[11px] uppercase tracking-wider text-[#9CA3AF] font-semibold">
+                  Contas Login
+                </span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-white">{report.counts.users}</span>
+                  <span className="text-xs font-mono text-[#9CA3AF]">
+                    / {report.counts.usersExpected} esp.
+                  </span>
+                </div>
+                <span
+                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                    report.counts.users === report.counts.usersExpected
+                      ? 'bg-[#22C55E]/15 text-[#22C55E]'
+                      : 'bg-[#FFD400]/15 text-[#FFD400]'
+                  }`}
+                >
+                  {report.counts.users === report.counts.usersExpected ? '100% OK' : 'Ajustado'}
+                </span>
+              </div>
+
+              {/* Processos */}
+              <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] space-y-1">
+                <span className="text-[11px] uppercase tracking-wider text-[#9CA3AF] font-semibold">
+                  Processos
+                </span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-white">{report.counts.processos}</span>
+                  <span className="text-xs font-mono text-[#9CA3AF]">
+                    / {report.counts.processosExpected} esp.
+                  </span>
+                </div>
+                <span
+                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                    report.counts.processos === report.counts.processosExpected
+                      ? 'bg-[#22C55E]/15 text-[#22C55E]'
+                      : 'bg-[#FFD400]/15 text-[#FFD400]'
+                  }`}
+                >
+                  {report.counts.processos === report.counts.processosExpected
+                    ? '100% OK'
+                    : 'Ajustado'}
+                </span>
+              </div>
+
+              {/* Conexões */}
+              <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] space-y-1">
+                <span className="text-[11px] uppercase tracking-wider text-[#9CA3AF] font-semibold">
+                  Conexões
+                </span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-white">{report.counts.conexoes}</span>
+                  <span className="text-xs font-mono text-[#9CA3AF]">
+                    / {report.counts.conexoesExpected} esp.
+                  </span>
+                </div>
+                <span
+                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                    report.counts.conexoes === report.counts.conexoesExpected
+                      ? 'bg-[#22C55E]/15 text-[#22C55E]'
+                      : 'bg-[#FFD400]/15 text-[#FFD400]'
+                  }`}
+                >
+                  {report.counts.conexoes === report.counts.conexoesExpected
+                    ? '100% OK'
+                    : 'Ajustado'}
+                </span>
+              </div>
             </div>
 
-            {/* Colaboradores */}
-            <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] space-y-1">
-              <span className="text-[11px] uppercase tracking-wider text-[#9CA3AF] font-semibold">
-                Colaboradores
-              </span>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-black text-white">
-                  {report.counts.colaboradores}
+            {/* Cards da Etapa 2 */}
+            <span className="text-xs font-mono font-bold text-[#FFD400] uppercase block pt-2">
+              Contagens da Etapa 2 (Projetos, Metas, Indicadores e Vínculos)
+            </span>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              {/* Projetos */}
+              <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] space-y-1">
+                <span className="text-[11px] uppercase tracking-wider text-[#9CA3AF] font-semibold">
+                  Projetos
                 </span>
-                <span className="text-xs font-mono text-[#9CA3AF]">
-                  / {report.counts.colaboradoresExpected} esp.
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-white">{report.counts.projetos}</span>
+                  <span className="text-xs font-mono text-[#9CA3AF]">
+                    / {report.counts.projetosExpected} esp.
+                  </span>
+                </div>
+                <span
+                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                    report.counts.projetos === report.counts.projetosExpected
+                      ? 'bg-[#22C55E]/15 text-[#22C55E]'
+                      : 'bg-[#FFD400]/15 text-[#FFD400]'
+                  }`}
+                >
+                  {report.counts.projetos === report.counts.projetosExpected
+                    ? '100% OK'
+                    : 'Ajustado'}
                 </span>
               </div>
-              <span
-                className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                  report.counts.colaboradores === report.counts.colaboradoresExpected
-                    ? 'bg-[#22C55E]/15 text-[#22C55E]'
-                    : 'bg-[#FFD400]/15 text-[#FFD400]'
-                }`}
-              >
-                {report.counts.colaboradores === report.counts.colaboradoresExpected
-                  ? '100% OK'
-                  : 'Ajustado'}
-              </span>
-            </div>
 
-            {/* Contas de Login */}
-            <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] space-y-1">
-              <span className="text-[11px] uppercase tracking-wider text-[#9CA3AF] font-semibold">
-                Contas Login
-              </span>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-black text-white">{report.counts.users}</span>
-                <span className="text-xs font-mono text-[#9CA3AF]">
-                  / {report.counts.usersExpected} esp.
+              {/* Metas */}
+              <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] space-y-1">
+                <span className="text-[11px] uppercase tracking-wider text-[#9CA3AF] font-semibold">
+                  Metas
+                </span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-white">{report.counts.metas}</span>
+                  <span className="text-xs font-mono text-[#9CA3AF]">
+                    / {report.counts.metasExpected} esp.
+                  </span>
+                </div>
+                <span
+                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                    report.counts.metas === report.counts.metasExpected
+                      ? 'bg-[#22C55E]/15 text-[#22C55E]'
+                      : 'bg-[#FFD400]/15 text-[#FFD400]'
+                  }`}
+                >
+                  {report.counts.metas === report.counts.metasExpected ? '100% OK' : 'Ajustado'}
                 </span>
               </div>
-              <span
-                className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                  report.counts.users === report.counts.usersExpected
-                    ? 'bg-[#22C55E]/15 text-[#22C55E]'
-                    : 'bg-[#FFD400]/15 text-[#FFD400]'
-                }`}
-              >
-                {report.counts.users === report.counts.usersExpected ? '100% OK' : 'Ajustado'}
-              </span>
-            </div>
 
-            {/* Processos */}
-            <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] space-y-1">
-              <span className="text-[11px] uppercase tracking-wider text-[#9CA3AF] font-semibold">
-                Processos
-              </span>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-black text-white">{report.counts.processos}</span>
-                <span className="text-xs font-mono text-[#9CA3AF]">
-                  / {report.counts.processosExpected} esp.
+              {/* Indicadores */}
+              <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] space-y-1">
+                <span className="text-[11px] uppercase tracking-wider text-[#9CA3AF] font-semibold">
+                  Indicadores
+                </span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-white">
+                    {report.counts.indicadores}
+                  </span>
+                  <span className="text-xs font-mono text-[#9CA3AF]">
+                    / {report.counts.indicadoresExpected} esp.
+                  </span>
+                </div>
+                <span
+                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                    report.counts.indicadores === report.counts.indicadoresExpected
+                      ? 'bg-[#22C55E]/15 text-[#22C55E]'
+                      : 'bg-[#FFD400]/15 text-[#FFD400]'
+                  }`}
+                >
+                  {report.counts.indicadores === report.counts.indicadoresExpected
+                    ? '100% OK'
+                    : 'Ajustado'}
                 </span>
               </div>
-              <span
-                className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                  report.counts.processos === report.counts.processosExpected
-                    ? 'bg-[#22C55E]/15 text-[#22C55E]'
-                    : 'bg-[#FFD400]/15 text-[#FFD400]'
-                }`}
-              >
-                {report.counts.processos === report.counts.processosExpected
-                  ? '100% OK'
-                  : 'Ajustado'}
-              </span>
-            </div>
 
-            {/* Conexões */}
-            <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] space-y-1">
-              <span className="text-[11px] uppercase tracking-wider text-[#9CA3AF] font-semibold">
-                Conexões
-              </span>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-black text-white">{report.counts.conexoes}</span>
-                <span className="text-xs font-mono text-[#9CA3AF]">
-                  / {report.counts.conexoesExpected} esp.
+              {/* Vínculos Meta-Responsável */}
+              <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] space-y-1">
+                <span className="text-[11px] uppercase tracking-wider text-[#9CA3AF] font-semibold">
+                  Vínculos Resp.
+                </span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-white">
+                    {report.counts.vinculosMetaResponsavel}
+                  </span>
+                  <span className="text-xs font-mono text-[#9CA3AF]">
+                    / {report.counts.vinculosMetaResponsavelExpected} esp.
+                  </span>
+                </div>
+                <span
+                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                    report.counts.vinculosMetaResponsavel ===
+                    report.counts.vinculosMetaResponsavelExpected
+                      ? 'bg-[#22C55E]/15 text-[#22C55E]'
+                      : 'bg-[#FFD400]/15 text-[#FFD400]'
+                  }`}
+                >
+                  {report.counts.vinculosMetaResponsavel ===
+                  report.counts.vinculosMetaResponsavelExpected
+                    ? '100% OK'
+                    : 'Ajustado'}
                 </span>
               </div>
-              <span
-                className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                  report.counts.conexoes === report.counts.conexoesExpected
-                    ? 'bg-[#22C55E]/15 text-[#22C55E]'
-                    : 'bg-[#FFD400]/15 text-[#FFD400]'
-                }`}
-              >
-                {report.counts.conexoes === report.counts.conexoesExpected ? '100% OK' : 'Ajustado'}
-              </span>
+
+              {/* Vínculos Meta-Processo */}
+              <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] space-y-1">
+                <span className="text-[11px] uppercase tracking-wider text-[#9CA3AF] font-semibold">
+                  Vínculos Proc.
+                </span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-white">
+                    {report.counts.vinculosMetaProcesso}
+                  </span>
+                  <span className="text-xs font-mono text-[#9CA3AF]">
+                    / {report.counts.vinculosMetaProcessoExpected} esp.
+                  </span>
+                </div>
+                <span
+                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                    report.counts.vinculosMetaProcesso ===
+                    report.counts.vinculosMetaProcessoExpected
+                      ? 'bg-[#22C55E]/15 text-[#22C55E]'
+                      : 'bg-[#FFD400]/15 text-[#FFD400]'
+                  }`}
+                >
+                  {report.counts.vinculosMetaProcesso === report.counts.vinculosMetaProcessoExpected
+                    ? '100% OK'
+                    : 'Ajustado'}
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Checagens Específicas do Usuário */}
+          {/* Checagens Específicas do Usuário (Etapa 1 e Etapa 2) */}
           <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] space-y-3">
             <h4 className="text-xs uppercase tracking-wider font-bold text-[#FFD400]">
-              Checagens Pontuais
+              Checagens Pontuais de Consistência
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
               {/* Check 1 */}
               <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#1F1F1F] border border-[#2B2B2B]">
                 {report.checks.williamCheck === true ? (
@@ -1253,6 +2131,101 @@ export default function AdminImport() {
                   Processo RH05:{' '}
                   <strong className="text-white">
                     {report.checks.rh05Check ? 'sem conexões (conforme planilha)' : 'com conexões'}
+                  </strong>
+                </span>
+              </div>
+
+              {/* Check 4 (Etapa 2: MT38 Rafael e Mahara) */}
+              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#1F1F1F] border border-[#2B2B2B]">
+                {report.checks.mt38ResponsaveisCheck === true ? (
+                  <CheckCircle2 className="w-4 h-4 text-[#22C55E] shrink-0" />
+                ) : report.checks.mt38ResponsaveisCheck === false ? (
+                  <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+                ) : (
+                  <span className="w-2 h-2 rounded-full bg-[#666] shrink-0" />
+                )}
+                <span>
+                  MT38 Responsáveis:{' '}
+                  <strong className="text-white">
+                    {report.checks.mt38ResponsaveisCheck
+                      ? 'Rafael e Mahara vinculados'
+                      : 'Pendente upload'}
+                  </strong>
+                </span>
+              </div>
+
+              {/* Check 5 (Etapa 2: Miguel responsável por MT52 a MT55) */}
+              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#1F1F1F] border border-[#2B2B2B]">
+                {report.checks.miguelMetasCheck === true ? (
+                  <CheckCircle2 className="w-4 h-4 text-[#22C55E] shrink-0" />
+                ) : report.checks.miguelMetasCheck === false ? (
+                  <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+                ) : (
+                  <span className="w-2 h-2 rounded-full bg-[#666] shrink-0" />
+                )}
+                <span>
+                  Miguel (MT52 a MT55):{' '}
+                  <strong className="text-white">
+                    {report.checks.miguelMetasCheck
+                      ? 'Responsável pelas 4 metas'
+                      : 'Pendente upload'}
+                  </strong>
+                </span>
+              </div>
+
+              {/* Check 6 (Etapa 2: William sem metas) */}
+              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#1F1F1F] border border-[#2B2B2B]">
+                {report.checks.williamSemMetasCheck === true ? (
+                  <CheckCircle2 className="w-4 h-4 text-[#22C55E] shrink-0" />
+                ) : report.checks.williamSemMetasCheck === false ? (
+                  <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+                ) : (
+                  <span className="w-2 h-2 rounded-full bg-[#666] shrink-0" />
+                )}
+                <span>
+                  William (sem_metas):{' '}
+                  <strong className="text-white">
+                    {report.checks.williamSemMetasCheck
+                      ? '0 metas atribuídas (OK)'
+                      : 'Pendente upload'}
+                  </strong>
+                </span>
+              </div>
+
+              {/* Check 7 (Etapa 2: Paulo Emílio sponsor de P2 e P5) */}
+              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#1F1F1F] border border-[#2B2B2B]">
+                {report.checks.pauloEmilioSponsorCheck === true ? (
+                  <CheckCircle2 className="w-4 h-4 text-[#22C55E] shrink-0" />
+                ) : report.checks.pauloEmilioSponsorCheck === false ? (
+                  <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+                ) : (
+                  <span className="w-2 h-2 rounded-full bg-[#666] shrink-0" />
+                )}
+                <span>
+                  Paulo Emílio:{' '}
+                  <strong className="text-white">
+                    {report.checks.pauloEmilioSponsorCheck
+                      ? 'Sponsor oficial de P2 e P5'
+                      : 'Pendente upload'}
+                  </strong>
+                </span>
+              </div>
+
+              {/* Check 8 (Etapa 2: Nenhuma meta sem responsável ou projeto principal) */}
+              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#1F1F1F] border border-[#2B2B2B] md:col-span-2">
+                {report.checks.todasMetasComResponsavelEProjetoCheck === true ? (
+                  <CheckCircle2 className="w-4 h-4 text-[#22C55E] shrink-0" />
+                ) : report.checks.todasMetasComResponsavelEProjetoCheck === false ? (
+                  <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
+                ) : (
+                  <span className="w-2 h-2 rounded-full bg-[#666] shrink-0" />
+                )}
+                <span>
+                  Integridade de Metas:{' '}
+                  <strong className="text-white">
+                    {report.checks.todasMetasComResponsavelEProjetoCheck
+                      ? '100% das metas têm responsável e projeto principal'
+                      : 'Pendente upload de metas'}
                   </strong>
                 </span>
               </div>

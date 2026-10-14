@@ -45,13 +45,20 @@ export interface Processo extends RecordModel {
 }
 
 export interface ProjetoEstrategico extends RecordModel {
+  codigo: string
   nome: string
   descricao?: string
+  sponsor?: string
+  expand?: {
+    sponsor?: Colaborador
+  }
 }
 
 export interface Indicador extends RecordModel {
   meta: string
   nome: string
+  ordem?: number
+  alvo?: string
   valor_atual?: number
   valor_meta?: number
   tendencia?: 'subindo' | 'descendo' | 'estavel'
@@ -59,16 +66,24 @@ export interface Indicador extends RecordModel {
 }
 
 export interface Meta extends RecordModel {
+  codigo: string
   titulo: string
   descricao?: string
-  projeto: string
-  owner: string
-  status: 'em andamento' | 'concluida' | 'atrasada'
-  timeframe?: string
+  projeto: string // projeto principal
+  projeto_secundario?: string
+  responsaveis?: string[]
+  periodicidade?: string
+  prazo?: string
+  trimestre?: string
+  processos_vinculados?: string[]
+  valor_alvo_a_definir?: boolean
+  status: 'sem atualização' | 'em andamento' | 'concluida' | 'atrasada'
   progresso?: number
   expand?: {
     projeto?: ProjetoEstrategico
-    owner?: UserProfile
+    projeto_secundario?: ProjetoEstrategico
+    responsaveis?: Colaborador[]
+    processos_vinculados?: Processo[]
   }
 }
 

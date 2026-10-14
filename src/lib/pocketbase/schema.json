@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-14T00:10:53.158Z",
+  "generatedAt": "2026-10-14T09:57:49.618Z",
   "collections": [
     {
       "name": "users",
@@ -75,9 +75,9 @@
       "apiRules": {
         "list": "@request.auth.id != ''",
         "view": "@request.auth.id != ''",
-        "create": null,
-        "update": null,
-        "delete": null
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
       },
       "fields": [
         {
@@ -105,21 +105,35 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "codigo",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "sponsor",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "colaboradores"
         }
       ],
       "indexes": [
-        "CREATE UNIQUE INDEX idx_projetos_estrategicos_nome ON projetos_estrategicos (nome)"
+        "CREATE UNIQUE INDEX idx_projetos_estrategicos_nome ON projetos_estrategicos (nome)",
+        "CREATE UNIQUE INDEX `idx_projetos_estrategicos_codigo` ON `projetos_estrategicos` (codigo)"
       ]
     },
     {
       "name": "metas",
       "type": "base",
       "apiRules": {
-        "list": "owner = @request.auth.id",
-        "view": "owner = @request.auth.id",
-        "create": "owner = @request.auth.id",
-        "update": "owner = @request.auth.id",
-        "delete": "owner = @request.auth.id"
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
       },
       "fields": [
         {
@@ -142,32 +156,6 @@
           "collectionRef": "projetos_estrategicos"
         },
         {
-          "name": "owner",
-          "type": "relation",
-          "required": true,
-          "system": false,
-          "collectionRef": "users"
-        },
-        {
-          "name": "status",
-          "type": "select",
-          "required": false,
-          "system": false,
-          "selectValues": ["em andamento", "concluida", "atrasada"]
-        },
-        {
-          "name": "timeframe",
-          "type": "text",
-          "required": false,
-          "system": false
-        },
-        {
-          "name": "progresso",
-          "type": "number",
-          "required": false,
-          "system": false
-        },
-        {
           "name": "created",
           "type": "autodate",
           "required": false,
@@ -180,23 +168,87 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "codigo",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "responsaveis",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "colaboradores"
+        },
+        {
+          "name": "projeto_secundario",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "projetos_estrategicos"
+        },
+        {
+          "name": "periodicidade",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "prazo",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "trimestre",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "processos_vinculados",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "processos"
+        },
+        {
+          "name": "valor_alvo_a_definir",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["sem atualização", "em andamento", "concluida", "atrasada"]
+        },
+        {
+          "name": "progresso",
+          "type": "number",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
-        "CREATE INDEX idx_metas_owner ON metas (owner)",
         "CREATE INDEX idx_metas_projeto ON metas (projeto)",
-        "CREATE INDEX idx_metas_status ON metas (status)"
+        "CREATE UNIQUE INDEX `idx_metas_codigo` ON `metas` (codigo)",
+        "CREATE INDEX `idx_metas_status` ON `metas` (status)"
       ]
     },
     {
       "name": "indicadores",
       "type": "base",
       "apiRules": {
-        "list": "meta.owner = @request.auth.id",
-        "view": "meta.owner = @request.auth.id",
-        "create": "meta.owner = @request.auth.id",
-        "update": "meta.owner = @request.auth.id",
-        "delete": "meta.owner = @request.auth.id"
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
       },
       "fields": [
         {
@@ -250,6 +302,18 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "ordem",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "alvo",
+          "type": "text",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": ["CREATE INDEX idx_indicadores_meta ON indicadores (meta)"]

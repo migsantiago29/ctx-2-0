@@ -15,20 +15,24 @@ import {
   FileSpreadsheet,
   List,
   Compass,
+  Calendar,
+  Users,
 } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
 import pb from '@/lib/pocketbase/client'
 import { useAuth } from '@/contexts/AuthContext'
-import type { Area, Processo, Colaborador } from '@/types/ctx'
+import type { Area, Processo, Colaborador, Meta } from '@/types/ctx'
 import { computeDiagramLayout, type ProcessNode, type DiagramLayout } from '@/lib/diagramLayout'
 
 export default function Fluxograma() {
   const { user } = useAuth()
+  const [searchParams] = useSearchParams()
 
   const [areas, setAreas] = useState<Area[]>([])
   const [processos, setProcessos] = useState<Processo[]>([])
-  const [colaboradorLogado, setColaboradorLogado] = useState<Colaborador | null>(null)
+  const [colaboradores, setColaboradores] = useState<Colaborador[]>([])
+  const [allMetas, setAllMetas] = useState<Meta[]>([])
   const [loading, setLoading] = useState(true)
-
   // Layout View Controls
   const [viewMode, setViewMode] = useState<'diagram' | 'list'>('diagram')
   const [searchQuery, setSearchQuery] = useState('')
@@ -84,7 +88,7 @@ export default function Fluxograma() {
       return user.area.trim().toLowerCase()
     }
     return ''
-  }, [colaboradorLogado, areas, user])
+  }, [areas, user])
 
   // MEMOIZED DIAGRAM LAYOUT CALCULATION (Calculado apenas quando areas ou processos mudam!)
   const layout: DiagramLayout = useMemo(() => {

@@ -23,22 +23,24 @@ export const rotinaService = {
 
   // Alternar rotina ativa / pulso ativo (Admin)
   async setRotinaAtiva(rotinaAtiva: boolean): Promise<boolean> {
+    const acao = rotinaAtiva ? 'reativar_rotina' : 'pausar_rotina'
     const res = await pb.send<{ success: boolean; rotina_ativa: boolean }>(
       '/backend/v1/ctx/admin-rotina',
       {
         method: 'POST',
-        body: { acao: 'toggle_rotina', rotina_ativa: rotinaAtiva },
+        body: { acao, rotina_ativa: rotinaAtiva },
       },
     )
     return !!res?.success
   },
 
   async setPulsoAtivo(pulsoAtivo: boolean): Promise<boolean> {
+    const acao = pulsoAtivo ? 'ligar_pulso' : 'desligar_pulso'
     const res = await pb.send<{ success: boolean; pulso_ativo: boolean }>(
       '/backend/v1/ctx/admin-rotina',
       {
         method: 'POST',
-        body: { acao: 'toggle_pulso', pulso_ativo: pulsoAtivo },
+        body: { acao, pulso_ativo: pulsoAtivo },
       },
     )
     return !!res?.success
@@ -89,10 +91,11 @@ export const rotinaService = {
     abertura: string,
     fechamento: string,
     titulo?: string,
+    referencia?: string,
   ): Promise<boolean> {
     const res = await pb.send<{ success: boolean }>('/backend/v1/ctx/admin-rotina', {
       method: 'POST',
-      body: { acao: 'ajustar_datas', ciclo_id: cicloId, abertura, fechamento, titulo },
+      body: { acao: 'ajustar_datas', ciclo_id: cicloId, abertura, fechamento, titulo, referencia },
     })
     return !!res?.success
   },

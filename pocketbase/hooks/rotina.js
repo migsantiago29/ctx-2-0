@@ -346,13 +346,21 @@ routerAdd('POST', '/backend/v1/ctx/comentarios', (e) => {
 routerAdd('POST', '/backend/v1/ctx/admin-rotina', (e) => {
   const authRecord = e.auth
   const isSuper = e.hasSuperuserAuth ? e.hasSuperuserAuth() : false
-  const userRole = authRecord ? authRecord.get('role') || authRecord.getString('role') || '' : ''
-  const userEmail = authRecord
-    ? authRecord.email
-      ? authRecord.email()
-      : authRecord.getString('email')
-    : ''
-  const isProtectedAdmin = userEmail === 'miguel.santiago@ctxcenografia.com.br'
+  let userRole = ''
+  let userEmail = ''
+  if (authRecord) {
+    try {
+      userRole =
+        authRecord.getString('role') || (authRecord.get ? authRecord.get('role') : '') || ''
+    } catch (_) {}
+    try {
+      userEmail =
+        (typeof authRecord.email === 'function'
+          ? authRecord.email()
+          : authRecord.getString('email')) || ''
+    } catch (_) {}
+  }
+  const isProtectedAdmin = userEmail.toLowerCase() === 'miguel.santiago@ctxcenografia.com.br'
   const isAdmin = isSuper || isProtectedAdmin || userRole === 'admin'
   if (!isAdmin) {
     throw new ForbiddenError('Apenas administradores podem executar esta operação.')
@@ -374,17 +382,31 @@ routerAdd('POST', '/backend/v1/ctx/admin-rotina', (e) => {
     e.app.save(config)
   }
 
-  if (acao === 'toggle_rotina') {
-    const novoValor =
-      body.rotina_ativa !== undefined ? !!body.rotina_ativa : !config.getBool('rotina_ativa')
+  if (acao === 'toggle_rotina' || acao === 'pausar_rotina' || acao === 'reativar_rotina') {
+    let novoValor = false
+    if (acao === 'pausar_rotina') {
+      novoValor = false
+    } else if (acao === 'reativar_rotina') {
+      novoValor = true
+    } else {
+      novoValor =
+        body.rotina_ativa !== undefined ? !!body.rotina_ativa : !config.getBool('rotina_ativa')
+    }
     config.set('rotina_ativa', novoValor)
     e.app.save(config)
     return e.json(200, { success: true, rotina_ativa: novoValor })
   }
 
-  if (acao === 'toggle_pulso') {
-    const novoValor =
-      body.pulso_ativo !== undefined ? !!body.pulso_ativo : !config.getBool('pulso_ativo')
+  if (acao === 'toggle_pulso' || acao === 'ligar_pulso' || acao === 'desligar_pulso') {
+    let novoValor = false
+    if (acao === 'ligar_pulso') {
+      novoValor = true
+    } else if (acao === 'desligar_pulso') {
+      novoValor = false
+    } else {
+      novoValor =
+        body.pulso_ativo !== undefined ? !!body.pulso_ativo : !config.getBool('pulso_ativo')
+    }
     config.set('pulso_ativo', novoValor)
     e.app.save(config)
     return e.json(200, { success: true, pulso_ativo: novoValor })
@@ -461,7 +483,14 @@ routerAdd('POST', '/backend/v1/ctx/admin-rotina', (e) => {
   if (acao === 'fechar_ciclo' || acao === 'reabrir_ciclo') {
     const cicloId = body.ciclo_id
     if (!cicloId) throw new BadRequestError('ID do ciclo obrigatório.')
-    const ciclo = e.app.findRecordById('ciclos', cicloId)
+    let ciclo = null
+    try {
+      ciclo = e.app.findRecordById('ciclos', cicloId)
+    } catch (_) {
+      throw new BadRequestError('Ciclo não encontrado.')
+    }
+    if (!ciclo) throw new BadRequestError('Ciclo não encontrado.')
+
     const novoStatus = acao === 'fechar_ciclo' ? 'fechado' : 'aberto'
     ciclo.set('status', novoStatus)
     e.app.save(ciclo)
@@ -471,10 +500,19 @@ routerAdd('POST', '/backend/v1/ctx/admin-rotina', (e) => {
   if (acao === 'ajustar_datas') {
     const cicloId = body.ciclo_id
     if (!cicloId) throw new BadRequestError('ID do ciclo obrigatório.')
-    const ciclo = e.app.findRecordById('ciclos', cicloId)
+    let ciclo = null
+    try {
+      ciclo = e.app.findRecordById('ciclos', cicloId)
+    } catch (_) {
+      throw new BadRequestError('Ciclo não encontrado.')
+    }
+    if (!ciclo) throw new BadRequestError('Ciclo não encontrado.')
+
     if (body.abertura) ciclo.set('abertura', body.abertura)
     if (body.fechamento) ciclo.set('fechamento', body.fechamento)
-    if (body.titulo) ciclo.set('titulo', body.titulo)
+    if (body.titulo !== undefined) ciclo.set('titulo', body.titulo)
+    if (body.referencia !== undefined && body.referencia.trim())
+      ciclo.set('referencia', body.referencia.trim())
     e.app.save(ciclo)
     return e.json(200, { success: true, ciclo_id: ciclo.id })
   }
@@ -484,7 +522,13 @@ routerAdd('POST', '/backend/v1/ctx/admin-rotina', (e) => {
     const colabIds = body.colaborador_ids || []
     if (!cicloId) throw new BadRequestError('ID do ciclo obrigatório.')
 
-    const ciclo = e.app.findRecordById('ciclos', cicloId)
+    let ciclo = null
+    try {
+      ciclo = e.app.findRecordById('ciclos', cicloId)
+    } catch (_) {
+      throw new BadRequestError('Ciclo não encontrado.')
+    }
+    if (!ciclo) throw new BadRequestError('Ciclo não encontrado.')
     const isMensal = ciclo.getString('tipo') === 'avaliacao_mensal'
     let count = 0
 
@@ -523,18 +567,25 @@ routerAdd('POST', '/backend/v1/ctx/admin-rotina', (e) => {
 routerAdd('GET', '/backend/v1/ctx/export-csv', (e) => {
   const authRecord = e.auth
   const isSuper = e.hasSuperuserAuth ? e.hasSuperuserAuth() : false
-  const userRole = authRecord ? authRecord.get('role') || authRecord.getString('role') || '' : ''
-  const userEmail = authRecord
-    ? authRecord.email
-      ? authRecord.email()
-      : authRecord.getString('email')
-    : ''
-  const isProtectedAdmin = userEmail === 'miguel.santiago@ctxcenografia.com.br'
+  let userRole = ''
+  let userEmail = ''
+  if (authRecord) {
+    try {
+      userRole =
+        authRecord.getString('role') || (authRecord.get ? authRecord.get('role') : '') || ''
+    } catch (_) {}
+    try {
+      userEmail =
+        (typeof authRecord.email === 'function'
+          ? authRecord.email()
+          : authRecord.getString('email')) || ''
+    } catch (_) {}
+  }
+  const isProtectedAdmin = userEmail.toLowerCase() === 'miguel.santiago@ctxcenografia.com.br'
   const isAdmin = isSuper || isProtectedAdmin || userRole === 'admin'
   if (!isAdmin) {
     throw new ForbiddenError('Apenas administradores podem exportar dados.')
   }
-
   const req = e.requestInfo()
   const query = (req && req.query) || {}
   const tipo = query.tipo || 'avaliacoes'

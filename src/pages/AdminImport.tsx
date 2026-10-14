@@ -2290,6 +2290,30 @@ export default function AdminImport() {
         </div>
       )}
 
+      {/* ATALHO RÁPIDO PARA ACOMPANHAMENTO DE CICLOS */}
+      <div className="bg-[#111111] border border-[#262626] rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+        <div className="space-y-1">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#FFD400]/10 border border-[#FFD400]/30 text-[#FFD400] text-xs font-semibold">
+            <Database className="w-3.5 h-3.5" />
+            <span>Rotina Operacional CTX 2.0</span>
+          </div>
+          <h2 className="text-base font-bold text-white">
+            Acompanhamento por Ciclo & Gestão de Rotina
+          </h2>
+          <p className="text-xs text-[#9CA3AF]">
+            Gerencie ciclos (fechar/reabrir, ajustar datas, criar manuais), pause ou reative a
+            rotina geral, ligue/desligue o pulso semanal e envie lembretes aos pendentes.
+          </p>
+        </div>
+        <a
+          href="/admin/ciclos"
+          className="px-4 py-2.5 bg-[#FFD400] hover:bg-[#E5BE00] text-black font-extrabold rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-[#FFD400]/20 shrink-0"
+        >
+          <span>Acessar Painel de Ciclos & Adesão</span>
+          <ArrowRight className="w-4 h-4" />
+        </a>
+      </div>
+
       {/* SEÇÃO 3: REDEFINIÇÃO MANUAL DE SENHAS PELO ADMIN */}
       <div className="bg-[#111111] border border-[#262626] rounded-2xl p-6 md:p-8 space-y-6 shadow-xl">
         <div className="border-b border-[#262626] pb-4">

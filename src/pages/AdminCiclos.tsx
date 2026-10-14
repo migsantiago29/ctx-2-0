@@ -30,6 +30,8 @@ import type {
 } from '@/types/ctx'
 import { rotinaService } from '@/services/rotinaService'
 import { toast } from '@/hooks/use-toast'
+import { getErrorMessage } from '@/lib/pocketbase/errors'
+import { Edit3 } from 'lucide-react'
 
 export default function AdminCiclos() {
   const [config, setConfig] = useState<ConfiguracaoGeral | null>(null)
@@ -59,6 +61,14 @@ export default function AdminCiclos() {
   const [novoTitulo, setNovoTitulo] = useState('')
   const [novaAbertura, setNovaAbertura] = useState('')
   const [novoFechamento, setNovoFechamento] = useState('')
+
+  // Modal Ajustar Datas do Ciclo
+  const [ajustarModal, setAjustarModal] = useState(false)
+  const [editCicloId, setEditCicloId] = useState('')
+  const [editTitulo, setEditTitulo] = useState('')
+  const [editReferencia, setEditReferencia] = useState('')
+  const [editAbertura, setEditAbertura] = useState('')
+  const [editFechamento, setEditFechamento] = useState('')
 
   const carregarDados = async () => {
     setLoading(true)
@@ -110,7 +120,12 @@ export default function AdminCiclos() {
           : 'Nenhum ciclo automático será aberto enquanto a rotina estiver pausada.',
       })
     } catch (e) {
-      toast({ title: 'Erro ao alterar rotina', variant: 'destructive' })
+      const msg = getErrorMessage(e)
+      toast({
+        title: 'Erro ao alterar rotina',
+        description: msg,
+        variant: 'destructive',
+      })
     } finally {
       setActionLoading(false)
     }
@@ -129,13 +144,18 @@ export default function AdminCiclos() {
           : 'Apenas a avaliação mensal ficará em vigor.',
       })
     } catch (e) {
-      toast({ title: 'Erro ao alterar pulso semanal', variant: 'destructive' })
+      const msg = getErrorMessage(e)
+      toast({
+        title: 'Erro ao alterar pulso semanal',
+        description: msg,
+        variant: 'destructive',
+      })
     } finally {
       setActionLoading(false)
     }
   }
 
-  // 2. Ações de Ciclo: Fechar / Reabrir / Criar
+  // 2. Ações de Ciclo: Fechar / Reabrir / Criar / Ajustar Datas
   const cicloSelecionado = ciclos.find((c) => c.id === selectedCicloId) || null
 
   const handleToggleStatusCiclo = async (ciclo: Ciclo) => {
@@ -150,7 +170,66 @@ export default function AdminCiclos() {
       }
       await carregarDados()
     } catch (e) {
-      toast({ title: 'Erro ao alterar status do ciclo', variant: 'destructive' })
+      const msg = getErrorMessage(e)
+      toast({
+        title: 'Erro ao alterar status do ciclo',
+        description: msg,
+        variant: 'destructive',
+      })
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const abrirModalAjustarDatas = (c: Ciclo) => {
+    setEditCicloId(c.id)
+    setEditTitulo(c.titulo || '')
+    setEditReferencia(c.referencia || '')
+    const formatForInput = (dStr: string) => {
+      try {
+        const d = new Date(dStr)
+        if (isNaN(d.getTime())) return ''
+        return d.toISOString().split('T')[0]
+      } catch {
+        return ''
+      }
+    }
+    setEditAbertura(formatForInput(c.abertura))
+    setEditFechamento(formatForInput(c.fechamento))
+    setAjustarModal(true)
+  }
+
+  const handleSalvarAjusteDatas = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editCicloId || !editAbertura || !editFechamento) {
+      toast({
+        title: 'Datas obrigatórias',
+        description: 'Preencha a data de abertura e de fechamento.',
+        variant: 'destructive',
+      })
+      return
+    }
+    setActionLoading(true)
+    try {
+      await rotinaService.ajustarDatasCiclo(
+        editCicloId,
+        new Date(editAbertura).toISOString(),
+        new Date(editFechamento).toISOString(),
+        editTitulo || undefined,
+        editReferencia || undefined,
+      )
+      toast({
+        title: 'Datas do ciclo ajustadas com sucesso!',
+      })
+      setAjustarModal(false)
+      await carregarDados()
+    } catch (err: unknown) {
+      const msg = getErrorMessage(err)
+      toast({
+        title: 'Erro ao ajustar datas do ciclo',
+        description: msg,
+        variant: 'destructive',
+      })
     } finally {
       setActionLoading(false)
     }
@@ -180,9 +259,10 @@ export default function AdminCiclos() {
       setNovoTitulo('')
       await carregarDados()
     } catch (err: unknown) {
+      const msg = getErrorMessage(err)
       toast({
         title: 'Erro ao criar ciclo',
-        description: err instanceof Error ? err.message : 'Falha na criação.',
+        description: msg,
         variant: 'destructive',
       })
     } finally {
@@ -256,7 +336,12 @@ export default function AdminCiclos() {
         description: `${qtd} colaborador(es) foram notificados no app.`,
       })
     } catch (e) {
-      toast({ title: 'Erro ao enviar lembretes', variant: 'destructive' })
+      const msg = getErrorMessage(e)
+      toast({
+        title: 'Erro ao enviar lembretes',
+        description: msg,
+        variant: 'destructive',
+      })
     } finally {
       setLembrando(false)
     }
@@ -440,8 +525,19 @@ export default function AdminCiclos() {
                 </p>
               </div>
 
-              {/* Ações de Fechar/Reabrir e Lembrar Geral */}
+              {/* Ações de Ajustar Datas, Fechar/Reabrir e Lembrar Geral */}
               <div className="flex flex-wrap items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => abrirModalAjustarDatas(cicloSelecionado)}
+                  disabled={actionLoading}
+                  className="px-3.5 py-2 rounded-xl bg-[#1A1A1A] hover:bg-[#252525] border border-[#333] text-xs font-bold text-white transition-colors flex items-center gap-1.5"
+                  title="Ajustar datas e título do ciclo"
+                >
+                  <Edit3 className="w-3.5 h-3.5 text-[#FFD400]" />
+                  <span>Ajustar Datas</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => handleToggleStatusCiclo(cicloSelecionado)}
@@ -727,6 +823,90 @@ export default function AdminCiclos() {
                   className="px-5 py-2 rounded-xl bg-[#FFD400] text-black font-extrabold hover:bg-[#E5BE00]"
                 >
                   Criar Ciclo
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Ajustar Datas do Ciclo */}
+      {ajustarModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
+          <div
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm"
+            onClick={() => setAjustarModal(false)}
+          />
+
+          <div className="relative w-full max-w-md bg-[#111111] border border-[#2B2B2B] rounded-2xl shadow-2xl overflow-hidden p-6 space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-2 border-b border-[#222] pb-3">
+              <Edit3 className="w-4 h-4 text-[#FFD400]" />
+              <h3 className="text-sm font-extrabold text-white">
+                Ajustar Datas e Detalhes do Ciclo
+              </h3>
+            </div>
+
+            <form onSubmit={handleSalvarAjusteDatas} className="space-y-3 text-xs">
+              <div>
+                <label className="block text-[#9CA3AF] mb-1 font-bold">Referência</label>
+                <input
+                  type="text"
+                  required
+                  value={editReferencia}
+                  onChange={(e) => setEditReferencia(e.target.value)}
+                  className="w-full bg-[#161616] border border-[#2B2B2B] rounded-lg p-2 text-white outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[#9CA3AF] mb-1 font-bold">Título de exibição</label>
+                <input
+                  type="text"
+                  value={editTitulo}
+                  onChange={(e) => setEditTitulo(e.target.value)}
+                  placeholder="Título descritivo do ciclo"
+                  className="w-full bg-[#161616] border border-[#2B2B2B] rounded-lg p-2 text-white outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[#9CA3AF] mb-1 font-bold">Data de Abertura</label>
+                  <input
+                    type="date"
+                    required
+                    value={editAbertura}
+                    onChange={(e) => setEditAbertura(e.target.value)}
+                    className="w-full bg-[#161616] border border-[#2B2B2B] rounded-lg p-2 text-white outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[#9CA3AF] mb-1 font-bold">Data de Fechamento</label>
+                  <input
+                    type="date"
+                    required
+                    value={editFechamento}
+                    onChange={(e) => setEditFechamento(e.target.value)}
+                    className="w-full bg-[#161616] border border-[#2B2B2B] rounded-lg p-2 text-white outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-3 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAjustarModal(false)}
+                  className="px-4 py-2 rounded-xl bg-[#1A1A1A] text-[#9CA3AF] hover:text-white"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={actionLoading}
+                  className="px-5 py-2 rounded-xl bg-[#FFD400] text-black font-extrabold hover:bg-[#E5BE00] flex items-center gap-1.5"
+                >
+                  {actionLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                  Salvar Ajustes
                 </button>
               </div>
             </form>

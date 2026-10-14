@@ -40,14 +40,32 @@ export default function RedefinirSenhaObrigatoria() {
 
     setLoading(true)
     try {
-      // Atualizar senha e desativar flag must_change_password
-      await pb.collection('users').update(user.id, {
-        password,
-        passwordConfirm,
-        must_change_password: false,
+      const userEmail = user.email
+
+      // Chamar endpoint seguro do servidor para primeiro acesso
+      const response = await pb.send('/backend/v1/ctx/first-access-password', {
+        method: 'POST',
+        body: {
+          password,
+          passwordConfirm,
+        },
       })
 
-      await refreshUser()
+      if (!response || !response.success) {
+        throw new Error(response?.message || 'Falha ao redefinir senha no servidor.')
+      }
+
+      // Reautenticar silenciosamente com a nova senha para garantir que o token JWT seja renovado
+      try {
+        if (userEmail) {
+          await pb.collection('users').authWithPassword(userEmail, password)
+        } else {
+          await refreshUser()
+        }
+      } catch (authErr) {
+        console.warn('Reautenticação silenciosa pós-troca falhou, tentando refreshUser:', authErr)
+        await refreshUser()
+      }
 
       toast({
         title: 'Senha alterada com sucesso!',
@@ -57,7 +75,12 @@ export default function RedefinirSenhaObrigatoria() {
       navigate('/', { replace: true })
     } catch (err: unknown) {
       console.error('Erro ao redefinir senha:', err)
-      const msg = err instanceof Error ? err.message : 'Não foi possível redefinir a senha.'
+      let msg = 'Não foi possível redefinir a senha.'
+      if (err instanceof Error) {
+        msg = err.message
+      } else if (typeof err === 'object' && err !== null && 'message' in err) {
+        msg = String((err as { message: unknown }).message)
+      }
       setErrorMsg(msg)
       toast({
         title: 'Erro ao atualizar senha',

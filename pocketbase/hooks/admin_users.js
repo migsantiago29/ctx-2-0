@@ -93,3 +93,66 @@ routerAdd('POST', '/backend/v1/ctx/sync-user', (e) => {
     },
   })
 })
+
+// Endpoint para primeiro acesso — troca obrigatória de senha pelo próprio usuário autenticado
+// Permite que qualquer usuário autenticado com a flag must_change_password troque sua senha com privilégio do servidor
+routerAdd('POST', '/backend/v1/ctx/first-access-password', (e) => {
+  // 1. Validar usuário autenticado via token na requisição
+  const authRecord = e.auth
+  if (!authRecord) {
+    throw new ForbiddenError('Sessão inválida ou expirada. Faça login novamente.')
+  }
+
+  // 2. Extrair dados da nova senha
+  const info = e.requestInfo()
+  const body = (info && info.body) || {}
+  const password = body.password || ''
+  const passwordConfirm = body.passwordConfirm || ''
+
+  // 3. Validações de segurança
+  if (!password || typeof password !== 'string') {
+    throw new BadRequestError('A nova senha é obrigatória.')
+  }
+
+  if (password.length < 8) {
+    throw new BadRequestError('A nova senha deve ter no mínimo 8 caracteres.')
+  }
+
+  if (password === 'CTX@2027') {
+    throw new BadRequestError('A nova senha não pode ser a senha provisória CTX@2027.')
+  }
+
+  if (password !== passwordConfirm) {
+    throw new BadRequestError('A confirmação da nova senha não confere.')
+  }
+
+  // 4. Buscar record atualizado do usuário no banco com privilégio do sistema
+  const userId = authRecord.id
+  let user = null
+  try {
+    user = e.app.findRecordById('_pb_users_auth_', userId)
+  } catch (_) {
+    throw new BadRequestError('Usuário não encontrado.')
+  }
+
+  // 5. Redefinir senha e remover a flag must_change_password
+  user.setPassword(password)
+  user.set('must_change_password', false)
+  user.setVerified(true)
+
+  e.app.save(user)
+
+  return e.json(200, {
+    success: true,
+    message: 'Senha definida com sucesso!',
+    user: {
+      id: user.id,
+      email: user.email(),
+      name: user.getString('name'),
+      role: user.getString('role'),
+      cargo: user.getString('cargo'),
+      area: user.getString('area'),
+      must_change_password: false,
+    },
+  })
+})

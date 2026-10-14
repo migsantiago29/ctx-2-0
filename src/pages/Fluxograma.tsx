@@ -262,6 +262,11 @@ export default function Fluxograma() {
     return Array.from(set).sort()
   }, [processos])
 
+  // Alternar seleção ao clicar em um nó: se já estiver selecionado, desseleciona (ou seleciona novo)
+  const handleToggleNodeSelection = (node: ProcessNode) => {
+    setSelectedNode((prev) => (prev?.id === node.id ? null : node))
+  }
+
   // Centralizar em um nó buscado
   const handleSelectSearchNode = (node: ProcessNode) => {
     setSelectedNode(node)
@@ -323,6 +328,15 @@ export default function Fluxograma() {
     if (e.button !== 0) return
     setIsPanning(true)
     panStartRef.current = { x: e.clientX - pan.x, y: e.clientY - pan.y }
+  }
+
+  // Clicar no fundo do canvas desmarca a seleção ativa (sem interferir caso tenha arrastado)
+  const handleCanvasClick = (e: React.MouseEvent) => {
+    if (hasMovedDuringDragRef.current) return
+    // Apenas se o clique foi direto no canvas/wrapper e não em um nó (os nós dão stopPropagation)
+    if (selectedNode && !isEditMode) {
+      setSelectedNode(null)
+    }
   }
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -857,6 +871,7 @@ export default function Fluxograma() {
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
+          onClick={handleCanvasClick}
           className="flex-1 relative bg-[#090909] border border-[#262626] rounded-2xl overflow-hidden cursor-grab active:cursor-grabbing select-none"
         >
           {/* Canvas Wrapper transformado com pan e zoom */}
@@ -974,7 +989,20 @@ export default function Fluxograma() {
               style={{ overflow: 'visible' }}
             >
               <defs>
-                {/* Marcador de seta padrão (amarelo) */}
+                {/* Marcador de seta amarela destacada (#FFD400) com tamanho realçado */}
+                <marker
+                  id="arrow-highlighted"
+                  viewBox="0 0 10 10"
+                  refX="9"
+                  refY="5"
+                  markerWidth="8"
+                  markerHeight="8"
+                  orient="auto-start-reverse"
+                >
+                  <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#FFD400" />
+                </marker>
+
+                {/* Marcador de seta padrão (amarelo) quando não há seleção */}
                 <marker
                   id="arrow-default"
                   viewBox="0 0 10 10"
@@ -987,20 +1015,20 @@ export default function Fluxograma() {
                   <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#FFD400" />
                 </marker>
 
-                {/* Marcador de seta esmaecida */}
+                {/* Marcador de seta esmaecida (quando outro processo está selecionado) */}
                 <marker
                   id="arrow-dimmed"
                   viewBox="0 0 10 10"
                   refX="9"
                   refY="5"
-                  markerWidth="7"
-                  markerHeight="7"
+                  markerWidth="6"
+                  markerHeight="6"
                   orient="auto-start-reverse"
                 >
-                  <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#3A3A3A" />
+                  <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#2E2E2E" />
                 </marker>
 
-                {/* Marcador de seta de retorno / ciclo (laranja) */}
+                {/* Marcador de seta de retorno / ciclo não selecionado (laranja suave) */}
                 <marker
                   id="arrow-backward"
                   viewBox="0 0 10 10"
@@ -1018,15 +1046,28 @@ export default function Fluxograma() {
               {layout.edges.map((edge) => {
                 const isSelectedEdge = activeConnectionIds.has(edge.id)
                 const isAnySelected = selectedNode !== null
-                const opacity = isAnySelected ? (isSelectedEdge ? 1 : 0.08) : 0.65
-                const strokeColor = edge.isBackward
-                  ? '#FF9900'
-                  : isSelectedEdge
-                    ? '#FFD400'
-                    : '#8E8E93'
-                const strokeWidth = isSelectedEdge ? 2.8 : 1.6
-                const markerId =
-                  isAnySelected && !isSelectedEdge
+
+                // Opacidade: setas não selecionadas ficam bem esmaecidas (0.05), a selecionada brilha em 1.0
+                const opacity = isAnySelected ? (isSelectedEdge ? 1 : 0.05) : 0.65
+
+                // Cor: se selecionada (inclusive retorno), TODAS as conexões ativas ficam em AMARELO marca (#FFD400)
+                // Se não selecionada: retornos em #FF9900 e fluxo normal em cinza #737373
+                const strokeColor = isSelectedEdge
+                  ? '#FFD400'
+                  : edge.isBackward
+                    ? '#FF9900'
+                    : '#737373'
+
+                // Espessura: aumentada para 3.5 quando destacada (vs 1.6 normal)
+                const strokeWidth = isSelectedEdge ? 3.5 : 1.6
+
+                // Marcador no fim da seta:
+                // - Se a aresta estiver selecionada: arrow-highlighted (amarela, tamanho 8)
+                // - Se houver outra seleção ativa: arrow-dimmed
+                // - Se nenhuma seleção ativa: arrow-backward (para retornos) ou arrow-default
+                const markerId = isSelectedEdge
+                  ? 'url(#arrow-highlighted)'
+                  : isAnySelected
                     ? 'url(#arrow-dimmed)'
                     : edge.isBackward
                       ? 'url(#arrow-backward)'
@@ -1046,7 +1087,7 @@ export default function Fluxograma() {
                       fill="none"
                       stroke={strokeColor}
                       strokeWidth={strokeWidth}
-                      strokeDasharray={edge.isBackward ? '6,4' : 'none'}
+                      strokeDasharray={edge.isBackward ? (isSelectedEdge ? '7,4' : '6,4') : 'none'}
                       markerEnd={markerId}
                       className="transition-opacity duration-200"
                     />
@@ -1082,6 +1123,8 @@ export default function Fluxograma() {
             {/* NÓS DO DIAGRAMA (Caixas nas raias ou Losangos para Milestone e Decisão) */}
             {layout.nodes.map((node) => {
               const isSelected = selectedNode?.id === node.id
+              const isDirectNeighbor =
+                selectedNode !== null && !isSelected && relatedNodeIds.has(node.id)
               const isRelated = relatedNodeIds.has(node.id)
               const isAnySelected = selectedNode !== null
               const isUserArea = loggedUserArea && node.area.trim().toLowerCase() === loggedUserArea
@@ -1095,9 +1138,10 @@ export default function Fluxograma() {
               const isMilestone = node.isMilestone
 
               // Opacidade para destacar rota selecionada ou filtro de área
+              // As caixas não relacionadas ficam bem esmaecidas (0.12) enquanto selecionado
               let opacity = 1
               if (isAnySelected && !isEditMode) {
-                opacity = isRelated ? 1 : 0.18
+                opacity = isSelected ? 1 : isDirectNeighbor ? 1 : 0.12
               } else if (selectedAreaFilter !== 'all' && !isEditMode) {
                 opacity = matchesAreaFilter ? 1 : 0.25
               }
@@ -1120,7 +1164,7 @@ export default function Fluxograma() {
                     onClick={(e) => {
                       e.stopPropagation()
                       if (hasMovedDuringDragRef.current) return
-                      setSelectedNode(node)
+                      handleToggleNodeSelection(node)
                     }}
                     style={{
                       position: 'absolute',
@@ -1137,10 +1181,12 @@ export default function Fluxograma() {
                       isDraggingThis
                         ? 'z-40 scale-105 shadow-2xl ring-2 ring-[#FFD400]'
                         : isSelected
-                          ? 'scale-105 z-30'
-                          : isEditMode
-                            ? 'hover:scale-102 hover:ring-1 hover:ring-[#FFD400]/70'
-                            : 'hover:scale-102'
+                          ? 'scale-105 z-30 drop-shadow-[0_0_12px_rgba(255,212,0,0.45)]'
+                          : isDirectNeighbor
+                            ? 'z-25 scale-102 ring-1 ring-[#FFD400]/70 drop-shadow-[0_0_8px_rgba(255,212,0,0.25)]'
+                            : isEditMode
+                              ? 'hover:scale-102 hover:ring-1 hover:ring-[#FFD400]/70'
+                              : 'hover:scale-102'
                     }`}
                   >
                     <div className="relative w-full h-full flex items-center justify-center">
@@ -1150,28 +1196,32 @@ export default function Fluxograma() {
                       >
                         <polygon
                           points={`${node.width / 2},4 ${node.width - 6},${node.height / 2} ${node.width / 2},${node.height - 4} 6,${node.height / 2}`}
-                          fill="#181507"
+                          fill={isDirectNeighbor ? '#201a07' : '#181507'}
                           stroke={
                             isDraggingThis
                               ? '#FFD400'
                               : isSelected
                                 ? '#FFD400'
-                                : isEditMode
+                                : isDirectNeighbor
                                   ? '#FFD400'
-                                  : hasYellowBorder
+                                  : isEditMode
                                     ? '#FFD400'
-                                    : '#EAB308'
+                                    : hasYellowBorder
+                                      ? '#FFD400'
+                                      : '#EAB308'
                           }
                           strokeWidth={
                             isDraggingThis
                               ? '3.5'
                               : isSelected
-                                ? '3'
-                                : isEditMode
-                                  ? '2.2'
-                                  : hasYellowBorder
-                                    ? '2.8'
-                                    : '2'
+                                ? '3.5'
+                                : isDirectNeighbor
+                                  ? '2.5'
+                                  : isEditMode
+                                    ? '2.2'
+                                    : hasYellowBorder
+                                      ? '2.8'
+                                      : '2'
                           }
                           strokeDasharray={isEditMode ? '4,2' : 'none'}
                         />
@@ -1215,7 +1265,7 @@ export default function Fluxograma() {
                     onClick={(e) => {
                       e.stopPropagation()
                       if (hasMovedDuringDragRef.current) return
-                      setSelectedNode(node)
+                      handleToggleNodeSelection(node)
                     }}
                     style={{
                       position: 'absolute',
@@ -1232,10 +1282,12 @@ export default function Fluxograma() {
                       isDraggingThis
                         ? 'z-40 scale-105 shadow-2xl ring-2 ring-[#FFD400]'
                         : isSelected
-                          ? 'scale-105 z-30'
-                          : isEditMode
-                            ? 'hover:scale-102 hover:ring-1 hover:ring-[#FFD400]/70'
-                            : 'hover:scale-102'
+                          ? 'scale-105 z-30 drop-shadow-[0_0_12px_rgba(255,212,0,0.45)]'
+                          : isDirectNeighbor
+                            ? 'z-25 scale-102 ring-1 ring-[#FFD400]/70 drop-shadow-[0_0_8px_rgba(255,212,0,0.25)]'
+                            : isEditMode
+                              ? 'hover:scale-102 hover:ring-1 hover:ring-[#FFD400]/70'
+                              : 'hover:scale-102'
                     }`}
                   >
                     <div className="relative w-full h-full flex items-center justify-center">
@@ -1245,28 +1297,32 @@ export default function Fluxograma() {
                       >
                         <polygon
                           points={`${node.width / 2},4 ${node.width - 6},${node.height / 2} ${node.width / 2},${node.height - 4} 6,${node.height / 2}`}
-                          fill="#141414"
+                          fill={isDirectNeighbor ? '#1a1810' : '#141414'}
                           stroke={
                             isDraggingThis
                               ? '#FFD400'
                               : isSelected
                                 ? '#FFD400'
-                                : isEditMode
+                                : isDirectNeighbor
                                   ? '#FFD400'
-                                  : hasYellowBorder
+                                  : isEditMode
                                     ? '#FFD400'
-                                    : '#EAB308'
+                                    : hasYellowBorder
+                                      ? '#FFD400'
+                                      : '#EAB308'
                           }
                           strokeWidth={
                             isDraggingThis
                               ? '3.5'
                               : isSelected
-                                ? '3'
-                                : isEditMode
-                                  ? '2.2'
-                                  : hasYellowBorder
-                                    ? '2.5'
-                                    : '1.8'
+                                ? '3.5'
+                                : isDirectNeighbor
+                                  ? '2.4'
+                                  : isEditMode
+                                    ? '2.2'
+                                    : hasYellowBorder
+                                      ? '2.5'
+                                      : '1.8'
                           }
                           strokeDasharray={isEditMode ? '4,2' : 'none'}
                         />
@@ -1305,7 +1361,7 @@ export default function Fluxograma() {
                   onClick={(e) => {
                     e.stopPropagation()
                     if (hasMovedDuringDragRef.current) return
-                    setSelectedNode(node)
+                    handleToggleNodeSelection(node)
                   }}
                   style={{
                     position: 'absolute',
@@ -1318,16 +1374,20 @@ export default function Fluxograma() {
                       ? 'none'
                       : 'box-shadow 0.2s ease, transform 0.2s ease',
                   }}
-                  className={`bg-[#121212] border rounded-xl p-3 shadow-lg ${cursorClass} z-20 flex flex-col justify-between ${
+                  className={`border rounded-xl p-3 shadow-lg ${cursorClass} z-20 flex flex-col justify-between ${
+                    isDirectNeighbor ? 'bg-[#181611]' : 'bg-[#121212]'
+                  } ${
                     isDraggingThis
                       ? 'border-[#FFD400] ring-4 ring-[#FFD400]/40 scale-105 z-40 shadow-2xl'
                       : isSelected
-                        ? 'border-[#FFD400] ring-2 ring-[#FFD400]/60 scale-105 z-30'
-                        : isEditMode
-                          ? 'border-[#FFD400]/80 hover:border-[#FFD400] hover:scale-102 hover:shadow-xl'
-                          : hasYellowBorder
-                            ? 'border-2 border-[#FFD400] hover:scale-102'
-                            : 'border-[#262626] hover:border-[#FFD400]/60 hover:scale-102'
+                        ? 'border-[#FFD400] ring-3 ring-[#FFD400]/70 scale-105 z-30 shadow-[0_0_20px_rgba(255,212,0,0.35)]'
+                        : isDirectNeighbor
+                          ? 'border-[#FFD400]/80 ring-1 ring-[#FFD400]/50 z-25 scale-102 shadow-[0_0_12px_rgba(255,212,0,0.18)]'
+                          : isEditMode
+                            ? 'border-[#FFD400]/80 hover:border-[#FFD400] hover:scale-102 hover:shadow-xl'
+                            : hasYellowBorder
+                              ? 'border-2 border-[#FFD400] hover:scale-102'
+                              : 'border-[#262626] hover:border-[#FFD400]/60 hover:scale-102'
                   }`}
                 >
                   {/* Topo do Card: Código em destaque amarelo + Nome da Área completo */}
@@ -1479,13 +1539,15 @@ export default function Fluxograma() {
                     return (
                       <div
                         key={node.id}
-                        onClick={() => setSelectedNode(node)}
+                        onClick={() => handleToggleNodeSelection(node)}
                         className={`p-3.5 rounded-xl border bg-[#161616] cursor-pointer hover:border-[#FFD400] transition-colors flex flex-col justify-between ${
                           selectedNode?.id === node.id
-                            ? 'border-[#FFD400] ring-1 ring-[#FFD400]'
-                            : hasYellowBorder
-                              ? 'border-[#FFD400]'
-                              : 'border-[#262626]'
+                            ? 'border-[#FFD400] ring-2 ring-[#FFD400]/70 shadow-[0_0_15px_rgba(255,212,0,0.25)]'
+                            : relatedNodeIds.has(node.id) && selectedNode !== null
+                              ? 'border-[#FFD400]/70 ring-1 ring-[#FFD400]/40'
+                              : hasYellowBorder
+                                ? 'border-[#FFD400]'
+                                : 'border-[#262626]'
                         }`}
                       >
                         <div className="space-y-1.5">

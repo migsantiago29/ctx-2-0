@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-14T20:05:18.938Z",
+  "generatedAt": "2026-10-14T20:23:09.527Z",
   "collections": [
     {
       "name": "users",
@@ -584,9 +584,9 @@
       "apiRules": {
         "list": "@request.auth.id != ''",
         "view": "@request.auth.id != ''",
-        "create": "@request.auth.id != '' && @request.auth.role = 'admin'",
-        "update": "@request.auth.id != '' && @request.auth.role = 'admin'",
-        "delete": "@request.auth.id != '' && @request.auth.role = 'admin'"
+        "create": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.email = 'miguel.santiago@ctxcenografia.com.br')",
+        "update": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.email = 'miguel.santiago@ctxcenografia.com.br')",
+        "delete": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.email = 'miguel.santiago@ctxcenografia.com.br')"
       },
       "fields": [
         {
@@ -636,9 +636,9 @@
       "apiRules": {
         "list": "@request.auth.id != ''",
         "view": "@request.auth.id != ''",
-        "create": "@request.auth.id != '' && @request.auth.role = 'admin'",
-        "update": "@request.auth.id != '' && @request.auth.role = 'admin'",
-        "delete": "@request.auth.id != '' && @request.auth.role = 'admin'"
+        "create": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.email = 'miguel.santiago@ctxcenografia.com.br')",
+        "update": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.email = 'miguel.santiago@ctxcenografia.com.br')",
+        "delete": "@request.auth.id != '' && (@request.auth.role = 'admin' || @request.auth.email = 'miguel.santiago@ctxcenografia.com.br')"
       },
       "fields": [
         {

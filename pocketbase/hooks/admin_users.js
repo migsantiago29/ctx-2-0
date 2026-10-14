@@ -6,10 +6,16 @@ routerAdd('POST', '/backend/v1/ctx/sync-user', (e) => {
   // 1. Checar autenticação de admin ou superuser
   const authRecord = e.auth
   const isSuper = e.hasSuperuserAuth ? e.hasSuperuserAuth() : false
-  const isAdmin =
-    authRecord && (authRecord.get('role') === 'admin' || authRecord.getString('role') === 'admin')
+  const userRole = authRecord ? authRecord.get('role') || authRecord.getString('role') || '' : ''
+  const userEmail = authRecord
+    ? authRecord.email
+      ? authRecord.email()
+      : authRecord.getString('email')
+    : ''
+  const isProtectedAdmin = userEmail === 'miguel.santiago@ctxcenografia.com.br'
+  const isAdmin = isSuper || isProtectedAdmin || userRole === 'admin'
 
-  if (!isSuper && !isAdmin) {
+  if (!isAdmin) {
     throw new ForbiddenError('Apenas administradores podem gerenciar contas de colaboradores.')
   }
 
@@ -164,10 +170,16 @@ routerAdd('POST', '/backend/v1/ctx/admin-reset-password', (e) => {
   // 1. Checar autenticação de admin ou superuser
   const authRecord = e.auth
   const isSuper = e.hasSuperuserAuth ? e.hasSuperuserAuth() : false
-  const isAdmin =
-    authRecord && (authRecord.get('role') === 'admin' || authRecord.getString('role') === 'admin')
+  const userRole = authRecord ? authRecord.get('role') || authRecord.getString('role') || '' : ''
+  const userEmail = authRecord
+    ? authRecord.email
+      ? authRecord.email()
+      : authRecord.getString('email')
+    : ''
+  const isProtectedAdmin = userEmail === 'miguel.santiago@ctxcenografia.com.br'
+  const isAdmin = isSuper || isProtectedAdmin || userRole === 'admin'
 
-  if (!isSuper && !isAdmin) {
+  if (!isAdmin) {
     throw new ForbiddenError('Apenas administradores podem redefinir senhas de colaboradores.')
   }
 
@@ -205,8 +217,8 @@ routerAdd('POST', '/backend/v1/ctx/admin-reset-password', (e) => {
 
   // 4. Aplicar a nova senha e reativar a flag must_change_password
   targetUser.setPassword(password)
-  const isProtectedAdmin = targetUser.email() === 'miguel.santiago@ctxcenografia.com.br'
-  targetUser.set('must_change_password', isProtectedAdmin ? false : true)
+  const isTargetProtected = targetUser.email() === 'miguel.santiago@ctxcenografia.com.br'
+  targetUser.set('must_change_password', isTargetProtected ? false : true)
   targetUser.setVerified(true)
 
   e.app.save(targetUser)

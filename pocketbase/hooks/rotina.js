@@ -346,9 +346,15 @@ routerAdd('POST', '/backend/v1/ctx/comentarios', (e) => {
 routerAdd('POST', '/backend/v1/ctx/admin-rotina', (e) => {
   const authRecord = e.auth
   const isSuper = e.hasSuperuserAuth ? e.hasSuperuserAuth() : false
-  const isAdmin =
-    authRecord && (authRecord.get('role') === 'admin' || authRecord.getString('role') === 'admin')
-  if (!isSuper && !isAdmin) {
+  const userRole = authRecord ? authRecord.get('role') || authRecord.getString('role') || '' : ''
+  const userEmail = authRecord
+    ? authRecord.email
+      ? authRecord.email()
+      : authRecord.getString('email')
+    : ''
+  const isProtectedAdmin = userEmail === 'miguel.santiago@ctxcenografia.com.br'
+  const isAdmin = isSuper || isProtectedAdmin || userRole === 'admin'
+  if (!isAdmin) {
     throw new ForbiddenError('Apenas administradores podem executar esta operação.')
   }
 
@@ -517,9 +523,15 @@ routerAdd('POST', '/backend/v1/ctx/admin-rotina', (e) => {
 routerAdd('GET', '/backend/v1/ctx/export-csv', (e) => {
   const authRecord = e.auth
   const isSuper = e.hasSuperuserAuth ? e.hasSuperuserAuth() : false
-  const isAdmin =
-    authRecord && (authRecord.get('role') === 'admin' || authRecord.getString('role') === 'admin')
-  if (!isSuper && !isAdmin) {
+  const userRole = authRecord ? authRecord.get('role') || authRecord.getString('role') || '' : ''
+  const userEmail = authRecord
+    ? authRecord.email
+      ? authRecord.email()
+      : authRecord.getString('email')
+    : ''
+  const isProtectedAdmin = userEmail === 'miguel.santiago@ctxcenografia.com.br'
+  const isAdmin = isSuper || isProtectedAdmin || userRole === 'admin'
+  if (!isAdmin) {
     throw new ForbiddenError('Apenas administradores podem exportar dados.')
   }
 

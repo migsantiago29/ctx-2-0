@@ -7,10 +7,15 @@ routerAdd('POST', '/backend/v1/ctx/fluxograma/save-positions', (e) => {
   // 1. Checar autenticação de admin ou superuser
   const authRecord = e.auth
   const isSuper = e.hasSuperuserAuth ? e.hasSuperuserAuth() : false
-  const isAdmin =
-    authRecord && (authRecord.get('role') === 'admin' || authRecord.getString('role') === 'admin')
-
-  if (!isSuper && !isAdmin) {
+  const userRole = authRecord ? authRecord.get('role') || authRecord.getString('role') || '' : ''
+  const userEmail = authRecord
+    ? authRecord.email
+      ? authRecord.email()
+      : authRecord.getString('email')
+    : ''
+  const isProtectedAdmin = userEmail === 'miguel.santiago@ctxcenografia.com.br'
+  const isAdmin = isSuper || isProtectedAdmin || userRole === 'admin'
+  if (!isAdmin) {
     throw new ForbiddenError('Apenas administradores podem alterar a disposição do fluxograma.')
   }
 
@@ -64,10 +69,15 @@ routerAdd('POST', '/backend/v1/ctx/fluxograma/reset-positions', (e) => {
   // 1. Checar autenticação de admin ou superuser
   const authRecord = e.auth
   const isSuper = e.hasSuperuserAuth ? e.hasSuperuserAuth() : false
-  const isAdmin =
-    authRecord && (authRecord.get('role') === 'admin' || authRecord.getString('role') === 'admin')
-
-  if (!isSuper && !isAdmin) {
+  const userRole = authRecord ? authRecord.get('role') || authRecord.getString('role') || '' : ''
+  const userEmail = authRecord
+    ? authRecord.email
+      ? authRecord.email()
+      : authRecord.getString('email')
+    : ''
+  const isProtectedAdmin = userEmail === 'miguel.santiago@ctxcenografia.com.br'
+  const isAdmin = isSuper || isProtectedAdmin || userRole === 'admin'
+  if (!isAdmin) {
     throw new ForbiddenError(
       'Apenas administradores podem restaurar a disposição automática do fluxograma.',
     )

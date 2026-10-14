@@ -615,11 +615,6 @@ export default function Fluxograma() {
             <span className="text-xs font-mono px-2 py-0.5 rounded bg-[#1A1A1A] text-[#9CA3AF] border border-[#262626]">
               {layout.nodes.length} processos • {layout.edges.length} conexões
             </span>
-            {savedPositions.size > 0 && !isEditMode && (
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#FFD400]/15 text-[#FFD400] border border-[#FFD400]/30">
-                Disposição personalizada ativa
-              </span>
-            )}
           </h1>
         </div>
 

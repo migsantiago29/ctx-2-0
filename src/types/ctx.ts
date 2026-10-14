@@ -140,6 +140,7 @@ export interface Pulso extends RecordModel {
   meta: string
   resposta: 'avancei' | 'sem_avanco' | 'travado'
   bloqueio_texto?: string
+  feedback_texto?: string
   expand?: {
     ciclo?: Ciclo
     colaborador?: Colaborador

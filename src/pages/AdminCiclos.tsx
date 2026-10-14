@@ -603,7 +603,7 @@ export default function AdminCiclos() {
               <option value="">Todos os Projetos Estratégicos</option>
               {projetos.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.codigo} - {p.nome}
+                  {(p.nome || '').startsWith(p.codigo || '') ? p.nome : `${p.codigo} - ${p.nome}`}
                 </option>
               ))}
             </select>

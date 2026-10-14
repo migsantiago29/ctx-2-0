@@ -170,7 +170,7 @@ export function ModalAvaliacaoMensal({
   }> = [
     {
       id: 'verde',
-      label: 'Verde',
+      label: 'No ritmo',
       desc: 'No ritmo para cumprir no prazo',
       color: '#22C55E',
       border: 'border-[#22C55E]',
@@ -186,7 +186,7 @@ export function ModalAvaliacaoMensal({
     },
     {
       id: 'vermelho',
-      label: 'Vermelho',
+      label: 'Travado',
       desc: 'Não cumpre sem ajuda ou decisão',
       color: '#EF4444',
       border: 'border-[#EF4444]',

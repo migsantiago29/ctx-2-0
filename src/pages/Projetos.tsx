@@ -55,21 +55,53 @@ export default function Projetos() {
 
   const isAdmin = user?.role === 'admin'
 
-  // Identificar colaborador
+  // Identificar colaborador e verificar permissão de acesso
   useEffect(() => {
-    async function loadColab() {
+    async function loadColabAndCheckPermission() {
       if (!user) return
       try {
-        const c = await pb
-          .collection('colaboradores')
-          .getFirstListItem<Colaborador>(`usuario="${user.id}"`)
-        setColaboradorLogado(c)
-      } catch {
-        /* intentionally ignored */
+        let colab: Colaborador | null = null
+        try {
+          colab = await pb
+            .collection('colaboradores')
+            .getFirstListItem<Colaborador>(`usuario="${user.id}"`)
+          setColaboradorLogado(colab)
+        } catch {
+          /* intentionally ignored */
+        }
+
+        // Se for admin, tem acesso liberado
+        if (isAdmin) return
+
+        // Se não for admin, verificar se é sponsor de algum projeto estratégico
+        if (colab) {
+          const sponsorList = await pb
+            .collection('projetos_estrategicos')
+            .getList<ProjetoEstrategico>(1, 1, {
+              filter: `sponsor = "${colab.id}"`,
+            })
+          if (sponsorList.totalItems === 0) {
+            toast({
+              title: 'Acesso restrito',
+              description: 'A página de Projetos é restrita a administradores e sponsors.',
+              variant: 'destructive',
+            })
+            navigate('/', { replace: true })
+          }
+        } else {
+          toast({
+            title: 'Acesso restrito',
+            description: 'A página de Projetos é restrita a administradores e sponsors.',
+            variant: 'destructive',
+          })
+          navigate('/', { replace: true })
+        }
+      } catch (err) {
+        console.error('Erro ao verificar permissão em Projetos:', err)
       }
     }
-    loadColab()
-  }, [user])
+    loadColabAndCheckPermission()
+  }, [user, isAdmin, navigate])
 
   // Carregar todos os Projetos Estratégicos (P1..P5)
   useEffect(() => {
@@ -355,9 +387,9 @@ export default function Projetos() {
                 <span className="text-[#888]">Distribuição por Farol:</span>
                 <div className="flex flex-wrap items-center gap-3 font-mono text-[11px]">
                   <span className="text-[#3B82F6] font-bold">● {stats.concluida} Concluída</span>
-                  <span className="text-[#22C55E] font-bold">● {stats.verde} Verde</span>
+                  <span className="text-[#22C55E] font-bold">● {stats.verde} No ritmo</span>
                   <span className="text-[#F59E0B] font-bold">● {stats.atencao} Atenção</span>
-                  <span className="text-[#EF4444] font-bold">● {stats.vermelho} Vermelho</span>
+                  <span className="text-[#EF4444] font-bold">● {stats.vermelho} Travado</span>
                   <span className="text-[#666] font-bold">
                     ● {stats.sem_atualizacao} Sem atualização
                   </span>
@@ -483,9 +515,9 @@ export default function Projetos() {
             {(
               [
                 { key: 'concluida', title: 'Concluídas', color: '#3B82F6' },
-                { key: 'verde', title: 'Verde — No ritmo', color: '#22C55E' },
+                { key: 'verde', title: 'No ritmo', color: '#22C55E' },
                 { key: 'atencao', title: 'Atenção — Em risco com plano', color: '#F59E0B' },
-                { key: 'vermelho', title: 'Vermelho — Não cumpre sem ajuda', color: '#EF4444' },
+                { key: 'vermelho', title: 'Travado — Não cumpre sem ajuda', color: '#EF4444' },
                 { key: 'sem atualização', title: 'Sem Atualização', color: '#888888' },
               ] as const
             ).map((grupo) => {
@@ -588,7 +620,12 @@ export default function Projetos() {
                               className="font-bold uppercase tracking-wider text-[11px]"
                               style={{ color: grupo.color }}
                             >
-                              ● {grupo.key}
+                              ●{' '}
+                              {grupo.key === 'verde'
+                                ? 'No ritmo'
+                                : grupo.key === 'vermelho'
+                                  ? 'Travado'
+                                  : grupo.key}
                             </span>
                             <span className="text-[11px] text-[#888] group-hover:text-white flex items-center gap-1">
                               <span>Ver timeline</span>

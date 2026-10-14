@@ -257,6 +257,7 @@ routerAdd('POST', '/backend/v1/ctx/pulsos', (e) => {
       const metaId = item.meta_id
       const resposta = item.resposta
       const bloqueio = (item.bloqueio_texto || '').trim()
+      const feedback = (item.feedback_texto || '').trim()
 
       if (!metaId || !resposta) continue
 
@@ -281,6 +282,7 @@ routerAdd('POST', '/backend/v1/ctx/pulsos', (e) => {
 
       pulsoRec.set('resposta', resposta)
       pulsoRec.set('bloqueio_texto', bloqueio)
+      pulsoRec.set('feedback_texto', feedback)
       txApp.save(pulsoRec)
     }
   })
@@ -588,6 +590,18 @@ routerAdd('GET', '/backend/v1/ctx/export-csv', (e) => {
             .replace(/"/g, '""')
             .replace(/\n/g, ' ')}"`
 
+        const rawFarol = a.getString('farol')
+        const farolLabel =
+          rawFarol === 'verde'
+            ? 'No ritmo'
+            : rawFarol === 'vermelho'
+              ? 'Travado'
+              : rawFarol === 'atencao'
+                ? 'Atenção'
+                : rawFarol === 'concluida'
+                  ? 'Concluída'
+                  : rawFarol
+
         csvContent +=
           [
             safe(ciclo ? ciclo.getString('titulo') : ''),
@@ -597,7 +611,7 @@ routerAdd('GET', '/backend/v1/ctx/export-csv', (e) => {
             safe(projNome),
             safe(areaNome),
             safe(colab ? colab.getString('nome') : ''),
-            safe(a.getString('farol')),
+            safe(farolLabel),
             safe(a.getString('avancou')),
             safe(a.getString('proximo_passo')),
             safe(ajudaNome),
@@ -610,7 +624,7 @@ routerAdd('GET', '/backend/v1/ctx/export-csv', (e) => {
     }
   } else {
     csvContent +=
-      'Ciclo;Referência;Código Meta;Título Meta;Colaborador;Área;Resposta;Bloqueio;Data\n'
+      'Ciclo;Referência;Código Meta;Título Meta;Colaborador;Área;Resposta;Bloqueio;Feedback;Data\n'
     let filter = 'id != ""'
     if (cicloId) filter += ` && ciclo = "${cicloId}"`
 
@@ -655,6 +669,7 @@ routerAdd('GET', '/backend/v1/ctx/export-csv', (e) => {
             safe(areaNome),
             safe(p.getString('resposta')),
             safe(p.getString('bloqueio_texto')),
+            safe(p.getString('feedback_texto')),
             safe(p.getString('created')),
           ].join(';') + '\n'
       } catch (errRow) {}

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { getFarolLabel } from '@/lib/farolUtils'
 import {
   X,
   Calendar,
@@ -298,7 +299,7 @@ export function GoalDetailDrawer({ goal, currentUserProfile, onClose }: GoalDeta
                             style={{ backgroundColor: farolColor }}
                           />
                           <span className="text-xs font-bold text-white uppercase tracking-wider">
-                            {av.farol}
+                            {getFarolLabel(av.farol)}
                           </span>
                           {av.expand?.ciclo && (
                             <span className="text-[10px] font-mono text-[#9CA3AF] bg-[#1F1F1F] px-1.5 py-0.5 rounded">

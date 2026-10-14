@@ -14,16 +14,20 @@ interface ModalPulsoSemanalProps {
 type RespostaTipo = 'avancei' | 'sem_avanco' | 'travado'
 
 export function ModalPulsoSemanal({ ciclo, metas, onClose, onSuccess }: ModalPulsoSemanalProps) {
-  // Estado local para cada meta: resposta e texto de bloqueio opcional
+  // Estado local para cada meta: resposta, texto de bloqueio opcional e feedback opcional
   const [respostas, setRespostas] = useState<
-    Record<string, { resposta: RespostaTipo; bloqueio_texto: string }>
+    Record<string, { resposta: RespostaTipo; bloqueio_texto: string; feedback_texto: string }>
   >(() => {
-    const initial: Record<string, { resposta: RespostaTipo; bloqueio_texto: string }> = {}
+    const initial: Record<
+      string,
+      { resposta: RespostaTipo; bloqueio_texto: string; feedback_texto: string }
+    > = {}
     metas.forEach((m) => {
       // Pré-preenche se já tiver pulso anterior
       initial[m.id] = {
         resposta: m.ultimoPulso?.resposta || 'avancei',
         bloqueio_texto: m.ultimoPulso?.bloqueio_texto || '',
+        feedback_texto: m.ultimoPulso?.feedback_texto || '',
       }
     })
     return initial
@@ -51,6 +55,16 @@ export function ModalPulsoSemanal({ ciclo, metas, onClose, onSuccess }: ModalPul
     }))
   }
 
+  const handleFeedbackChange = (metaId: string, texto: string) => {
+    setRespostas((prev) => ({
+      ...prev,
+      [metaId]: {
+        ...prev[metaId],
+        feedback_texto: texto,
+      },
+    }))
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
@@ -59,6 +73,7 @@ export function ModalPulsoSemanal({ ciclo, metas, onClose, onSuccess }: ModalPul
         meta_id: m.id,
         resposta: respostas[m.id]?.resposta || 'avancei',
         bloqueio_texto: respostas[m.id]?.bloqueio_texto || '',
+        feedback_texto: respostas[m.id]?.feedback_texto || '',
       }))
 
       await rotinaService.salvarPulsos(ciclo.id, itens)
@@ -111,7 +126,11 @@ export function ModalPulsoSemanal({ ciclo, metas, onClose, onSuccess }: ModalPul
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
           {metas.map((meta, idx) => {
-            const current = respostas[meta.id] || { resposta: 'avancei', bloqueio_texto: '' }
+            const current = respostas[meta.id] || {
+              resposta: 'avancei',
+              bloqueio_texto: '',
+              feedback_texto: '',
+            }
             const isTravado = current.resposta === 'travado'
 
             return (
@@ -182,15 +201,34 @@ export function ModalPulsoSemanal({ ciclo, metas, onClose, onSuccess }: ModalPul
 
                 {/* Campo opcional "Algo te travando?" */}
                 <div className="pt-1">
+                  <label className="block text-[11px] font-medium text-[#9CA3AF] mb-1">
+                    {isTravado
+                      ? 'O que está te travando? (opcional)'
+                      : 'Algo te travando? (opcional)'}
+                  </label>
                   <input
                     type="text"
                     value={current.bloqueio_texto}
                     onChange={(e) => handleBloqueioChange(meta.id, e.target.value)}
                     placeholder={
                       isTravado
-                        ? 'O que está te travando? (opcional)'
-                        : 'Algo te travando? (opcional)'
+                        ? 'Descreva o que te impede de avançar...'
+                        : 'Descreva eventuais impedimentos...'
                     }
+                    className="w-full bg-[#111111] border border-[#2B2B2B] focus:border-[#FFD400] rounded-lg px-3 py-1.5 text-xs text-white placeholder-[#555] outline-none transition-colors"
+                  />
+                </div>
+
+                {/* Pergunta opcional: "Algum feedback?" */}
+                <div className="pt-1">
+                  <label className="block text-[11px] font-medium text-[#9CA3AF] mb-1">
+                    Algum feedback? <span className="text-[#666] font-normal">(opcional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={current.feedback_texto}
+                    onChange={(e) => handleFeedbackChange(meta.id, e.target.value)}
+                    placeholder="Feedbacks adicionais, sugestões ou observações..."
                     className="w-full bg-[#111111] border border-[#2B2B2B] focus:border-[#FFD400] rounded-lg px-3 py-1.5 text-xs text-white placeholder-[#555] outline-none transition-colors"
                   />
                 </div>

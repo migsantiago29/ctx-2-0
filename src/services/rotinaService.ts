@@ -190,6 +190,7 @@ export const rotinaService = {
       meta_id: string
       resposta: 'avancei' | 'sem_avanco' | 'travado'
       bloqueio_texto?: string
+      feedback_texto?: string
     }>,
   ): Promise<boolean> {
     const res = await pb.send<{ success: boolean; total: number }>('/backend/v1/ctx/pulsos', {

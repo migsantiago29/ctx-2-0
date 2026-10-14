@@ -21,7 +21,10 @@ import {
 import { useNavigate } from 'react-router-dom'
 import pb from '@/lib/pocketbase/client'
 import { useAuth } from '@/contexts/AuthContext'
+import { useProjectPermissions } from '@/hooks/useProjectPermissions'
 import useRealtime from '@/hooks/use-realtime'
+import { formatProjectLabel } from '@/lib/projectUtils'
+import { getFarolLabel } from '@/lib/farolUtils'
 import type {
   Meta,
   MetaWithDetails,
@@ -41,6 +44,7 @@ import { rotinaService } from '@/services/rotinaService'
 
 export default function Index() {
   const { user } = useAuth()
+  const { canAccessProjects } = useProjectPermissions()
   const navigate = useNavigate()
 
   // Estados principais
@@ -575,7 +579,9 @@ export default function Index() {
             </h2>
           </div>
           <span className="text-[11px] text-[#9CA3AF]">
-            Clique para ver metas e andamento da empresa
+            {canAccessProjects
+              ? 'Clique para ver metas e andamento do projeto'
+              : 'Andamento dos projetos estratégicos'}
           </span>
         </div>
 
@@ -598,8 +604,14 @@ export default function Index() {
             return (
               <div
                 key={proj.id}
-                onClick={() => navigate(`/projetos/${proj.id}`)}
-                className={`group relative p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between space-y-3 ${
+                onClick={() => {
+                  if (canAccessProjects) {
+                    navigate(`/projetos/${proj.id}`)
+                  }
+                }}
+                className={`group relative p-4 rounded-2xl border transition-all flex flex-col justify-between space-y-3 ${
+                  canAccessProjects ? 'cursor-pointer' : 'cursor-default'
+                } ${
                   participa
                     ? 'border-[#FFD400] bg-[#141414] shadow-md shadow-[#FFD400]/5'
                     : 'border-[#242424] bg-[#0E0E0E] opacity-60 grayscale hover:opacity-100 hover:grayscale-0'
@@ -653,7 +665,7 @@ export default function Index() {
                       <div
                         style={{ width: `${(counts.verde / total) * 100}%` }}
                         className="bg-[#22C55E]"
-                        title={`Verde: ${counts.verde}`}
+                        title={`No ritmo: ${counts.verde}`}
                       />
                     )}
                     {counts.atencao > 0 && (
@@ -667,7 +679,7 @@ export default function Index() {
                       <div
                         style={{ width: `${(counts.vermelho / total) * 100}%` }}
                         className="bg-[#EF4444]"
-                        title={`Vermelho: ${counts.vermelho}`}
+                        title={`Travado: ${counts.vermelho}`}
                       />
                     )}
                     {counts.sem_atualizacao > 0 && (
@@ -770,13 +782,13 @@ export default function Index() {
 
                         {goal.expand?.projeto && (
                           <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#FFD400] text-black font-extrabold">
-                            {goal.expand.projeto.codigo} - {goal.expand.projeto.nome}
+                            {formatProjectLabel(goal.expand.projeto)}
                           </span>
                         )}
 
                         {goal.expand?.projeto_secundario && (
                           <span className="text-[10px] px-2 py-0.5 rounded-full border border-[#FFD400]/70 text-[#FFD400] font-bold">
-                            {goal.expand.projeto_secundario.codigo}
+                            {formatProjectLabel(goal.expand.projeto_secundario)}
                           </span>
                         )}
                       </div>
@@ -828,7 +840,7 @@ export default function Index() {
                             className="font-bold uppercase tracking-wider text-[11px]"
                             style={{ color: farolColor }}
                           >
-                            {farol}
+                            {getFarolLabel(farol)}
                           </span>
                           {dataAvaliacao && (
                             <span className="text-[10px] text-[#666]">em {dataAvaliacao}</span>

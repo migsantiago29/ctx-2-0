@@ -13,10 +13,12 @@ import {
   Sliders,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useProjectPermissions } from '@/hooks/useProjectPermissions'
 import { NotificationBell } from './NotificationBell'
 
 export default function Layout() {
   const { user, logout } = useAuth()
+  const { canAccessProjects } = useProjectPermissions()
   const navigate = useNavigate()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
@@ -27,13 +29,14 @@ export default function Layout() {
 
   const isAdmin = user?.role === 'admin'
 
-  const navItems = [
+  const baseNavItems = [
     { name: 'Meu Painel', path: '/', icon: Target },
-    { name: 'Projetos', path: '/projetos', icon: Compass },
+    ...(canAccessProjects ? [{ name: 'Projetos', path: '/projetos', icon: Compass }] : []),
     { name: 'Pulso CTX', path: '/pulso-ctx', icon: Activity },
     { name: 'Fluxograma', path: '/fluxograma', icon: Workflow },
     { name: 'Organograma', path: '/organograma', icon: Users },
   ]
+  const navItems = baseNavItems
 
   const adminNavItems = [
     { name: 'Ciclos & Adesão', path: '/admin/ciclos', icon: Sliders },

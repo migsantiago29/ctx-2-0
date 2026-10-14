@@ -277,7 +277,7 @@ export default function PulsoCTX() {
             <span className="text-xs text-[#888] font-mono">metas</span>
           </div>
           <span className="block text-[11px] text-[#666]">
-            {numerosGerais.atencao} em atenção • {numerosGerais.vermelho} em risco
+            {numerosGerais.atencao} em atenção • {numerosGerais.vermelho} travadas
           </span>
         </div>
 
@@ -365,11 +365,21 @@ export default function PulsoCTX() {
                   </div>
 
                   <div className="flex flex-wrap items-center justify-between text-[10px] text-[#888] font-mono pt-0.5">
-                    <span className="text-[#3B82F6]">● {p.concluida}</span>
-                    <span className="text-[#22C55E]">● {p.verde}</span>
-                    <span className="text-[#F59E0B]">● {p.atencao}</span>
-                    <span className="text-[#EF4444]">● {p.vermelho}</span>
-                    <span className="text-[#666]">● {p.sem_atualizacao}</span>
+                    <span className="text-[#3B82F6]" title="Concluída">
+                      ● {p.concluida}
+                    </span>
+                    <span className="text-[#22C55E]" title="No ritmo">
+                      ● {p.verde}
+                    </span>
+                    <span className="text-[#F59E0B]" title="Atenção">
+                      ● {p.atencao}
+                    </span>
+                    <span className="text-[#EF4444]" title="Travado">
+                      ● {p.vermelho}
+                    </span>
+                    <span className="text-[#666]" title="Sem atualização">
+                      ● {p.sem_atualizacao}
+                    </span>
                   </div>
                 </div>
               </div>

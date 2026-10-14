@@ -1,28 +1,80 @@
-import { useEffect, useState, useMemo, useRef, useCallback } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import {
   Workflow,
   Search,
   ZoomIn,
   ZoomOut,
   Maximize2,
-  Filter,
   X,
   ArrowRight,
   ArrowLeft,
   Target,
-  Layers,
-  HelpCircle,
   FileSpreadsheet,
   List,
   Compass,
-  Calendar,
   Users,
+  Filter,
+  Check,
 } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import pb from '@/lib/pocketbase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import type { Area, Processo, Colaborador, Meta } from '@/types/ctx'
-import { computeDiagramLayout, type ProcessNode, type DiagramLayout } from '@/lib/diagramLayout'
+import {
+  computeDiagramLayout,
+  type ProcessNode,
+  type DiagramLayout,
+  type EdgeConnection,
+  NODE_WIDTH,
+  NODE_HEIGHT,
+} from '@/lib/diagramLayout'
+
+/**
+ * Gera o path SVG cúbico (smooth bezier) entre os dois pontos da aresta
+ * considerando os lados de origem e destino para máxima fluidez.
+ */
+function buildSmoothPath(edge: EdgeConnection): string {
+  const { fromX, fromY, toX, toY, fromSide, toSide, isBackward } = edge
+
+  if (isBackward) {
+    if (fromSide === 'right' && toSide === 'right') {
+      // Loop pelo lado direito
+      const loopWidth = 45
+      const c1X = fromX + loopWidth
+      const c1Y = fromY
+      const c2X = toX + loopWidth
+      const c2Y = toY
+      return `M ${fromX} ${fromY} C ${c1X} ${c1Y}, ${c2X} ${c2Y}, ${toX} ${toY}`
+    }
+    if (fromSide === 'bottom' && toSide === 'top') {
+      const midY = (fromY + toY) / 2
+      return `M ${fromX} ${fromY} C ${fromX} ${midY}, ${toX} ${midY}, ${toX} ${toY}`
+    }
+    if (fromSide === 'top' && toSide === 'top') {
+      const curveHeight = Math.max(30, Math.abs(toX - fromX) * 0.15)
+      const topArcY = Math.min(fromY, toY) - curveHeight
+      return `M ${fromX} ${fromY} C ${fromX} ${topArcY}, ${toX} ${topArcY}, ${toX} ${toY}`
+    }
+    // bottom to bottom
+    const curveHeight = Math.max(30, Math.abs(toX - fromX) * 0.15)
+    const bottomArcY = Math.max(fromY, toY) + curveHeight
+    return `M ${fromX} ${fromY} C ${fromX} ${bottomArcY}, ${toX} ${bottomArcY}, ${toX} ${toY}`
+  }
+
+  // Conexão direta progressiva: fromSide='right', toSide='left'
+  const dx = toX - fromX
+  const dy = toY - fromY
+
+  // Controle horizontal proporcional à distância horizontal
+  // Garante que a curva saia perfeitamente na horizontal da direita e entre suavemente na esquerda
+  const tension = Math.max(Math.min(dx * 0.5, 140), 40)
+  const c1X = fromX + tension
+  const c1Y = fromY
+  const c2X = toX - tension
+  const c2Y = toY
+
+  return `M ${fromX} ${fromY} C ${c1X} ${c1Y}, ${c2X} ${c2Y}, ${toX} ${toY}`
+}
 
 export default function Fluxograma() {
   const { user } = useAuth()
@@ -34,15 +86,16 @@ export default function Fluxograma() {
   const [colaboradorLogado, setColaboradorLogado] = useState<Colaborador | null>(null)
   const [allMetas, setAllMetas] = useState<Meta[]>([])
   const [loading, setLoading] = useState(true)
+
   // Layout View Controls
   const [viewMode, setViewMode] = useState<'diagram' | 'list'>('diagram')
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedLanes, setSelectedLanes] = useState<string[]>([]) // filter by area names
+  const [selectedAreaFilter, setSelectedAreaFilter] = useState<string>('all')
   const [selectedNode, setSelectedNode] = useState<ProcessNode | null>(null)
 
   // Zoom & Pan state
-  const [zoom, setZoom] = useState(0.85)
-  const [pan, setPan] = useState({ x: 30, y: 20 })
+  const [zoom, setZoom] = useState(0.75)
+  const [pan, setPan] = useState({ x: 50, y: 50 })
   const [isPanning, setIsPanning] = useState(false)
   const panStartRef = useRef({ x: 0, y: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
@@ -98,27 +151,26 @@ export default function Fluxograma() {
       return user.area.trim().toLowerCase()
     }
     return ''
-  }, [areas, user])
+  }, [areas, user, colaboradorLogado])
 
-  // MEMOIZED DIAGRAM LAYOUT CALCULATION (Calculado apenas quando areas ou processos mudam!)
+  // IDs de processos vinculados a metas do colaborador logado
+  const userGoalProcessIds = useMemo(() => {
+    if (!colaboradorLogado) return new Set<string>()
+    const set = new Set<string>()
+    allMetas.forEach((meta) => {
+      const resp = Array.isArray(meta.responsaveis) ? meta.responsaveis : []
+      if (resp.includes(colaboradorLogado.id)) {
+        const procs = Array.isArray(meta.processos_vinculados) ? meta.processos_vinculados : []
+        procs.forEach((pId) => set.add(pId))
+      }
+    })
+    return set
+  }, [allMetas, colaboradorLogado])
+
+  // DIAGRAM LAYOUT CALCULATION (sem raias, fluido E-D)
   const layout: DiagramLayout = useMemo(() => {
     return computeDiagramLayout(areas, processos)
   }, [areas, processos])
-
-  // Filtragem de raias visíveis
-  const filteredSwimlanes = useMemo(() => {
-    if (selectedLanes.length === 0) return layout.swimlanes
-    return layout.swimlanes.filter((l) => selectedLanes.includes(l.nome))
-  }, [layout.swimlanes, selectedLanes])
-
-  const visibleLaneNames = useMemo(() => {
-    return new Set(filteredSwimlanes.map((l) => l.nome.trim().toLowerCase()))
-  }, [filteredSwimlanes])
-
-  // Nós e conexões visíveis conforme filtros de raias
-  const visibleNodes = useMemo(() => {
-    return layout.nodes.filter((n) => visibleLaneNames.has(n.area.trim().toLowerCase()))
-  }, [layout.nodes, visibleLaneNames])
 
   // Identificar conexões ativas do nó selecionado
   const activeConnectionIds = useMemo(() => {
@@ -144,14 +196,22 @@ export default function Fluxograma() {
     return set
   }, [selectedNode])
 
+  // Lista única de nomes de áreas presentes nos processos para o filtro de realce
+  const availableAreas = useMemo(() => {
+    const set = new Set<string>()
+    processos.forEach((p) => {
+      if (p.area) set.add(p.area.trim())
+    })
+    return Array.from(set).sort()
+  }, [processos])
+
   // Centralizar em um nó buscado
   const handleSelectSearchNode = (node: ProcessNode) => {
     setSelectedNode(node)
-    // Centralizar na viewport
     if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect()
-      const targetX = rect.width / 2 - node.x * zoom
-      const targetY = rect.height / 2 - node.y * zoom
+      const targetX = rect.width / 2 - (node.x + node.width / 2) * zoom
+      const targetY = rect.height / 2 - (node.y + node.height / 2) * zoom
       setPan({ x: targetX, y: targetY })
     }
   }
@@ -165,15 +225,14 @@ export default function Fluxograma() {
     )
   }, [layout.nodes, searchQuery])
 
-  // Reset zoom e pan
+  // Reset zoom e pan para visão geral
   const handleResetView = () => {
-    setZoom(0.85)
-    setPan({ x: 30, y: 20 })
+    setZoom(0.75)
+    setPan({ x: 50, y: 50 })
   }
 
   // Mouse pan handlers
   const handleMouseDown = (e: React.MouseEvent) => {
-    // Only left click outside buttons/nodes
     if (e.button !== 0) return
     setIsPanning(true)
     panStartRef.current = { x: e.clientX - pan.x, y: e.clientY - pan.y }
@@ -191,7 +250,7 @@ export default function Fluxograma() {
     setIsPanning(false)
   }
 
-  // Touch pan & pinch zoom handler
+  // Touch pan handler
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 1) {
       setIsPanning(true)
@@ -216,7 +275,7 @@ export default function Fluxograma() {
 
   // Zoom controls
   const handleZoomIn = () => setZoom((z) => Math.min(z + 0.15, 1.8))
-  const handleZoomOut = () => setZoom((z) => Math.max(z - 0.15, 0.3))
+  const handleZoomOut = () => setZoom((z) => Math.max(z - 0.15, 0.25))
 
   // Detalhes do nó selecionado para o Drawer
   const selectedNodeDetails = useMemo(() => {
@@ -236,20 +295,6 @@ export default function Fluxograma() {
     }
   }, [selectedNode, layout.nodeMap])
 
-  // IDs de processos vinculados a metas do colaborador logado
-  const userGoalProcessIds = useMemo(() => {
-    if (!colaboradorLogado) return new Set<string>()
-    const set = new Set<string>()
-    allMetas.forEach((meta) => {
-      const resp = Array.isArray(meta.responsaveis) ? meta.responsaveis : []
-      if (resp.includes(colaboradorLogado.id)) {
-        const procs = Array.isArray(meta.processos_vinculados) ? meta.processos_vinculados : []
-        procs.forEach((pId) => set.add(pId))
-      }
-    })
-    return set
-  }, [allMetas, colaboradorLogado])
-
   // Selecionar nó automaticamente caso venha o param "?codigo=..." na URL
   useEffect(() => {
     const targetCodigo = searchParams.get('codigo')?.trim().toUpperCase()
@@ -260,8 +305,8 @@ export default function Fluxograma() {
       setSelectedNode(matchedNode)
       if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect()
-        const targetX = rect.width / 2 - matchedNode.x * zoom
-        const targetY = rect.height / 2 - matchedNode.y * zoom
+        const targetX = rect.width / 2 - (matchedNode.x + matchedNode.width / 2) * zoom
+        const targetY = rect.height / 2 - (matchedNode.y + matchedNode.height / 2) * zoom
         setPan({ x: targetX, y: targetY })
       }
     }
@@ -279,17 +324,12 @@ export default function Fluxograma() {
   // Agrupamento por área para o modo lista (mobile / alternativo)
   const procsGroupedByArea = useMemo(() => {
     const map = new Map<string, ProcessNode[]>()
-    layout.swimlanes.forEach((lane) => {
-      map.set(lane.nome, [])
-    })
-
     layout.nodes.forEach((n) => {
       if (!map.has(n.area)) map.set(n.area, [])
       map.get(n.area)!.push(n)
     })
-
     return map
-  }, [layout.swimlanes, layout.nodes])
+  }, [layout.nodes])
 
   return (
     <div className="space-y-4 animate-fade-in pb-12 flex flex-col h-[calc(100vh-100px)]">
@@ -298,12 +338,12 @@ export default function Fluxograma() {
         <div>
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-[#FFD400]/10 border border-[#FFD400]/30 text-[#FFD400] text-xs font-semibold mb-1">
             <Workflow className="w-3.5 h-3.5" />
-            Fluxograma Oficial CTX
+            Fluxograma Contínuo CTX
           </div>
           <h1 className="text-xl md:text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
-            Diagrama End-to-End da Operação
+            Fluxo Operacional de Ponta a Ponta
             <span className="text-xs font-mono px-2 py-0.5 rounded bg-[#1A1A1A] text-[#9CA3AF] border border-[#262626]">
-              {layout.nodes.length} nós • {layout.edges.length} conexões
+              {layout.nodes.length} processos • {layout.edges.length} conexões
             </span>
           </h1>
         </div>
@@ -336,6 +376,22 @@ export default function Fluxograma() {
             </button>
           </div>
 
+          {/* Filtro rápido por área (destaca caixas da área selecionada sem ocultar conexões) */}
+          <div className="relative">
+            <select
+              value={selectedAreaFilter}
+              onChange={(e) => setSelectedAreaFilter(e.target.value)}
+              className="bg-[#141414] border border-[#262626] rounded-lg px-2.5 py-1.5 text-xs text-[#D1D5DB] focus:outline-none focus:border-[#FFD400] transition-colors cursor-pointer"
+            >
+              <option value="all">Todas as Áreas ({layout.nodes.length})</option>
+              {availableAreas.map((areaName) => (
+                <option key={areaName} value={areaName}>
+                  {areaName}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Search box with auto-complete */}
           <div className="relative">
             <div className="relative flex items-center">
@@ -345,7 +401,7 @@ export default function Fluxograma() {
                 placeholder="Buscar por código ou nome..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-56 md:w-64 bg-[#141414] border border-[#262626] rounded-lg pl-9 pr-7 py-1.5 text-xs text-white placeholder-[#666] focus:outline-none focus:border-[#FFD400] transition-colors"
+                className="w-52 md:w-60 bg-[#141414] border border-[#262626] rounded-lg pl-9 pr-7 py-1.5 text-xs text-white placeholder-[#666] focus:outline-none focus:border-[#FFD400] transition-colors"
               />
               {searchQuery && (
                 <button
@@ -414,7 +470,7 @@ export default function Fluxograma() {
         </div>
       </div>
 
-      {/* Empty State se ainda não importou */}
+      {/* Empty State */}
       {layout.nodes.length === 0 && !loading && (
         <div className="flex-1 bg-[#111111] border border-[#262626] rounded-2xl p-12 flex flex-col items-center justify-center text-center space-y-4">
           <FileSpreadsheet className="w-12 h-12 text-[#FFD400] opacity-80" />
@@ -426,7 +482,7 @@ export default function Fluxograma() {
         </div>
       )}
 
-      {/* MODO 1: DIAGRAMA INTERATIVO (CANVAS COM SWIMLANES, DAG, ZOOM E MINIMAPA) */}
+      {/* MODO 1: DIAGRAMA INTERATIVO FLUIDO E-D (SEM RAIAS, CURVAS BEZIER SUAVES) */}
       {viewMode === 'diagram' && layout.nodes.length > 0 && (
         <div
           ref={containerRef}
@@ -449,7 +505,7 @@ export default function Fluxograma() {
             }}
             className="absolute top-0 left-0"
           >
-            {/* SVG Background Layer para Linhas das Raias e Conexões/Arestas */}
+            {/* SVG Background Layer para Conexões Suaves (Curvas Bézier) */}
             <svg
               className="absolute inset-0 pointer-events-none"
               width={layout.width}
@@ -457,14 +513,14 @@ export default function Fluxograma() {
               style={{ overflow: 'visible' }}
             >
               <defs>
-                {/* Marcador de seta normal (amarelo) */}
+                {/* Marcador de seta padrão (amarelo) */}
                 <marker
                   id="arrow-default"
                   viewBox="0 0 10 10"
                   refX="9"
                   refY="5"
-                  markerWidth="6"
-                  markerHeight="6"
+                  markerWidth="7"
+                  markerHeight="7"
                   orient="auto-start-reverse"
                 >
                   <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#FFD400" />
@@ -476,62 +532,44 @@ export default function Fluxograma() {
                   viewBox="0 0 10 10"
                   refX="9"
                   refY="5"
-                  markerWidth="6"
-                  markerHeight="6"
+                  markerWidth="7"
+                  markerHeight="7"
                   orient="auto-start-reverse"
                 >
                   <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#3A3A3A" />
                 </marker>
 
-                {/* Marcador de seta tracejada de retorno */}
+                {/* Marcador de seta de retorno / ciclo (laranja) */}
                 <marker
                   id="arrow-backward"
                   viewBox="0 0 10 10"
                   refX="9"
                   refY="5"
-                  markerWidth="6"
-                  markerHeight="6"
+                  markerWidth="7"
+                  markerHeight="7"
                   orient="auto-start-reverse"
                 >
                   <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#FF9900" />
                 </marker>
               </defs>
 
-              {/* Linhas divisórias das Swimlanes */}
-              {layout.swimlanes.map((lane) => (
-                <g key={`lane-line-${lane.nome}`}>
-                  <rect
-                    x={0}
-                    y={lane.y}
-                    width={layout.width}
-                    height={lane.height}
-                    fill={lane.laneIndex % 2 === 0 ? '#0B0B0B' : '#0F0F0F'}
-                    stroke="#1E1E1E"
-                    strokeWidth="1"
-                  />
-                  {/* Linha de separação */}
-                  <line
-                    x1={0}
-                    y1={lane.y}
-                    x2={layout.width}
-                    y2={lane.y}
-                    stroke="#262626"
-                    strokeWidth="1"
-                  />
-                </g>
-              ))}
+              {/* Grid sutil de pontos ao fundo */}
+              <pattern id="flow-grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                <circle cx="2" cy="2" r="1" fill="#1C1C1C" />
+              </pattern>
+              <rect width={layout.width} height={layout.height} fill="url(#flow-grid)" />
 
-              {/* Renderização de TODAS as Conexões / Arestas */}
+              {/* Renderização de TODAS as Conexões / Arestas Fluidas */}
               {layout.edges.map((edge) => {
                 const isSelectedEdge = activeConnectionIds.has(edge.id)
                 const isAnySelected = selectedNode !== null
-                const opacity = isAnySelected ? (isSelectedEdge ? 1 : 0.12) : 0.75
+                const opacity = isAnySelected ? (isSelectedEdge ? 1 : 0.1) : 0.65
                 const strokeColor = edge.isBackward
                   ? '#FF9900'
                   : isSelectedEdge
                     ? '#FFD400'
-                    : '#A3A3A3'
-                const strokeWidth = isSelectedEdge ? 2.5 : 1.5
+                    : '#8E8E93'
+                const strokeWidth = isSelectedEdge ? 2.8 : 1.6
                 const markerId =
                   isAnySelected && !isSelectedEdge
                     ? 'url(#arrow-dimmed)'
@@ -540,25 +578,16 @@ export default function Fluxograma() {
                       : 'url(#arrow-default)'
 
                 // Curva de Bézier suave
-                let d = ''
-                if (edge.isBackward) {
-                  // Caminho curvo por baixo ou por cima para retorno/ciclo
-                  const midY = Math.max(edge.fromY, edge.toY) + 50
-                  d = `M ${edge.fromX} ${edge.fromY} C ${edge.fromX} ${midY}, ${edge.toX} ${midY}, ${edge.toX} ${edge.toY}`
-                } else {
-                  // Fluxo principal para frente
-                  const deltaX = Math.max((edge.toX - edge.fromX) / 2, 40)
-                  d = `M ${edge.fromX} ${edge.fromY} C ${edge.fromX + deltaX} ${edge.fromY}, ${edge.toX - deltaX} ${edge.toY}, ${edge.toX} ${edge.toY}`
-                }
+                const pathData = buildSmoothPath(edge)
 
                 // Ponto médio para rótulo Sim / Não
                 const labelX = (edge.fromX + edge.toX) / 2
-                const labelY = (edge.fromY + edge.toY) / 2 - 8
+                const labelY = (edge.fromY + edge.toY) / 2 - 10
 
                 return (
                   <g key={edge.id} opacity={opacity}>
                     <path
-                      d={d}
+                      d={pathData}
                       fill="none"
                       stroke={strokeColor}
                       strokeWidth={strokeWidth}
@@ -569,14 +598,14 @@ export default function Fluxograma() {
                     {edge.label && (
                       <g transform={`translate(${labelX}, ${labelY})`}>
                         <rect
-                          x={-18}
+                          x={-20}
                           y={-10}
-                          width={36}
+                          width={40}
                           height={20}
                           rx={4}
                           fill="#141414"
                           stroke={edge.label === 'Sim' ? '#22C55E' : '#EF4444'}
-                          strokeWidth="1"
+                          strokeWidth="1.2"
                         />
                         <text
                           textAnchor="middle"
@@ -595,60 +624,26 @@ export default function Fluxograma() {
               })}
             </svg>
 
-            {/* Headers fixados à esquerda das Raias (Swimlane Labels) */}
-            {layout.swimlanes.map((lane) => {
-              const isUserLane = loggedUserArea && lane.nome.trim().toLowerCase() === loggedUserArea
-
-              return (
-                <div
-                  key={`header-${lane.nome}`}
-                  style={{
-                    position: 'absolute',
-                    top: lane.y,
-                    left: 0,
-                    width: 220,
-                    height: lane.height,
-                  }}
-                  className={`border-r border-[#262626] p-4 flex flex-col justify-center bg-[#0D0D0D]/95 backdrop-blur-sm z-10 transition-colors ${
-                    isUserLane ? 'border-r-2 border-r-[#FFD400]' : ''
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="w-5 h-5 rounded bg-[#1C1C1C] text-[#FFD400] text-[10px] font-mono font-bold flex items-center justify-center shrink-0 border border-[#262626]">
-                      {lane.ordem}
-                    </span>
-                    <h3 className="text-xs font-extrabold text-white tracking-tight leading-snug">
-                      {lane.nome}
-                    </h3>
-                  </div>
-
-                  {lane.tipo && lane.tipo.includes('grupo') && (
-                    <span className="mt-1 text-[9px] uppercase font-bold text-[#FFD400] bg-[#FFD400]/10 px-1.5 py-0.5 rounded w-max border border-[#FFD400]/20">
-                      Milestone
-                    </span>
-                  )}
-
-                  {isUserLane && (
-                    <span className="mt-1 text-[9px] uppercase font-bold text-[#FFD400] flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#FFD400] animate-pulse" />
-                      Sua Área
-                    </span>
-                  )}
-                </div>
-              )
-            })}
-
-            {/* NÓS DO DIAGRAMA (Caixas retangulares ou Losangos para Decisão) */}
+            {/* NÓS DO DIAGRAMA (Caixas Fluidas com área visível e sem corte de texto) */}
             {layout.nodes.map((node) => {
               const isSelected = selectedNode?.id === node.id
               const isRelated = relatedNodeIds.has(node.id)
               const isAnySelected = selectedNode !== null
               const isUserArea = loggedUserArea && node.area.trim().toLowerCase() === loggedUserArea
               const isUserGoalProc = userGoalProcessIds.has(node.id)
+              const matchesAreaFilter =
+                selectedAreaFilter === 'all' ||
+                node.area.trim().toLowerCase() === selectedAreaFilter.trim().toLowerCase()
+
               const hasYellowBorder = isUserArea || isUserGoalProc
 
-              // Opacidade para destacar rota selecionada
-              const opacity = isAnySelected ? (isRelated ? 1 : 0.22) : 1
+              // Opacidade para destacar rota selecionada ou filtro de área
+              let opacity = 1
+              if (isAnySelected) {
+                opacity = isRelated ? 1 : 0.18
+              } else if (selectedAreaFilter !== 'all') {
+                opacity = matchesAreaFilter ? 1 : 0.25
+              }
 
               // Se for ponto de decisão (ex.: O01), renderiza como LOSANGO
               if (node.isDecision) {
@@ -671,23 +666,33 @@ export default function Fluxograma() {
                       isSelected ? 'scale-105 z-30' : 'hover:scale-102'
                     }`}
                   >
-                    {/* Losango em SVG */}
                     <div className="relative w-full h-full flex items-center justify-center">
-                      <svg viewBox="0 0 200 80" className="w-full h-full drop-shadow-md">
+                      <svg
+                        viewBox={`0 0 ${node.width} ${node.height}`}
+                        className="w-full h-full drop-shadow-lg"
+                      >
                         <polygon
-                          points="100,2 196,40 100,78 4,40"
-                          fill="#171717"
+                          points={`${node.width / 2},4 ${node.width - 6},${node.height / 2} ${node.width / 2},${node.height - 4} 6,${node.height / 2}`}
+                          fill="#141414"
                           stroke={isSelected ? '#FFD400' : hasYellowBorder ? '#FFD400' : '#EAB308'}
-                          strokeWidth={isSelected ? '3' : hasYellowBorder ? '2.5' : '1.5'}
+                          strokeWidth={isSelected ? '3' : hasYellowBorder ? '2.5' : '1.8'}
                         />
                       </svg>
 
-                      {/* Conteúdo textual centralizado no losango */}
-                      <div className="absolute inset-0 px-8 flex flex-col items-center justify-center text-center pointer-events-none">
-                        <span className="font-mono font-black text-xs text-[#FFD400]">
-                          {node.codigo}
+                      {/* Conteúdo textual centralizado no losango com código, área e nome */}
+                      <div className="absolute inset-0 px-8 py-3 flex flex-col items-center justify-center text-center pointer-events-none">
+                        <div className="flex items-center gap-1.5 justify-center mb-0.5">
+                          <span className="font-mono font-black text-xs text-[#FFD400]">
+                            {node.codigo}
+                          </span>
+                          <span className="text-[10px] uppercase font-bold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">
+                            Decisão
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-semibold text-[#9CA3AF] mb-1">
+                          {node.area}
                         </span>
-                        <p className="text-[11px] font-bold text-white line-clamp-2 leading-tight mt-0.5">
+                        <p className="text-[11px] font-bold text-white line-clamp-2 leading-tight">
                           {node.nome}
                         </p>
                       </div>
@@ -696,7 +701,7 @@ export default function Fluxograma() {
                 )
               }
 
-              // Caixa padrão (Retangular)
+              // Caixa padrão retangular com dimensões aprimoradas para caber o texto completo
               return (
                 <div
                   key={node.id}
@@ -720,28 +725,51 @@ export default function Fluxograma() {
                         : 'border-[#262626] hover:border-[#FFD400]/60 hover:scale-102'
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono font-black text-xs text-[#FFD400]">
+                  {/* Topo do Card: Código em destaque amarelo + Nome da Área completo */}
+                  <div className="flex items-center justify-between gap-2 shrink-0">
+                    <span className="font-mono font-black text-xs text-[#FFD400] tracking-wide shrink-0">
                       {node.codigo}
                     </span>
-                    <span className="text-[10px] font-mono text-[#9CA3AF] truncate max-w-[100px]">
+                    <span
+                      title={node.area}
+                      className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-[#1C1C1C] text-[#A3A3A3] border border-[#2B2B2B] truncate max-w-[170px]"
+                    >
                       {node.area}
                     </span>
                   </div>
 
-                  <p className="text-[11px] font-medium text-white line-clamp-2 leading-tight">
-                    {node.nome}
-                  </p>
+                  {/* Nome do Processo completo legível */}
+                  <div className="my-auto py-1">
+                    <p
+                      title={node.nome}
+                      className="text-[12px] font-medium text-white leading-snug line-clamp-3"
+                    >
+                      {node.nome}
+                    </p>
+                  </div>
 
-                  <div className="flex items-center justify-between text-[9px] font-mono text-[#888] pt-1 border-t border-[#222]">
+                  {/* Rodapé: contadores de dependência anterior/sucessora e etiquetas */}
+                  <div className="flex items-center justify-between text-[9px] font-mono text-[#777] pt-1.5 border-t border-[#202020] shrink-0">
                     <span>
                       &larr; {node.etapasAnterioresIds.length} | &rarr;{' '}
                       {node.etapasSucessorasIds.length}
                     </span>
-                    {node.etapasAnterioresIds.length === 0 &&
-                      node.etapasSucessorasIds.length === 0 && (
-                        <span className="text-zinc-500 italic">avulso</span>
+                    <div className="flex items-center gap-1">
+                      {isUserArea && (
+                        <span className="text-[8px] font-bold text-[#FFD400] uppercase">
+                          Sua Área
+                        </span>
                       )}
+                      {isUserGoalProc && (
+                        <span className="text-[8px] font-bold text-[#FFD400] uppercase">
+                          Sua Meta
+                        </span>
+                      )}
+                      {node.etapasAnterioresIds.length === 0 &&
+                        node.etapasSucessorasIds.length === 0 && (
+                          <span className="text-zinc-500 italic">avulso</span>
+                        )}
+                    </div>
                   </div>
                 </div>
               )
@@ -749,22 +777,25 @@ export default function Fluxograma() {
           </div>
 
           {/* Minimapa Flutuante (canto inferior direito) */}
-          <div className="absolute bottom-4 right-4 w-44 h-32 bg-[#141414]/90 border border-[#262626] rounded-xl p-2 shadow-2xl backdrop-blur-md hidden sm:block pointer-events-none z-30">
-            <div className="flex items-center justify-between text-[9px] uppercase font-bold text-[#9CA3AF] mb-1">
-              <span>Minimapa</span>
-              <Compass className="w-3 h-3 text-[#FFD400]" />
+          <div className="absolute bottom-4 right-4 w-48 h-36 bg-[#141414]/90 border border-[#262626] rounded-xl p-2.5 shadow-2xl backdrop-blur-md hidden sm:block pointer-events-none z-30">
+            <div className="flex items-center justify-between text-[9px] uppercase font-bold text-[#9CA3AF] mb-1.5">
+              <span>Visão Geral do Fluxo</span>
+              <Compass className="w-3.5 h-3.5 text-[#FFD400]" />
             </div>
-            <div className="relative w-full h-[88px] bg-[#0A0A0A] rounded border border-[#222] overflow-hidden">
+            <div className="relative w-full h-[96px] bg-[#0A0A0A] rounded border border-[#222] overflow-hidden">
               {/* Pontos dos nós */}
               {layout.nodes.map((n) => {
-                const mapX = (n.x / layout.width) * 160
-                const mapY = (n.y / layout.height) * 88
+                const mapX = (n.x / layout.width) * 170
+                const mapY = (n.y / layout.height) * 96
+                const isNodeSelected = selectedNode?.id === n.id
                 return (
                   <div
                     key={`mini-${n.id}`}
                     style={{ left: mapX, top: mapY }}
-                    className={`absolute w-1 h-1 rounded-full ${
-                      selectedNode?.id === n.id ? 'bg-[#FFD400] w-2 h-2 z-10' : 'bg-[#555]'
+                    className={`absolute rounded-full ${
+                      isNodeSelected
+                        ? 'bg-[#FFD400] w-2 h-2 -ml-0.5 -mt-0.5 z-10'
+                        : 'bg-[#555] w-1 h-1'
                     }`}
                   />
                 )
@@ -773,15 +804,15 @@ export default function Fluxograma() {
               {containerRef.current && (
                 <div
                   style={{
-                    left: Math.max(0, (-pan.x / (layout.width * zoom)) * 160),
-                    top: Math.max(0, (-pan.y / (layout.height * zoom)) * 88),
+                    left: Math.max(0, (-pan.x / (layout.width * zoom)) * 170),
+                    top: Math.max(0, (-pan.y / (layout.height * zoom)) * 96),
                     width: Math.min(
-                      160,
-                      (containerRef.current.clientWidth / (layout.width * zoom)) * 160,
+                      170,
+                      (containerRef.current.clientWidth / (layout.width * zoom)) * 170,
                     ),
                     height: Math.min(
-                      88,
-                      (containerRef.current.clientHeight / (layout.height * zoom)) * 88,
+                      96,
+                      (containerRef.current.clientHeight / (layout.height * zoom)) * 96,
                     ),
                   }}
                   className="absolute border border-[#FFD400]/70 bg-[#FFD400]/10 rounded-sm pointer-events-none"
@@ -826,7 +857,7 @@ export default function Fluxograma() {
                       <div
                         key={node.id}
                         onClick={() => setSelectedNode(node)}
-                        className={`p-3 rounded-xl border bg-[#161616] cursor-pointer hover:border-[#FFD400] transition-colors flex flex-col justify-between ${
+                        className={`p-3.5 rounded-xl border bg-[#161616] cursor-pointer hover:border-[#FFD400] transition-colors flex flex-col justify-between ${
                           selectedNode?.id === node.id
                             ? 'border-[#FFD400] ring-1 ring-[#FFD400]'
                             : hasYellowBorder
@@ -834,18 +865,20 @@ export default function Fluxograma() {
                               : 'border-[#262626]'
                         }`}
                       >
-                        <div className="space-y-1">
+                        <div className="space-y-1.5">
                           <div className="flex items-center justify-between">
                             <span className="font-mono font-bold text-xs text-[#FFD400]">
                               {node.codigo}
                             </span>
                             {node.isDecision && (
-                              <span className="text-[10px] font-semibold text-amber-400 bg-amber-400/10 px-1.5 py-0.2 rounded">
+                              <span className="text-[10px] font-semibold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">
                                 Decisão
                               </span>
                             )}
                           </div>
-                          <p className="text-xs font-medium text-white line-clamp-2">{node.nome}</p>
+                          <p className="text-xs font-medium text-white line-clamp-3 leading-snug">
+                            {node.nome}
+                          </p>
                         </div>
 
                         <div className="mt-3 pt-2 border-t border-[#222] flex items-center justify-between text-[10px] text-[#9CA3AF]">
@@ -890,7 +923,7 @@ export default function Fluxograma() {
             {/* Conteúdo scrollável */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               {/* Processo Card */}
-              <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] space-y-2">
+              <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] space-y-2.5">
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-base font-black text-[#FFD400]">
                     {selectedNodeDetails.node.codigo}

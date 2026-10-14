@@ -99,3 +99,10 @@ export interface FluxogramaEtapa extends RecordModel {
   evidencia?: string
   subpassos?: string[]
 }
+
+export interface FluxogramaPosicao extends RecordModel {
+  processo_id: string
+  processo_codigo: string
+  x: number
+  y: number
+}

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-14T12:40:06.191Z",
+  "generatedAt": "2026-10-14T17:32:07.863Z",
   "collections": [
     {
       "name": "users",
@@ -513,6 +513,61 @@
       "indexes": [
         "CREATE UNIQUE INDEX idx_colaboradores_codigo ON colaboradores (codigo)",
         "CREATE INDEX idx_colaboradores_email ON colaboradores (email)"
+      ]
+    },
+    {
+      "name": "fluxograma_posicoes",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != '' && @request.auth.role = 'admin'",
+        "update": "@request.auth.id != '' && @request.auth.role = 'admin'",
+        "delete": "@request.auth.id != '' && @request.auth.role = 'admin'"
+      },
+      "fields": [
+        {
+          "name": "processo_id",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "processo_codigo",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "x",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "y",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_fluxograma_posicoes_id ON fluxograma_posicoes (processo_id)",
+        "CREATE INDEX idx_fluxograma_posicoes_cod ON fluxograma_posicoes (processo_codigo)"
       ]
     }
   ]

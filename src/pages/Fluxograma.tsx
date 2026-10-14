@@ -13,13 +13,19 @@ import {
   List,
   Compass,
   Users,
-  Filter,
-  Check,
+  Save,
+  RotateCcw,
+  Edit3,
+  AlertTriangle,
+  Move,
+  Loader2,
+  Info,
 } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import pb from '@/lib/pocketbase/client'
 import { useAuth } from '@/contexts/AuthContext'
-import type { Area, Processo, Colaborador, Meta } from '@/types/ctx'
+import { toast } from '@/hooks/use-toast'
+import type { Area, Processo, Colaborador, Meta, FluxogramaPosicao } from '@/types/ctx'
 import {
   computeDiagramLayout,
   type ProcessNode,
@@ -80,12 +86,39 @@ export default function Fluxograma() {
   const { user } = useAuth()
   const [searchParams] = useSearchParams()
 
+  const isAdmin = user?.role === 'admin'
+
   const [areas, setAreas] = useState<Area[]>([])
   const [processos, setProcessos] = useState<Processo[]>([])
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([])
   const [colaboradorLogado, setColaboradorLogado] = useState<Colaborador | null>(null)
   const [allMetas, setAllMetas] = useState<Meta[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Posições customizadas salvas no banco
+  const [savedPositions, setSavedPositions] = useState<Map<string, { x: number; y: number }>>(
+    new Map(),
+  )
+  // Posições em rascunho durante edição
+  const [editingPositions, setEditingPositions] = useState<Map<string, { x: number; y: number }>>(
+    new Map(),
+  )
+
+  // Modo Editor de Diagrama (exclusivo admin)
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [showExitConfirmDialog, setShowExitConfirmDialog] = useState(false)
+
+  // Dragging node state no modo edição
+  const [draggingNodeId, setDraggingNodeId] = useState<string | null>(null)
+  const dragStartPosRef = useRef<{
+    clientX: number
+    clientY: number
+    initialNodeX: number
+    initialNodeY: number
+  }>({ clientX: 0, clientY: 0, initialNodeX: 0, initialNodeY: 0 })
+  const hasMovedDuringDragRef = useRef(false)
 
   // Layout View Controls
   const [viewMode, setViewMode] = useState<'diagram' | 'list'>('diagram')
@@ -100,41 +133,57 @@ export default function Fluxograma() {
   const panStartRef = useRef({ x: 0, y: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // Fetch initial data
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [areasRes, procsRes, colabsRes, metasRes] = await Promise.all([
-          pb.collection('areas').getFullList<Area>({ sort: 'ordem_no_fluxo' }),
-          pb.collection('processos').getFullList<Processo>({ sort: 'codigo' }),
-          pb.collection('colaboradores').getFullList<Colaborador>(),
-          pb
-            .collection('metas')
-            .getFullList<Meta>({
-              expand: 'projeto,projeto_secundario,responsaveis',
-              sort: 'codigo',
-            })
-            .catch(() => []),
-        ])
+  // Fetch initial data + posições salvas
+  const fetchData = async () => {
+    try {
+      const [areasRes, procsRes, colabsRes, metasRes, posRes] = await Promise.all([
+        pb.collection('areas').getFullList<Area>({ sort: 'ordem_no_fluxo' }),
+        pb.collection('processos').getFullList<Processo>({ sort: 'codigo' }),
+        pb.collection('colaboradores').getFullList<Colaborador>(),
+        pb
+          .collection('metas')
+          .getFullList<Meta>({
+            expand: 'projeto,projeto_secundario,responsaveis',
+            sort: 'codigo',
+          })
+          .catch(() => []),
+        pb
+          .collection('fluxograma_posicoes')
+          .getFullList<FluxogramaPosicao>()
+          .catch(() => []),
+      ])
 
-        setAreas(areasRes)
-        setProcessos(procsRes)
-        setColaboradores(colabsRes)
-        setAllMetas(metasRes)
+      setAreas(areasRes)
+      setProcessos(procsRes)
+      setColaboradores(colabsRes)
+      setAllMetas(metasRes)
 
-        if (user) {
-          const matched = colabsRes.find(
-            (c) => c.usuario === user.id || c.email?.toLowerCase() === user.email?.toLowerCase(),
-          )
-          setColaboradorLogado(matched || null)
+      const posMap = new Map<string, { x: number; y: number }>()
+      posRes.forEach((p) => {
+        if (p.processo_id) {
+          posMap.set(p.processo_id, { x: p.x, y: p.y })
         }
-      } catch (err) {
-        console.error('Erro ao carregar fluxograma:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
+        if (p.processo_codigo) {
+          posMap.set(p.processo_codigo.trim().toUpperCase(), { x: p.x, y: p.y })
+        }
+      })
+      setSavedPositions(posMap)
+      setEditingPositions(new Map(posMap))
 
+      if (user) {
+        const matched = colabsRes.find(
+          (c) => c.usuario === user.id || c.email?.toLowerCase() === user.email?.toLowerCase(),
+        )
+        setColaboradorLogado(matched || null)
+      }
+    } catch (err) {
+      console.error('Erro ao carregar fluxograma:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
     fetchData()
   }, [user])
 
@@ -167,10 +216,16 @@ export default function Fluxograma() {
     return set
   }, [allMetas, colaboradorLogado])
 
-  // DIAGRAM LAYOUT CALCULATION (sem raias, fluido E-D)
+  // Determina as posições a passar para o gerador de layout:
+  // No modo edição, usamos editingPositions; fora dele, usamos savedPositions.
+  const activePositionsMap = useMemo(() => {
+    return isEditMode ? editingPositions : savedPositions
+  }, [isEditMode, editingPositions, savedPositions])
+
+  // DIAGRAM LAYOUT CALCULATION (respeitando posições salvas/editadas e fallback automático)
   const layout: DiagramLayout = useMemo(() => {
-    return computeDiagramLayout(areas, processos)
-  }, [areas, processos])
+    return computeDiagramLayout(areas, processos, activePositionsMap)
+  }, [areas, processos, activePositionsMap])
 
   // Identificar conexões ativas do nó selecionado
   const activeConnectionIds = useMemo(() => {
@@ -231,7 +286,37 @@ export default function Fluxograma() {
     setPan({ x: 50, y: 50 })
   }
 
-  // Mouse pan handlers
+  // Handlers para o modo edição (arrastar nós) e pan do canvas
+  const handleNodeMouseDown = (e: React.MouseEvent, node: ProcessNode) => {
+    if (!isEditMode) return
+    if (e.button !== 0) return
+    e.stopPropagation()
+
+    setDraggingNodeId(node.id)
+    hasMovedDuringDragRef.current = false
+    dragStartPosRef.current = {
+      clientX: e.clientX,
+      clientY: e.clientY,
+      initialNodeX: node.x,
+      initialNodeY: node.y,
+    }
+  }
+
+  const handleNodeTouchStart = (e: React.TouchEvent, node: ProcessNode) => {
+    if (!isEditMode) return
+    if (e.touches.length !== 1) return
+    e.stopPropagation()
+
+    setDraggingNodeId(node.id)
+    hasMovedDuringDragRef.current = false
+    dragStartPosRef.current = {
+      clientX: e.touches[0].clientX,
+      clientY: e.touches[0].clientY,
+      initialNodeX: node.x,
+      initialNodeY: node.y,
+    }
+  }
+
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return
     setIsPanning(true)
@@ -239,18 +324,42 @@ export default function Fluxograma() {
   }
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isPanning) return
-    setPan({
-      x: e.clientX - panStartRef.current.x,
-      y: e.clientY - panStartRef.current.y,
-    })
+    if (draggingNodeId) {
+      const dx = (e.clientX - dragStartPosRef.current.clientX) / zoom
+      const dy = (e.clientY - dragStartPosRef.current.clientY) / zoom
+
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+        hasMovedDuringDragRef.current = true
+      }
+
+      const newX = Math.max(20, Math.round(dragStartPosRef.current.initialNodeX + dx))
+      const newY = Math.max(20, Math.round(dragStartPosRef.current.initialNodeY + dy))
+
+      setEditingPositions((prev) => {
+        const next = new Map(prev)
+        next.set(draggingNodeId, { x: newX, y: newY })
+        return next
+      })
+      setHasUnsavedChanges(true)
+      return
+    }
+
+    if (isPanning) {
+      setPan({
+        x: e.clientX - panStartRef.current.x,
+        y: e.clientY - panStartRef.current.y,
+      })
+    }
   }
 
   const handleMouseUp = () => {
+    if (draggingNodeId) {
+      setDraggingNodeId(null)
+    }
     setIsPanning(false)
   }
 
-  // Touch pan handler
+  // Touch handlers
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 1) {
       setIsPanning(true)
@@ -262,6 +371,26 @@ export default function Fluxograma() {
   }
 
   const handleTouchMove = (e: React.TouchEvent) => {
+    if (draggingNodeId && e.touches.length === 1) {
+      const dx = (e.touches[0].clientX - dragStartPosRef.current.clientX) / zoom
+      const dy = (e.touches[0].clientY - dragStartPosRef.current.clientY) / zoom
+
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+        hasMovedDuringDragRef.current = true
+      }
+
+      const newX = Math.max(20, Math.round(dragStartPosRef.current.initialNodeX + dx))
+      const newY = Math.max(20, Math.round(dragStartPosRef.current.initialNodeY + dy))
+
+      setEditingPositions((prev) => {
+        const next = new Map(prev)
+        next.set(draggingNodeId, { x: newX, y: newY })
+        return next
+      })
+      setHasUnsavedChanges(true)
+      return
+    }
+
     if (!isPanning || e.touches.length !== 1) return
     setPan({
       x: e.touches[0].clientX - panStartRef.current.x,
@@ -270,7 +399,124 @@ export default function Fluxograma() {
   }
 
   const handleTouchEnd = () => {
+    if (draggingNodeId) {
+      setDraggingNodeId(null)
+    }
     setIsPanning(false)
+  }
+
+  // Salvar posições personalizadas no PocketBase
+  const handleSavePositions = async () => {
+    if (!isAdmin) return
+    setIsSaving(true)
+    try {
+      const existingRecords = await pb
+        .collection('fluxograma_posicoes')
+        .getFullList<FluxogramaPosicao>()
+      const existingByProcId = new Map<string, FluxogramaPosicao>()
+      existingRecords.forEach((r) => {
+        if (r.processo_id) existingByProcId.set(r.processo_id, r)
+      })
+
+      const savePromises: Promise<unknown>[] = []
+      editingPositions.forEach((pos, procId) => {
+        const proc = processos.find((p) => p.id === procId)
+        const codigo = proc?.codigo || ''
+        const existing = existingByProcId.get(procId)
+
+        if (existing) {
+          if (existing.x !== pos.x || existing.y !== pos.y) {
+            savePromises.push(
+              pb.collection('fluxograma_posicoes').update(existing.id, {
+                x: pos.x,
+                y: pos.y,
+                processo_codigo: codigo,
+              }),
+            )
+          }
+        } else {
+          savePromises.push(
+            pb.collection('fluxograma_posicoes').create({
+              processo_id: procId,
+              processo_codigo: codigo,
+              x: pos.x,
+              y: pos.y,
+            }),
+          )
+        }
+      })
+
+      await Promise.all(savePromises)
+
+      setSavedPositions(new Map(editingPositions))
+      setHasUnsavedChanges(false)
+
+      toast({
+        title: 'Disposição salva com sucesso!',
+        description:
+          'A nova organização do fluxograma agora está visível para todos os colaboradores.',
+      })
+    } catch (err: unknown) {
+      console.error('Erro ao salvar disposição:', err)
+      toast({
+        title: 'Erro ao salvar',
+        description: 'Não foi possível salvar as novas posições no servidor.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  // Voltar ao automático (limpa todas as posições salvas e restaura layout automático)
+  const handleResetToAutomatic = async () => {
+    if (!isAdmin) return
+    const confirmReset = window.confirm(
+      'Tem certeza que deseja restaurar o layout automático padrão? Isso apagará todas as posições salvas do diagrama.',
+    )
+    if (!confirmReset) return
+
+    setIsSaving(true)
+    try {
+      const records = await pb.collection('fluxograma_posicoes').getFullList<FluxogramaPosicao>()
+      await Promise.all(records.map((r) => pb.collection('fluxograma_posicoes').delete(r.id)))
+
+      setSavedPositions(new Map())
+      setEditingPositions(new Map())
+      setHasUnsavedChanges(false)
+      setIsEditMode(false)
+
+      toast({
+        title: 'Layout automático restaurado',
+        description: 'O fluxograma voltou a utilizar o posicionamento automático padrão.',
+      })
+    } catch (err: unknown) {
+      console.error('Erro ao resetar posições:', err)
+      toast({
+        title: 'Erro ao restaurar',
+        description: 'Não foi possível limpar as posições salvas.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  // Sair do modo edição avisando sobre alterações pendentes
+  const handleCancelOrExitEdit = () => {
+    if (hasUnsavedChanges) {
+      setShowExitConfirmDialog(true)
+    } else {
+      setIsEditMode(false)
+      setEditingPositions(new Map(savedPositions))
+    }
+  }
+
+  const handleConfirmExitWithoutSaving = () => {
+    setEditingPositions(new Map(savedPositions))
+    setHasUnsavedChanges(false)
+    setIsEditMode(false)
+    setShowExitConfirmDialog(false)
   }
 
   // Zoom controls
@@ -321,15 +567,41 @@ export default function Fluxograma() {
     })
   }, [selectedNode, allMetas])
 
+  // Mapa de ordem_no_fluxo das áreas para ordenar os grupos da Lista
+  const areaOrderMap = useMemo(() => {
+    const m = new Map<string, number>()
+    areas.forEach((a) => {
+      m.set(a.nome.trim().toLowerCase(), a.ordem_no_fluxo ?? 999)
+    })
+    return m
+  }, [areas])
+
   // Agrupamento por área para o modo lista (mobile / alternativo)
-  const procsGroupedByArea = useMemo(() => {
+  // 1. Áreas ordenadas por ordem_no_fluxo
+  // 2. Processos de cada área ordenados por código alfanumérico natural (V01, V02, V03...)
+  const sortedAreaGroups = useMemo(() => {
     const map = new Map<string, ProcessNode[]>()
     layout.nodes.forEach((n) => {
-      if (!map.has(n.area)) map.set(n.area, [])
-      map.get(n.area)!.push(n)
+      const areaKey = n.area?.trim() || 'Sem Área'
+      if (!map.has(areaKey)) map.set(areaKey, [])
+      map.get(areaKey)!.push(n)
     })
-    return map
-  }, [layout.nodes])
+
+    // Ordenar nós internamente em cada área por código (ex: V01, V02, V03...)
+    map.forEach((nodeList) => {
+      nodeList.sort((a, b) => a.codigo.localeCompare(b.codigo, undefined, { numeric: true }))
+    })
+
+    // Ordenar grupos de área pela ordem_no_fluxo da coleção 'areas'
+    const sortedEntries = Array.from(map.entries()).sort(([areaA], [areaB]) => {
+      const orderA = areaOrderMap.get(areaA.toLowerCase()) ?? 999
+      const orderB = areaOrderMap.get(areaB.toLowerCase()) ?? 999
+      if (orderA !== orderB) return orderA - orderB
+      return areaA.localeCompare(areaB, undefined, { numeric: true })
+    })
+
+    return sortedEntries
+  }, [layout.nodes, areaOrderMap])
 
   return (
     <div className="space-y-4 animate-fade-in pb-12 flex flex-col h-[calc(100vh-100px)]">
@@ -338,13 +610,18 @@ export default function Fluxograma() {
         <div>
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-[#FFD400]/10 border border-[#FFD400]/30 text-[#FFD400] text-xs font-semibold mb-1">
             <Workflow className="w-3.5 h-3.5" />
-            Fluxograma Contínuo CTX
+            Fluxograma CTX
           </div>
           <h1 className="text-xl md:text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
             Fluxo Operacional de Ponta a Ponta
             <span className="text-xs font-mono px-2 py-0.5 rounded bg-[#1A1A1A] text-[#9CA3AF] border border-[#262626]">
               {layout.nodes.length} processos • {layout.edges.length} conexões
             </span>
+            {savedPositions.size > 0 && !isEditMode && (
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#FFD400]/15 text-[#FFD400] border border-[#FFD400]/30">
+                Disposição personalizada ativa
+              </span>
+            )}
           </h1>
         </div>
 
@@ -467,9 +744,102 @@ export default function Fluxograma() {
               </button>
             </div>
           )}
+
+          {/* Botão de Modo Edição para Administrador */}
+          {isAdmin && viewMode === 'diagram' && (
+            <div className="flex items-center gap-2">
+              {!isEditMode ? (
+                <button
+                  onClick={() => {
+                    // Inicializa as posições de rascunho com as posições visíveis atuais de cada nó
+                    const initialMap = new Map<string, { x: number; y: number }>()
+                    layout.nodes.forEach((n) => {
+                      initialMap.set(n.id, { x: n.x, y: n.y })
+                    })
+                    setEditingPositions(initialMap)
+                    setIsEditMode(true)
+                    setHasUnsavedChanges(false)
+                  }}
+                  className="px-3 py-1.5 rounded-lg bg-[#141414] hover:bg-[#1E1E1E] text-white border border-[#333] hover:border-[#FFD400] text-xs font-bold transition-all flex items-center gap-1.5"
+                  title="Editar disposição dos processos no diagrama"
+                >
+                  <Edit3 className="w-3.5 h-3.5 text-[#FFD400]" />
+                  <span>Editar Diagrama</span>
+                </button>
+              ) : (
+                <div className="flex items-center gap-2 bg-[#171717] p-1 rounded-lg border border-[#FFD400]/40 shadow-lg">
+                  <button
+                    disabled={isSaving}
+                    onClick={handleSavePositions}
+                    className="px-3 py-1.5 rounded-md bg-[#FFD400] hover:bg-[#e6bf00] text-black font-extrabold text-xs transition-all flex items-center gap-1.5 shadow"
+                  >
+                    {isSaving ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Save className="w-3.5 h-3.5" />
+                    )}
+                    <span>Salvar disposição</span>
+                  </button>
+
+                  <button
+                    disabled={isSaving}
+                    onClick={handleResetToAutomatic}
+                    className="px-2.5 py-1.5 rounded-md bg-[#222] hover:bg-[#2A2A2A] text-[#D1D5DB] hover:text-white text-xs font-semibold transition-all flex items-center gap-1 border border-[#333]"
+                    title="Limpar posições personalizadas e restaurar layout automático"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+                    <span className="hidden sm:inline">Voltar ao automático</span>
+                  </button>
+
+                  <button
+                    disabled={isSaving}
+                    onClick={handleCancelOrExitEdit}
+                    className="px-2.5 py-1.5 rounded-md bg-[#1F1F1F] hover:bg-[#282828] text-[#9CA3AF] hover:text-white text-xs font-semibold transition-all"
+                    title="Sair do modo edição"
+                  >
+                    Sair
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
+      {/* Barra de alerta do Modo Edição Ativo */}
+      {isEditMode && (
+        <div className="bg-[#FFD400]/10 border border-[#FFD400]/40 rounded-xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-2 text-white">
+            <Move className="w-4 h-4 text-[#FFD400] shrink-0" />
+            <span>
+              <strong className="text-[#FFD400]">Modo Edição Ativo:</strong> Clique e arraste
+              qualquer caixa de processo para posicioná-la livremente no canvas. As conexões
+              seguirão a nova posição.
+            </span>
+            {hasUnsavedChanges && (
+              <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 text-[10px] font-bold border border-amber-500/40">
+                Alterações não salvas
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-3 text-[11px] text-[#A3A3A3]">
+            <span className="hidden md:inline">Desktop-first: ideal para tela cheia e mouse</span>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={handleSavePositions}
+                disabled={isSaving}
+                className="font-bold text-[#FFD400] hover:underline"
+              >
+                Salvar agora
+              </button>
+              <span>•</span>
+              <button onClick={handleCancelOrExitEdit} className="hover:underline">
+                Sair da edição
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Empty State */}
       {layout.nodes.length === 0 && !loading && (
         <div className="flex-1 bg-[#111111] border border-[#262626] rounded-2xl p-12 flex flex-col items-center justify-center text-center space-y-4">
@@ -635,23 +1005,34 @@ export default function Fluxograma() {
                 selectedAreaFilter === 'all' ||
                 node.area.trim().toLowerCase() === selectedAreaFilter.trim().toLowerCase()
 
+              const isDraggingThis = draggingNodeId === node.id
               const hasYellowBorder = isUserArea || isUserGoalProc
 
               // Opacidade para destacar rota selecionada ou filtro de área
               let opacity = 1
-              if (isAnySelected) {
+              if (isAnySelected && !isEditMode) {
                 opacity = isRelated ? 1 : 0.18
-              } else if (selectedAreaFilter !== 'all') {
+              } else if (selectedAreaFilter !== 'all' && !isEditMode) {
                 opacity = matchesAreaFilter ? 1 : 0.25
               }
+
+              // Estilo de cursor e drag
+              const cursorClass = isEditMode
+                ? isDraggingThis
+                  ? 'cursor-grabbing'
+                  : 'cursor-grab'
+                : 'cursor-pointer'
 
               // Se for ponto de decisão (ex.: O01), renderiza como LOSANGO
               if (node.isDecision) {
                 return (
                   <div
                     key={node.id}
+                    onMouseDown={(e) => handleNodeMouseDown(e, node)}
+                    onTouchStart={(e) => handleNodeTouchStart(e, node)}
                     onClick={(e) => {
                       e.stopPropagation()
+                      if (hasMovedDuringDragRef.current) return
                       setSelectedNode(node)
                     }}
                     style={{
@@ -661,9 +1042,16 @@ export default function Fluxograma() {
                       width: node.width,
                       height: node.height,
                       opacity,
+                      transition: isDraggingThis ? 'none' : 'box-shadow 0.2s ease',
                     }}
-                    className={`cursor-pointer transition-all duration-200 z-20 flex items-center justify-center ${
-                      isSelected ? 'scale-105 z-30' : 'hover:scale-102'
+                    className={`${cursorClass} z-20 flex items-center justify-center ${
+                      isDraggingThis
+                        ? 'z-40 scale-105 shadow-2xl ring-2 ring-[#FFD400]'
+                        : isSelected
+                          ? 'scale-105 z-30'
+                          : isEditMode
+                            ? 'hover:scale-102 hover:ring-1 hover:ring-[#FFD400]/70'
+                            : 'hover:scale-102'
                     }`}
                   >
                     <div className="relative w-full h-full flex items-center justify-center">
@@ -674,8 +1062,29 @@ export default function Fluxograma() {
                         <polygon
                           points={`${node.width / 2},4 ${node.width - 6},${node.height / 2} ${node.width / 2},${node.height - 4} 6,${node.height / 2}`}
                           fill="#141414"
-                          stroke={isSelected ? '#FFD400' : hasYellowBorder ? '#FFD400' : '#EAB308'}
-                          strokeWidth={isSelected ? '3' : hasYellowBorder ? '2.5' : '1.8'}
+                          stroke={
+                            isDraggingThis
+                              ? '#FFD400'
+                              : isSelected
+                                ? '#FFD400'
+                                : isEditMode
+                                  ? '#FFD400'
+                                  : hasYellowBorder
+                                    ? '#FFD400'
+                                    : '#EAB308'
+                          }
+                          strokeWidth={
+                            isDraggingThis
+                              ? '3.5'
+                              : isSelected
+                                ? '3'
+                                : isEditMode
+                                  ? '2.2'
+                                  : hasYellowBorder
+                                    ? '2.5'
+                                    : '1.8'
+                          }
+                          strokeDasharray={isEditMode ? '4,2' : 'none'}
                         />
                       </svg>
 
@@ -688,6 +1097,7 @@ export default function Fluxograma() {
                           <span className="text-[10px] uppercase font-bold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">
                             Decisão
                           </span>
+                          {isEditMode && <Move className="w-3 h-3 text-[#FFD400] opacity-80" />}
                         </div>
                         <span className="text-[10px] font-semibold text-[#9CA3AF] mb-1">
                           {node.area}
@@ -705,8 +1115,11 @@ export default function Fluxograma() {
               return (
                 <div
                   key={node.id}
+                  onMouseDown={(e) => handleNodeMouseDown(e, node)}
+                  onTouchStart={(e) => handleNodeTouchStart(e, node)}
                   onClick={(e) => {
                     e.stopPropagation()
+                    if (hasMovedDuringDragRef.current) return
                     setSelectedNode(node)
                   }}
                   style={{
@@ -716,20 +1129,35 @@ export default function Fluxograma() {
                     width: node.width,
                     height: node.height,
                     opacity,
+                    transition: isDraggingThis ? 'none' : 'box-shadow 0.2s ease',
                   }}
-                  className={`bg-[#121212] border rounded-xl p-3 shadow-lg cursor-pointer transition-all duration-200 z-20 flex flex-col justify-between ${
-                    isSelected
-                      ? 'border-[#FFD400] ring-2 ring-[#FFD400]/60 scale-105 z-30'
-                      : hasYellowBorder
-                        ? 'border-2 border-[#FFD400] hover:scale-102'
-                        : 'border-[#262626] hover:border-[#FFD400]/60 hover:scale-102'
+                  className={`bg-[#121212] border rounded-xl p-3 shadow-lg ${cursorClass} z-20 flex flex-col justify-between ${
+                    isDraggingThis
+                      ? 'border-[#FFD400] ring-4 ring-[#FFD400]/40 scale-105 z-40 shadow-2xl'
+                      : isSelected
+                        ? 'border-[#FFD400] ring-2 ring-[#FFD400]/60 scale-105 z-30'
+                        : isEditMode
+                          ? 'border-[#FFD400]/80 hover:border-[#FFD400] hover:scale-102 hover:shadow-xl'
+                          : hasYellowBorder
+                            ? 'border-2 border-[#FFD400] hover:scale-102'
+                            : 'border-[#262626] hover:border-[#FFD400]/60 hover:scale-102'
                   }`}
                 >
                   {/* Topo do Card: Código em destaque amarelo + Nome da Área completo */}
                   <div className="flex items-center justify-between gap-2 shrink-0">
-                    <span className="font-mono font-black text-xs text-[#FFD400] tracking-wide shrink-0">
-                      {node.codigo}
-                    </span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className="font-mono font-black text-xs text-[#FFD400] tracking-wide">
+                        {node.codigo}
+                      </span>
+                      {isEditMode && (
+                        <span
+                          title="Arraste para reposicionar este nó"
+                          className="p-0.5 rounded bg-[#FFD400]/15 text-[#FFD400]"
+                        >
+                          <Move className="w-2.5 h-2.5" />
+                        </span>
+                      )}
+                    </div>
                     <span
                       title={node.area}
                       className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-[#1C1C1C] text-[#A3A3A3] border border-[#2B2B2B] truncate max-w-[170px]"
@@ -742,7 +1170,7 @@ export default function Fluxograma() {
                   <div className="my-auto py-1">
                     <p
                       title={node.nome}
-                      className="text-[12px] font-medium text-white leading-snug line-clamp-3"
+                      className="text-[12px] font-medium text-white leading-snug line-clamp-3 select-none"
                     >
                       {node.nome}
                     </p>
@@ -755,20 +1183,28 @@ export default function Fluxograma() {
                       {node.etapasSucessorasIds.length}
                     </span>
                     <div className="flex items-center gap-1">
-                      {isUserArea && (
-                        <span className="text-[8px] font-bold text-[#FFD400] uppercase">
-                          Sua Área
+                      {isEditMode ? (
+                        <span className="text-[8px] font-bold text-[#FFD400] uppercase font-sans">
+                          Arraste Livre
                         </span>
+                      ) : (
+                        <>
+                          {isUserArea && (
+                            <span className="text-[8px] font-bold text-[#FFD400] uppercase">
+                              Sua Área
+                            </span>
+                          )}
+                          {isUserGoalProc && (
+                            <span className="text-[8px] font-bold text-[#FFD400] uppercase">
+                              Sua Meta
+                            </span>
+                          )}
+                          {node.etapasAnterioresIds.length === 0 &&
+                            node.etapasSucessorasIds.length === 0 && (
+                              <span className="text-zinc-500 italic">avulso</span>
+                            )}
+                        </>
                       )}
-                      {isUserGoalProc && (
-                        <span className="text-[8px] font-bold text-[#FFD400] uppercase">
-                          Sua Meta
-                        </span>
-                      )}
-                      {node.etapasAnterioresIds.length === 0 &&
-                        node.etapasSucessorasIds.length === 0 && (
-                          <span className="text-zinc-500 italic">avulso</span>
-                        )}
                     </div>
                   </div>
                 </div>
@@ -826,7 +1262,7 @@ export default function Fluxograma() {
       {/* MODO 2: LISTA POR ÁREAS (RESPONSIVO / MOBILE) */}
       {viewMode === 'list' && layout.nodes.length > 0 && (
         <div className="flex-1 overflow-y-auto space-y-4 pr-1">
-          {Array.from(procsGroupedByArea.entries()).map(([areaNome, procs]) => {
+          {sortedAreaGroups.map(([areaNome, procs]) => {
             const isUserLane = loggedUserArea && areaNome.trim().toLowerCase() === loggedUserArea
 
             return (
@@ -1090,6 +1526,52 @@ export default function Fluxograma() {
                 className="w-full py-2.5 bg-[#1C1C1C] hover:bg-[#262626] text-white text-xs font-semibold rounded-lg border border-[#333] transition-colors"
               >
                 Fechar painel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DIÁLOGO MODAL: CONFIRMAÇÃO DE SAÍDA COM ALTERAÇÕES NÃO SALVAS */}
+      {showExitConfirmDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="bg-[#141414] border border-[#2B2B2B] rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">Alterações não salvas</h3>
+                <p className="text-xs text-[#9CA3AF] mt-1 leading-relaxed">
+                  Você arrastou processos no diagrama mas ainda não salvou a nova disposição. Se
+                  sair agora, as posições editadas nesta sessão serão descartadas.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-end gap-2 pt-2 border-t border-[#222]">
+              <button
+                onClick={() => setShowExitConfirmDialog(false)}
+                className="w-full sm:w-auto px-4 py-2 rounded-lg bg-[#1E1E1E] hover:bg-[#282828] text-white text-xs font-semibold transition-colors"
+              >
+                Continuar editando
+              </button>
+              <button
+                onClick={handleConfirmExitWithoutSaving}
+                className="w-full sm:w-auto px-4 py-2 rounded-lg bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-800/40 text-xs font-semibold transition-colors"
+              >
+                Descartar e sair
+              </button>
+              <button
+                onClick={async () => {
+                  setShowExitConfirmDialog(false)
+                  await handleSavePositions()
+                  setIsEditMode(false)
+                }}
+                className="w-full sm:w-auto px-4 py-2 rounded-lg bg-[#FFD400] hover:bg-[#e6bf00] text-black text-xs font-extrabold transition-colors flex items-center justify-center gap-1.5"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>Salvar e sair</span>
               </button>
             </div>
           </div>

@@ -84,7 +84,11 @@ export function parseDecision(obs?: string): {
  * Sem divisão em raias horizontais (swimlanes desconsideradas na geometria visual),
  * agrupando e ordenando logicamente etapa a etapa.
  */
-export function computeDiagramLayout(rawAreas: Area[], rawProcessos: Processo[]): DiagramLayout {
+export function computeDiagramLayout(
+  rawAreas: Area[],
+  rawProcessos: Processo[],
+  customPositions?: Map<string, { x: number; y: number }>,
+): DiagramLayout {
   if (!rawProcessos || rawProcessos.length === 0) {
     return {
       nodes: [],
@@ -251,8 +255,14 @@ export function computeDiagramLayout(rawAreas: Area[], rawProcessos: Processo[])
     procs.forEach((proc, row) => {
       const decisionInfo = parseDecision(proc.observacao)
 
-      const x = CANVAS_PADDING_X + col * (NODE_WIDTH + HORIZONTAL_GAP)
-      const y = CANVAS_PADDING_Y + colVerticalOffset + row * (NODE_HEIGHT + VERTICAL_GAP)
+      // Se houver posição customizada salva pelo admin (por ID ou por Código), usa ela; senão fallback para automático
+      const customPos =
+        customPositions?.get(proc.id) || customPositions?.get(proc.codigo.trim().toUpperCase())
+      const autoX = CANVAS_PADDING_X + col * (NODE_WIDTH + HORIZONTAL_GAP)
+      const autoY = CANVAS_PADDING_Y + colVerticalOffset + row * (NODE_HEIGHT + VERTICAL_GAP)
+
+      const finalX = customPos ? customPos.x : autoX
+      const finalY = customPos ? customPos.y : autoY
 
       const nodeObj: ProcessNode = {
         id: proc.id,
@@ -266,8 +276,8 @@ export function computeDiagramLayout(rawAreas: Area[], rawProcessos: Processo[])
         etapasSucessorasIds: proc.etapas_sucessoras || [],
         col,
         row,
-        x,
-        y,
+        x: finalX,
+        y: finalY,
         width: NODE_WIDTH,
         height: NODE_HEIGHT,
       }
@@ -317,7 +327,7 @@ export function computeDiagramLayout(rawAreas: Area[], rawProcessos: Processo[])
       if (isBackward) {
         // Conexão de retorno / ciclo de correção:
         // Se toNode estiver no mesmo X/coluna (empilhado verticalmente):
-        if (toNode.col === fromNode.col) {
+        if (Math.abs(toNode.x - fromNode.x) < 40) {
           if (toNode.y > fromNode.y) {
             // De cima para baixo na mesma coluna
             fromX = fromNode.x + fromNode.width / 2
@@ -382,14 +392,25 @@ export function computeDiagramLayout(rawAreas: Area[], rawProcessos: Processo[])
     })
   })
 
-  const totalWidth = CANVAS_PADDING_X * 2 + (maxCol + 1) * (NODE_WIDTH + HORIZONTAL_GAP)
-  const totalHeight = CANVAS_PADDING_Y * 2 + maxRows * (NODE_HEIGHT + VERTICAL_GAP) + 100
+  // Determinar dimensões totais levando em conta nós customizados que podem ter sido arrastados para posições maiores
+  let maxX = 0
+  let maxY = 0
+  nodes.forEach((n) => {
+    if (n.x + n.width > maxX) maxX = n.x + n.width
+    if (n.y + n.height > maxY) maxY = n.y + n.height
+  })
+
+  const autoTotalWidth = CANVAS_PADDING_X * 2 + (maxCol + 1) * (NODE_WIDTH + HORIZONTAL_GAP)
+  const autoTotalHeight = CANVAS_PADDING_Y * 2 + maxRows * (NODE_HEIGHT + VERTICAL_GAP) + 100
+
+  const totalWidth = Math.max(autoTotalWidth, maxX + CANVAS_PADDING_X, 1800)
+  const totalHeight = Math.max(autoTotalHeight, maxY + CANVAS_PADDING_Y, 1000)
 
   return {
     nodes,
     edges,
-    width: Math.max(totalWidth, 1800),
-    height: Math.max(totalHeight, 1000),
+    width: totalWidth,
+    height: totalHeight,
     nodeMap,
     totalCols: maxCol + 1,
     totalRows: maxRows,

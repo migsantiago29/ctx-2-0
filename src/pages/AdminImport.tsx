@@ -141,7 +141,10 @@ export default function AdminImport() {
     ])
 
     const procMapByCodigo = new Map<string, string>()
-    allProcs.forEach((p) => procMapByCodigo.set(p.codigo.trim().toUpperCase(), p.id))
+    allProcs.forEach((p) => {
+      const cod = (p?.codigo ?? '').trim().toUpperCase()
+      if (cod) procMapByCodigo.set(cod, p.id)
+    })
 
     let totalConexoes = 0
     for (const p of allProcs) {
@@ -233,23 +236,28 @@ export default function AdminImport() {
       const existingAreas = await runWithRetry(() => pb.collection('areas').getFullList())
       const areaMapByName = new Map<string, string>() // nome -> id
       for (const a of existingAreas) {
-        areaMapByName.set(a.nome.trim().toLowerCase(), a.id)
+        const aNome = (a?.nome ?? '').trim().toLowerCase()
+        if (aNome) areaMapByName.set(aNome, a.id)
       }
 
       for (let i = 0; i < parsedAreas.rows.length; i++) {
         const row = parsedAreas.rows[i]
-        const nome = (row.nome || '').trim()
+        const nome = (row?.nome ?? '').trim()
         if (!nome) {
+          // Se toda a linha estiver em branco, ignorar silenciosamente ou avisar
+          const hasAnyData = Object.values(row || {}).some((v) => (v ?? '').trim() !== '')
+          if (!hasAnyData) continue
+
           errors.push({
             etapa: 'Áreas',
             linha: i + 2,
-            motivo: 'Nome da área vazio',
+            motivo: 'Nome da área vazio ou ausente na planilha',
           })
           continue
         }
 
-        const ordem = parseInt(row.ordem_no_fluxo || '0', 10) || 0
-        const tipoRaw = (row.tipo || '').trim().toLowerCase()
+        const ordem = parseInt((row.ordem_no_fluxo ?? '0').trim() || '0', 10) || 0
+        const tipoRaw = (row.tipo ?? '').trim().toLowerCase()
         const tipo =
           tipoRaw.includes('grupo') || tipoRaw.includes('marco') ? 'grupo de processos' : 'área'
 
@@ -284,7 +292,10 @@ export default function AdminImport() {
       // Re-consultar áreas para obter IDs atualizados
       const freshAreas = await runWithRetry(() => pb.collection('areas').getFullList())
       const areaIdMap = new Map<string, string>()
-      freshAreas.forEach((a) => areaIdMap.set(a.nome.trim().toLowerCase(), a.id))
+      freshAreas.forEach((a) => {
+        const aNome = (a?.nome ?? '').trim().toLowerCase()
+        if (aNome) areaIdMap.set(aNome, a.id)
+      })
 
       // ==========================================================
       // PASSO 2: IMPORTAR COLABORADORES E USUÁRIOS
@@ -296,30 +307,41 @@ export default function AdminImport() {
         pb.collection('users').getFullList<UserProfile>(),
       )
       const userMapByEmail = new Map<string, UserProfile>()
-      existingUsers.forEach((u) => userMapByEmail.set(u.email.trim().toLowerCase(), u))
+      existingUsers.forEach((u) => {
+        const uEmail = (u?.email ?? '').trim().toLowerCase()
+        if (uEmail) userMapByEmail.set(uEmail, u)
+      })
 
       const existingColabs = await runWithRetry(() =>
         pb.collection('colaboradores').getFullList<Colaborador>(),
       )
       const colabMapByCodigo = new Map<string, string>()
-      existingColabs.forEach((c) => colabMapByCodigo.set(c.codigo.trim().toLowerCase(), c.id))
+      existingColabs.forEach((c) => {
+        const cCod = (c?.codigo ?? '').trim().toLowerCase()
+        if (cCod) colabMapByCodigo.set(cCod, c.id)
+      })
 
       for (let i = 0; i < parsedColabs.rows.length; i++) {
         const row = parsedColabs.rows[i]
-        const codigo = (row.codigo || '').trim()
-        const nome = (row.nome || '').trim()
-        const cargo = (row.cargo || '').trim()
-        const areaNome = (row.area || '').trim()
-        const email = (row.email || '').trim().toLowerCase()
-        const semMetasRaw = (row.sem_metas || '').trim().toLowerCase()
+        const codigo = (row?.codigo ?? '').trim()
+        const nome = (row?.nome ?? '').trim()
+        const cargo = (row?.cargo ?? '').trim()
+        const areaNome = (row?.area ?? '').trim()
+        const email = (row?.email ?? '').trim().toLowerCase()
+        const semMetasRaw = (row?.sem_metas ?? '').trim().toLowerCase()
         const sem_metas = semMetasRaw === 'sim' || semMetasRaw === 'true'
 
         if (!codigo || !nome || !email) {
+          // Se for uma linha vazia, ignorar
+          const hasAnyData = Object.values(row || {}).some((v) => (v ?? '').trim() !== '')
+          if (!hasAnyData) continue
+
           errors.push({
             etapa: 'Colaboradores',
             linha: i + 2,
-            codigo,
+            codigo: codigo || nome || '(sem código)',
             motivo: 'Campos obrigatórios ausentes (código, nome ou e-mail)',
+            payload: { codigo, nome, email, cargo, areaNome },
           })
           continue
         }
@@ -409,22 +431,29 @@ export default function AdminImport() {
 
       const existingProcs = await runWithRetry(() => pb.collection('processos').getFullList())
       const procMapByCodigo = new Map<string, string>() // codigo -> id
-      existingProcs.forEach((p) => procMapByCodigo.set(p.codigo.trim().toUpperCase(), p.id))
+      existingProcs.forEach((p) => {
+        const cod = (p?.codigo ?? '').trim().toUpperCase()
+        if (cod) procMapByCodigo.set(cod, p.id)
+      })
 
       // 1ª passada: criar/atualizar campos base
       for (let i = 0; i < parsedProcs.rows.length; i++) {
         const row = parsedProcs.rows[i]
-        const codigo = (row.codigo || '').trim().toUpperCase()
-        const nome = (row.nome || '').trim()
-        const area = (row.area || '').trim()
-        const observacao = (row.observacao || '').trim()
+        const codigo = (row?.codigo ?? '').trim().toUpperCase()
+        const nome = (row?.nome ?? '').trim()
+        const area = (row?.area ?? '').trim()
+        const observacao = (row?.observacao ?? '').trim()
 
         if (!codigo || !nome || !area) {
+          const hasAnyData = Object.values(row || {}).some((v) => (v ?? '').trim() !== '')
+          if (!hasAnyData) continue
+
           errors.push({
             etapa: 'Processos (1ª passada)',
             linha: i + 2,
-            codigo,
+            codigo: codigo || '(sem código)',
             motivo: 'Campos obrigatórios ausentes (código, nome ou área)',
+            payload: { codigo, nome, area, observacao },
           })
           continue
         }
@@ -470,7 +499,10 @@ export default function AdminImport() {
 
       // Atualizar lista completa de IDs de processos antes da 2ª passada
       const updatedProcs = await runWithRetry(() => pb.collection('processos').getFullList())
-      updatedProcs.forEach((p) => procMapByCodigo.set(p.codigo.trim().toUpperCase(), p.id))
+      updatedProcs.forEach((p) => {
+        const cod = (p?.codigo ?? '').trim().toUpperCase()
+        if (cod) procMapByCodigo.set(cod, p.id)
+      })
 
       // 2ª passada: resolver relações etapas_anteriores e etapas_sucessoras
       setCurrentStep('Importando Processos — 2ª Passada (Conexões)...')
@@ -478,16 +510,20 @@ export default function AdminImport() {
 
       for (let i = 0; i < parsedProcs.rows.length; i++) {
         const row = parsedProcs.rows[i]
-        const codigo = (row.codigo || '').trim().toUpperCase()
+        const codigo = (row?.codigo ?? '').trim().toUpperCase()
+        if (!codigo) continue
+
         const procId = procMapByCodigo.get(codigo)
         if (!procId) continue
 
-        const parseCodes = (str?: string): string[] => {
-          if (!str) return []
-          // Trata delimitadores ';' e múltiplos espaços
-          return str
-            .split(';')
-            .map((s) => s.trim().toUpperCase())
+        const parseCodes = (str?: unknown): string[] => {
+          if (str === undefined || str === null) return []
+          const text = String(str).trim()
+          if (!text) return []
+          // Trata delimitadores ';' ou ',' e múltiplos espaços
+          return text
+            .split(/[;,]/)
+            .map((s) => (s ?? '').trim().toUpperCase())
             .filter((s) => s.length > 0)
         }
 
@@ -610,21 +646,34 @@ export default function AdminImport() {
       ])
 
       const areaIdMap = new Map<string, string>()
-      areas.forEach((a) => areaIdMap.set(a.nome.trim().toLowerCase(), a.id))
+      areas.forEach((a) => {
+        const aNome = (a?.nome ?? '').trim().toLowerCase()
+        if (aNome) areaIdMap.set(aNome, a.id)
+      })
 
       const userMapByEmail = new Map<string, UserProfile>()
-      users.forEach((u) => userMapByEmail.set(u.email.trim().toLowerCase(), u))
+      users.forEach((u) => {
+        const uEmail = (u?.email ?? '').trim().toLowerCase()
+        if (uEmail) userMapByEmail.set(uEmail, u)
+      })
 
       const colabMapByCodigo = new Map<string, string>()
-      colabs.forEach((c) => colabMapByCodigo.set(c.codigo.trim().toLowerCase(), c.id))
+      colabs.forEach((c) => {
+        const cCod = (c?.codigo ?? '').trim().toLowerCase()
+        if (cCod) colabMapByCodigo.set(cCod, c.id)
+      })
 
       const procMapByCodigo = new Map<string, string>()
-      procs.forEach((p) => procMapByCodigo.set(p.codigo.trim().toUpperCase(), p.id))
+      procs.forEach((p) => {
+        const pCod = (p?.codigo ?? '').trim().toUpperCase()
+        if (pCod) procMapByCodigo.set(pCod, p.id)
+      })
 
       for (let i = 0; i < itemsToRetry.length; i++) {
         const item = itemsToRetry[i]
+        const itemCodDisplay = (item.codigo ?? '').trim()
         setProgressMsg(
-          `Reprocessando item ${i + 1}/${itemsToRetry.length} (${item.etapa} - ${item.codigo || ''})...`,
+          `Reprocessando item ${i + 1}/${itemsToRetry.length} (${item.etapa} - ${itemCodDisplay})...`,
         )
 
         try {
@@ -632,18 +681,19 @@ export default function AdminImport() {
             const payload = item.payload as
               | { nome: string; ordem_no_fluxo: number; tipo: string }
               | undefined
-            const nome = payload?.nome || item.codigo || ''
+            const nome = (payload?.nome ?? item.codigo ?? '').trim()
             if (!nome) throw new Error('Nome da área ausente')
 
             const key = nome.toLowerCase()
             const existingId = areaIdMap.get(key)
+            const areaSavePayload = payload
+              ? { ...payload, nome }
+              : { nome, ordem_no_fluxo: 0, tipo: 'área' }
             if (existingId) {
-              await runWithRetry(() =>
-                pb.collection('areas').update(existingId, payload || { nome }),
-              )
+              await runWithRetry(() => pb.collection('areas').update(existingId, areaSavePayload))
             } else {
               const created = await runWithRetry(() =>
-                pb.collection('areas').create(payload || { nome }),
+                pb.collection('areas').create(areaSavePayload),
               )
               areaIdMap.set(key, created.id)
             }
@@ -651,8 +701,9 @@ export default function AdminImport() {
             const p = item.payload as
               | { email: string; nome: string; cargo?: string; area?: string }
               | undefined
-            const email = (p?.email || item.codigo || '').toLowerCase().trim()
-            const nome = p?.nome || item.codigo || email
+            const email = (p?.email ?? item.codigo ?? '').trim().toLowerCase()
+            const nome = (p?.nome ?? item.codigo ?? email).trim()
+            if (!email) throw new Error('E-mail do usuário ausente')
 
             const syncRes = await runWithRetry(() =>
               pb.send<{ success: boolean; user: UserProfile }>('/backend/v1/ctx/sync-user', {
@@ -660,8 +711,8 @@ export default function AdminImport() {
                 body: {
                   email,
                   nome,
-                  cargo: p?.cargo || '',
-                  area: p?.area || '',
+                  cargo: (p?.cargo ?? '').trim(),
+                  area: (p?.area ?? '').trim(),
                   role: email === 'miguel.santiago@ctxcenografia.com.br' ? 'admin' : 'colaborador',
                   password: 'CTX@2027',
                   must_change_password:
@@ -675,7 +726,7 @@ export default function AdminImport() {
             }
           } else if (item.etapa === 'Colaboradores') {
             const p = item.payload as Record<string, unknown> | undefined
-            const codigo = (item.codigo || (p?.codigo as string) || '').toLowerCase()
+            const codigo = (item.codigo ?? (p?.codigo as string) ?? '').trim().toLowerCase()
             if (!codigo) throw new Error('Código do colaborador ausente')
 
             const existingId = colabMapByCodigo.get(codigo)
@@ -689,7 +740,7 @@ export default function AdminImport() {
             const p = item.payload as
               | { codigo: string; nome: string; area: string; observacao?: string }
               | undefined
-            const codigo = (item.codigo || p?.codigo || '').toUpperCase()
+            const codigo = (item.codigo ?? p?.codigo ?? '').trim().toUpperCase()
             if (!codigo) throw new Error('Código do processo ausente')
 
             const existingId = procMapByCodigo.get(codigo)
@@ -707,9 +758,10 @@ export default function AdminImport() {
             const p = item.payload as
               | { procId: string; anterioresIds: string[]; sucessorasIds: string[] }
               | undefined
-            const codigo = (item.codigo || '').toUpperCase()
+            const codigo = (item.codigo ?? '').trim().toUpperCase()
             const procId = p?.procId || procMapByCodigo.get(codigo)
-            if (!procId) throw new Error(`Processo ${codigo} não encontrado para vinculação`)
+            if (!procId)
+              throw new Error(`Processo ${codigo || 'desconhecido'} não encontrado para vinculação`)
 
             await runWithRetry(
               () =>

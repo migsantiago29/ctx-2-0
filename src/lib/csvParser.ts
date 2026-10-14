@@ -82,9 +82,16 @@ export function parseCsv(text: string): ParsedCsvResult {
   for (let r = 1; r < rows.length; r++) {
     const rowObj: Record<string, string> = {}
     const rowVals = rows[r]
+    // Pula linhas onde todas as células são vazias ou whitespace
+    const hasAnyContent = rowVals && rowVals.some((v) => (v ?? '').trim() !== '')
+    if (!hasAnyContent) {
+      continue
+    }
+
     for (let c = 0; c < rawHeaders.length; c++) {
       const headerName = rawHeaders[c]
-      rowObj[headerName] = rowVals[c] !== undefined ? rowVals[c] : ''
+      const cellVal = rowVals[c]
+      rowObj[headerName] = cellVal !== undefined && cellVal !== null ? String(cellVal).trim() : ''
     }
     parsedRows.push(rowObj)
   }

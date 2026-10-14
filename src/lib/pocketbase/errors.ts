@@ -22,35 +22,8 @@ export function extractFieldErrors(error: unknown): FieldErrors {
 
 export function getErrorMessage(error: unknown): string {
   if (!(error instanceof ClientResponseError)) {
-    if (
-      error &&
-      typeof error === 'object' &&
-      'message' in error &&
-      typeof (error as { message: unknown }).message === 'string'
-    ) {
-      return (error as { message: string }).message
-    }
-    return error instanceof Error ? error.message : 'Erro inesperado.'
+    return error instanceof Error ? error.message : 'An unexpected error occurred.'
   }
-  if (error.status === 429) {
-    return '429 Too Many Requests (Rate limit atingido no backend)'
-  }
-  const data = error.response?.data
-  if (data && typeof data === 'object') {
-    const fieldDetails: string[] = []
-    for (const [key, val] of Object.entries(data)) {
-      if (val && typeof val === 'object' && 'message' in val) {
-        fieldDetails.push(`${key}: ${(val as { message: string }).message}`)
-      } else if (typeof val === 'string') {
-        fieldDetails.push(`${key}: ${val}`)
-      }
-    }
-    if (fieldDetails.length > 0) {
-      return fieldDetails.join(' | ')
-    }
-  }
-  if (error.response?.message) {
-    return error.response.message
-  }
-  return error.message || `Erro HTTP ${error.status}`
+  const msgs = Object.values(extractFieldErrors(error))
+  return msgs.length > 0 ? msgs.join(' ') : error.message || 'An unexpected error occurred.'
 }

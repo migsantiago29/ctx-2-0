@@ -127,6 +127,7 @@ export default function Fluxograma() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedAreaFilter, setSelectedAreaFilter] = useState<string>('all')
   const [selectedNode, setSelectedNode] = useState<ProcessNode | null>(null)
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
 
   // Zoom & Pan state
   const [zoom, setZoom] = useState(0.75)
@@ -263,13 +264,23 @@ export default function Fluxograma() {
   }, [processos])
 
   // Alternar seleção ao clicar em um nó: se já estiver selecionado, desseleciona (ou seleciona novo)
+  // Nota: o clique no nó destaca as conexões e NÃO abre o drawer diretamente.
+  // Se mudar de nó com drawer já aberto, fecha o drawer ou mantém fechado até o usuário clicar em "Ver detalhes".
   const handleToggleNodeSelection = (node: ProcessNode) => {
-    setSelectedNode((prev) => (prev?.id === node.id ? null : node))
+    setSelectedNode((prev) => {
+      if (prev?.id === node.id) {
+        setIsDrawerOpen(false)
+        return null
+      }
+      setIsDrawerOpen(false)
+      return node
+    })
   }
 
-  // Centralizar em um nó buscado
+  // Centralizar em um nó buscado (destaca e não abre drawer diretamente)
   const handleSelectSearchNode = (node: ProcessNode) => {
     setSelectedNode(node)
+    setIsDrawerOpen(false)
     if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect()
       const targetX = rect.width / 2 - (node.x + node.width / 2) * zoom
@@ -336,6 +347,7 @@ export default function Fluxograma() {
     // Apenas se o clique foi direto no canvas/wrapper e não em um nó (os nós dão stopPropagation)
     if (selectedNode && !isEditMode) {
       setSelectedNode(null)
+      setIsDrawerOpen(false)
     }
   }
 
@@ -563,6 +575,7 @@ export default function Fluxograma() {
     const matchedNode = layout.nodes.find((n) => n.codigo.toUpperCase() === targetCodigo)
     if (matchedNode) {
       setSelectedNode(matchedNode)
+      setIsDrawerOpen(false)
       if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect()
         const targetX = rect.width / 2 - (matchedNode.x + matchedNode.width / 2) * zoom
@@ -768,6 +781,8 @@ export default function Fluxograma() {
                     setEditingPositions(initialMap)
                     setIsEditMode(true)
                     setHasUnsavedChanges(false)
+                    setSelectedNode(null)
+                    setIsDrawerOpen(false)
                   }}
                   className="px-3 py-1.5 rounded-lg bg-[#141414] hover:bg-[#1E1E1E] text-white border border-[#333] hover:border-[#FFD400] text-xs font-bold transition-all flex items-center gap-1.5"
                   title="Editar disposição dos processos no diagrama"
@@ -1459,6 +1474,27 @@ export default function Fluxograma() {
             })}
           </div>
 
+          {/* Botão flutuante "Ver detalhes" fixado no canto inferior esquerdo */}
+          {selectedNode && !isEditMode && (
+            <div className="absolute bottom-4 left-4 z-30 animate-in fade-in slide-in-from-bottom-2 duration-200">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setIsDrawerOpen(true)
+                }}
+                className="group flex items-center gap-2 px-4 py-2.5 bg-[#FFD400] hover:bg-[#ffe033] active:scale-95 text-black font-extrabold text-xs md:text-sm rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.6),0_0_16px_rgba(255,212,0,0.35)] border border-[#FFD400] transition-all cursor-pointer select-none"
+                title={`Ver detalhes completos de ${selectedNode.codigo} - ${selectedNode.nome}`}
+              >
+                <Info className="w-4 h-4 text-black shrink-0 transition-transform group-hover:scale-110" />
+                <span>Ver detalhes</span>
+                <span className="font-mono text-[11px] font-bold px-1.5 py-0.5 rounded bg-black/15 text-black ml-0.5">
+                  {selectedNode.codigo}
+                </span>
+              </button>
+            </div>
+          )}
+
           {/* Minimapa Flutuante (canto inferior direito) */}
           <div className="absolute bottom-4 right-4 w-48 h-36 bg-[#141414]/90 border border-[#262626] rounded-xl p-2.5 shadow-2xl backdrop-blur-md hidden sm:block pointer-events-none z-30">
             <div className="flex items-center justify-between text-[9px] uppercase font-bold text-[#9CA3AF] mb-1.5">
@@ -1503,6 +1539,24 @@ export default function Fluxograma() {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Botão flutuante "Ver detalhes" fixado no canto inferior esquerdo no Modo Lista */}
+      {viewMode === 'list' && selectedNode && (
+        <div className="fixed bottom-6 left-6 z-40 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <button
+            type="button"
+            onClick={() => setIsDrawerOpen(true)}
+            className="group flex items-center gap-2 px-4 py-2.5 bg-[#FFD400] hover:bg-[#ffe033] active:scale-95 text-black font-extrabold text-xs md:text-sm rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.6),0_0_16px_rgba(255,212,0,0.35)] border border-[#FFD400] transition-all cursor-pointer select-none"
+            title={`Ver detalhes completos de ${selectedNode.codigo} - ${selectedNode.nome}`}
+          >
+            <Info className="w-4 h-4 text-black shrink-0 transition-transform group-hover:scale-110" />
+            <span>Ver detalhes</span>
+            <span className="font-mono text-[11px] font-bold px-1.5 py-0.5 rounded bg-black/15 text-black ml-0.5">
+              {selectedNode.codigo}
+            </span>
+          </button>
         </div>
       )}
 
@@ -1580,12 +1634,12 @@ export default function Fluxograma() {
         </div>
       )}
 
-      {/* PAINEL LATERAL (DRAWER AO CLICAR EM UM PROCESSO) */}
-      {selectedNodeDetails && (
+      {/* PAINEL LATERAL (DRAWER AO CLICAR EM 'VER DETALHES') */}
+      {isDrawerOpen && selectedNodeDetails && (
         <div className="fixed inset-0 z-50 flex justify-end">
           <div
             className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
-            onClick={() => setSelectedNode(null)}
+            onClick={() => setIsDrawerOpen(false)}
           />
 
           <div className="relative w-full md:w-[480px] bg-[#111111] border-l border-[#262626] h-full flex flex-col shadow-2xl z-10 animate-in slide-in-from-right duration-250 overflow-hidden">
@@ -1598,7 +1652,7 @@ export default function Fluxograma() {
                 </span>
               </div>
               <button
-                onClick={() => setSelectedNode(null)}
+                onClick={() => setIsDrawerOpen(false)}
                 className="p-1.5 rounded-lg text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E]"
               >
                 <X className="w-5 h-5" />
@@ -1771,7 +1825,7 @@ export default function Fluxograma() {
             {/* Footer */}
             <div className="p-4 border-t border-[#262626] bg-[#141414]">
               <button
-                onClick={() => setSelectedNode(null)}
+                onClick={() => setIsDrawerOpen(false)}
                 className="w-full py-2.5 bg-[#1C1C1C] hover:bg-[#262626] text-white text-xs font-semibold rounded-lg border border-[#333] transition-colors"
               >
                 Fechar painel

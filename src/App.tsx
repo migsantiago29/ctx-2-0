@@ -9,9 +9,12 @@ import Layout from '@/components/Layout'
 
 // Pages
 import Index from './pages/Index'
+import Projetos from './pages/Projetos'
+import PulsoCTX from './pages/PulsoCTX'
 import Fluxograma from './pages/Fluxograma'
 import Organograma from './pages/Organograma'
 import AdminImport from './pages/AdminImport'
+import AdminCiclos from './pages/AdminCiclos'
 import RedefinirSenhaObrigatoria from './pages/RedefinirSenhaObrigatoria'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
@@ -41,8 +44,12 @@ const App = () => (
           <Route element={<ProtectedRoute />}>
             <Route element={<Layout />}>
               <Route path="/" element={<Index />} />
+              <Route path="/projetos" element={<Projetos />} />
+              <Route path="/projetos/:id" element={<Projetos />} />
+              <Route path="/pulso-ctx" element={<PulsoCTX />} />
               <Route path="/fluxograma" element={<Fluxograma />} />
               <Route path="/organograma" element={<Organograma />} />
+              <Route path="/admin/ciclos" element={<AdminCiclos />} />
               <Route path="/admin/import" element={<AdminImport />} />
             </Route>
           </Route>

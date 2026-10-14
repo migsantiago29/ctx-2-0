@@ -1,7 +1,19 @@
 import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { Target, Workflow, Users, LogOut, Menu, X, Shield } from 'lucide-react'
+import {
+  Target,
+  Workflow,
+  Users,
+  LogOut,
+  Menu,
+  X,
+  Shield,
+  Compass,
+  Activity,
+  Sliders,
+} from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { NotificationBell } from './NotificationBell'
 
 export default function Layout() {
   const { user, logout } = useAuth()
@@ -17,11 +29,16 @@ export default function Layout() {
 
   const navItems = [
     { name: 'Meu Painel', path: '/', icon: Target },
+    { name: 'Projetos', path: '/projetos', icon: Compass },
+    { name: 'Pulso CTX', path: '/pulso-ctx', icon: Activity },
     { name: 'Fluxograma', path: '/fluxograma', icon: Workflow },
     { name: 'Organograma', path: '/organograma', icon: Users },
   ]
 
-  const adminNavItems = [{ name: 'Importação & Acessos', path: '/admin/import', icon: Shield }]
+  const adminNavItems = [
+    { name: 'Ciclos & Adesão', path: '/admin/ciclos', icon: Sliders },
+    { name: 'Importação & Acessos', path: '/admin/import', icon: Shield },
+  ]
 
   const firstName = user?.name ? user.name.split(' ')[0] : 'Colaborador'
   const userArea = user?.area || 'CTX Cenografia'
@@ -31,7 +48,7 @@ export default function Layout() {
       {/* DESKTOP SIDEBAR (~260px) */}
       <aside className="hidden md:flex flex-col w-[260px] bg-[#0D0D0D] border-r border-[#262626] shrink-0 fixed top-0 bottom-0 left-0 z-30">
         {/* Brand Header */}
-        <div className="h-20 flex items-center px-6 border-b border-[#262626]/80">
+        <div className="h-20 flex items-center justify-between px-6 border-b border-[#262626]/80">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-[#FFD400] text-black font-black flex items-center justify-center text-sm shadow-md shadow-[#FFD400]/20 tracking-wider">
               CTX
@@ -39,12 +56,12 @@ export default function Layout() {
             <div className="flex flex-col">
               <span className="font-extrabold text-base tracking-tight text-white flex items-center gap-1.5">
                 CTX 2.0
-                <span className="text-[10px] uppercase font-bold px-1.5 py-0.2 bg-[#FFD400]/15 text-[#FFD400] rounded">
-                  PRO
-                </span>
               </span>
               <span className="text-[11px] text-[#9CA3AF] tracking-wide">Cenografia & Stands</span>
             </div>
+          </div>
+          <div className="hidden md:block">
+            <NotificationBell />
           </div>
         </div>
 
@@ -131,13 +148,16 @@ export default function Layout() {
           </div>
           <span className="font-bold text-sm tracking-tight text-white">CTX 2.0</span>
         </div>
-        <button
-          onClick={() => setMobileMenuOpen(true)}
-          className="p-2 text-[#9CA3AF] hover:text-white rounded-lg hover:bg-[#1A1A1A]"
-          aria-label="Abrir menu"
-        >
-          <Menu className="w-6 h-6" />
-        </button>
+        <div className="flex items-center gap-2">
+          <NotificationBell />
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className="p-2 text-[#9CA3AF] hover:text-white rounded-lg hover:bg-[#1A1A1A]"
+            aria-label="Abrir menu"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+        </div>
       </header>
 
       {/* MOBILE DRAWER WITH BACKDROP */}

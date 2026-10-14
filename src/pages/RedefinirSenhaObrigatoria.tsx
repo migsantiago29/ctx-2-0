@@ -4,6 +4,7 @@ import { Lock, KeyRound, ShieldAlert, CheckCircle2, ArrowRight } from 'lucide-re
 import pb from '@/lib/pocketbase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from '@/hooks/use-toast'
+import { TourPrimeiroAcesso } from '@/components/TourPrimeiroAcesso'
 
 export default function RedefinirSenhaObrigatoria() {
   const { user, refreshUser, logout } = useAuth()
@@ -13,6 +14,7 @@ export default function RedefinirSenhaObrigatoria() {
   const [passwordConfirm, setPasswordConfirm] = useState('')
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
+  const [showTour, setShowTour] = useState(false)
 
   if (!user) {
     navigate('/login')
@@ -69,10 +71,10 @@ export default function RedefinirSenhaObrigatoria() {
 
       toast({
         title: 'Senha alterada com sucesso!',
-        description: 'Seu acesso ao CTX 2.0 foi liberado.',
+        description: 'Bem-vindo ao CTX 2.0!',
       })
 
-      navigate('/', { replace: true })
+      setShowTour(true)
     } catch (err: unknown) {
       console.error('Erro ao redefinir senha:', err)
       let msg = 'Não foi possível redefinir a senha.'
@@ -94,6 +96,12 @@ export default function RedefinirSenhaObrigatoria() {
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] flex flex-col justify-center items-center p-4">
+      {showTour && (
+        <TourPrimeiroAcesso
+          colaboradorNome={user?.name || 'Colaborador'}
+          onComplete={() => navigate('/', { replace: true })}
+        />
+      )}
       <div className="w-full max-w-md bg-[#111111] border border-[#262626] rounded-2xl p-8 shadow-2xl relative">
         <div className="flex flex-col items-center text-center mb-6">
           <div className="w-12 h-12 rounded-xl bg-[#FFD400] text-black font-black flex items-center justify-center text-lg mb-3 shadow-md shadow-[#FFD400]/20">

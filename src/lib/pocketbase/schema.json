@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-14T18:05:55.511Z",
+  "generatedAt": "2026-10-14T18:54:09.256Z",
   "collections": [
     {
       "name": "users",
@@ -221,17 +221,25 @@
           "system": false
         },
         {
-          "name": "status",
-          "type": "select",
-          "required": false,
-          "system": false,
-          "selectValues": ["sem atualização", "em andamento", "concluida", "atrasada"]
-        },
-        {
           "name": "progresso",
           "type": "number",
           "required": false,
           "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "sem atualização",
+            "verde",
+            "atencao",
+            "vermelho",
+            "concluida",
+            "em andamento",
+            "atrasada"
+          ]
         }
       ],
       "indexes": [
@@ -568,6 +576,412 @@
       "indexes": [
         "CREATE UNIQUE INDEX idx_fluxograma_posicoes_id ON fluxograma_posicoes (processo_id)",
         "CREATE INDEX idx_fluxograma_posicoes_cod ON fluxograma_posicoes (processo_codigo)"
+      ]
+    },
+    {
+      "name": "configuracoes",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != '' && @request.auth.role = 'admin'",
+        "update": "@request.auth.id != '' && @request.auth.role = 'admin'",
+        "delete": "@request.auth.id != '' && @request.auth.role = 'admin'"
+      },
+      "fields": [
+        {
+          "name": "chave",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "rotina_ativa",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "pulso_ativo",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "valor",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE UNIQUE INDEX idx_configuracoes_chave ON configuracoes (chave)"]
+    },
+    {
+      "name": "ciclos",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != '' && @request.auth.role = 'admin'",
+        "update": "@request.auth.id != '' && @request.auth.role = 'admin'",
+        "delete": "@request.auth.id != '' && @request.auth.role = 'admin'"
+      },
+      "fields": [
+        {
+          "name": "tipo",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["pulso_semanal", "avaliacao_mensal"]
+        },
+        {
+          "name": "referencia",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "titulo",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "abertura",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "fechamento",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["aberto", "fechado"]
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_ciclos_tipo_ref ON ciclos (tipo, referencia)",
+        "CREATE INDEX idx_ciclos_status ON ciclos (status)"
+      ]
+    },
+    {
+      "name": "avaliacoes",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != '' && @request.auth.role = 'admin'"
+      },
+      "fields": [
+        {
+          "name": "ciclo",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "ciclos"
+        },
+        {
+          "name": "meta",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "metas"
+        },
+        {
+          "name": "preenchido_por",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "colaboradores"
+        },
+        {
+          "name": "farol",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["verde", "atencao", "vermelho", "concluida"]
+        },
+        {
+          "name": "avancou",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "proximo_passo",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "ajuda_colaborador",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "colaboradores"
+        },
+        {
+          "name": "ajuda_texto",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "ajuda_status",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["aberto", "resolvido"]
+        },
+        {
+          "name": "evidencia_link",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "evidencia_arquivo",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_avaliacoes_ciclo_meta ON avaliacoes (ciclo, meta)",
+        "CREATE INDEX idx_avaliacoes_farol ON avaliacoes (farol)",
+        "CREATE INDEX idx_avaliacoes_ajuda ON avaliacoes (ajuda_status)"
+      ]
+    },
+    {
+      "name": "pulsos",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != '' && @request.auth.role = 'admin'"
+      },
+      "fields": [
+        {
+          "name": "ciclo",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "ciclos"
+        },
+        {
+          "name": "colaborador",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "colaboradores"
+        },
+        {
+          "name": "meta",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "metas"
+        },
+        {
+          "name": "resposta",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["avancei", "sem_avanco", "travado"]
+        },
+        {
+          "name": "bloqueio_texto",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_pulsos_ciclo_colab_meta ON pulsos (ciclo, colaborador, meta)",
+        "CREATE INDEX idx_pulsos_resposta ON pulsos (resposta)"
+      ]
+    },
+    {
+      "name": "comentarios",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != '' && autor = @request.auth.id",
+        "delete": "@request.auth.id != '' && (@request.auth.role = 'admin' || autor = @request.auth.id)"
+      },
+      "fields": [
+        {
+          "name": "avaliacao",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "avaliacoes"
+        },
+        {
+          "name": "autor",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "texto",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": ["CREATE INDEX idx_comentarios_avaliacao ON comentarios (avaliacao)"]
+    },
+    {
+      "name": "notificacoes",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && destinatario = @request.auth.id",
+        "view": "@request.auth.id != '' && destinatario = @request.auth.id",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != '' && destinatario = @request.auth.id",
+        "delete": "@request.auth.id != '' && destinatario = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "destinatario",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "tipo",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "ciclo_aberto",
+            "lembrete",
+            "pedido_ajuda",
+            "comentario",
+            "meta_concluida"
+          ]
+        },
+        {
+          "name": "texto",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "link",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "lida",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_notificacoes_dest_lida ON notificacoes (destinatario, lida, created DESC)"
       ]
     }
   ]

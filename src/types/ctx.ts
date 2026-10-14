@@ -52,6 +52,15 @@ export interface ProjetoEstrategico extends RecordModel {
   expand?: {
     sponsor?: Colaborador
   }
+  totalMetas?: number
+  metasCount?: {
+    total: number
+    verde: number
+    atencao: number
+    vermelho: number
+    concluida: number
+    sem_atualizacao: number
+  }
 }
 
 export interface Indicador extends RecordModel {
@@ -77,7 +86,14 @@ export interface Meta extends RecordModel {
   trimestre?: string
   processos_vinculados?: string[]
   valor_alvo_a_definir?: boolean
-  status: 'sem atualização' | 'em andamento' | 'concluida' | 'atrasada'
+  status:
+    | 'sem atualização'
+    | 'em andamento'
+    | 'concluida'
+    | 'atrasada'
+    | 'verde'
+    | 'atencao'
+    | 'vermelho'
   progresso?: number
   expand?: {
     projeto?: ProjetoEstrategico
@@ -87,9 +103,79 @@ export interface Meta extends RecordModel {
   }
 }
 
+export type FarolStatus = 'verde' | 'atencao' | 'vermelho' | 'concluida'
+
+export interface Ciclo extends RecordModel {
+  tipo: 'pulso_semanal' | 'avaliacao_mensal'
+  referencia: string
+  titulo?: string
+  abertura: string
+  fechamento: string
+  status: 'aberto' | 'fechado'
+}
+
+export interface Avaliacao extends RecordModel {
+  ciclo: string
+  meta: string
+  preenchido_por: string
+  farol: FarolStatus
+  avancou: string
+  proximo_passo: string
+  ajuda_colaborador?: string
+  ajuda_texto?: string
+  ajuda_status?: 'aberto' | 'resolvido'
+  evidencia_link?: string
+  evidencia_arquivo?: string
+  expand?: {
+    ciclo?: Ciclo
+    meta?: Meta
+    preenchido_por?: Colaborador
+    ajuda_colaborador?: Colaborador
+  }
+}
+
+export interface Pulso extends RecordModel {
+  ciclo: string
+  colaborador: string
+  meta: string
+  resposta: 'avancei' | 'sem_avanco' | 'travado'
+  bloqueio_texto?: string
+  expand?: {
+    ciclo?: Ciclo
+    colaborador?: Colaborador
+    meta?: Meta
+  }
+}
+
+export interface Comentario extends RecordModel {
+  avaliacao: string
+  autor: string
+  texto: string
+  expand?: {
+    autor?: UserProfile
+  }
+}
+
+export interface Notificacao extends RecordModel {
+  destinatario: string
+  tipo: 'ciclo_aberto' | 'lembrete' | 'pedido_ajuda' | 'comentario' | 'meta_concluida'
+  texto: string
+  link?: string
+  lida: boolean
+}
+
+export interface ConfiguracaoGeral extends RecordModel {
+  chave: string
+  rotina_ativa: boolean
+  pulso_ativo: boolean
+  valor?: string
+}
+
 export interface MetaWithDetails extends Meta {
   indicadoresList?: Indicador[]
   processosList?: Processo[]
+  ultimaAvaliacao?: Avaliacao
+  ultimoPulso?: Pulso
 }
 
 export interface FluxogramaEtapa extends RecordModel {

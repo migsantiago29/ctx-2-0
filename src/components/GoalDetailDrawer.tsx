@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   X,
@@ -8,19 +9,88 @@ import {
   AlertCircle,
   Users,
   ExternalLink,
+  MessageSquare,
+  Clock,
+  Send,
+  Loader2,
+  CheckCircle2,
+  AlertTriangle,
+  HelpCircle,
 } from 'lucide-react'
-import type { MetaWithDetails } from '@/types/ctx'
+import type { MetaWithDetails, Avaliacao, Comentario, UserProfile } from '@/types/ctx'
+import { rotinaService } from '@/services/rotinaService'
+import { useAuth } from '@/contexts/AuthContext'
+import { toast } from '@/hooks/use-toast'
 import Sparkline, { TrendBadge } from './Sparkline'
 
 interface GoalDetailDrawerProps {
   goal: MetaWithDetails | null
+  currentUserProfile?: UserProfile | null
   onClose: () => void
 }
 
-export function GoalDetailDrawer({ goal, onClose }: GoalDetailDrawerProps) {
+export function GoalDetailDrawer({ goal, currentUserProfile, onClose }: GoalDetailDrawerProps) {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const [timeline, setTimeline] = useState<Avaliacao[]>([])
+  const [loadingTimeline, setLoadingTimeline] = useState(false)
+  const [comentariosMap, setComentariosMap] = useState<Record<string, Comentario[]>>({})
+  const [novoComentario, setNovoComentario] = useState<Record<string, string>>({})
+  const [sendingComent, setSendingComent] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!goal) return
+    let isMounted = true
+    const loadTimeline = async () => {
+      setLoadingTimeline(true)
+      try {
+        const avs = await rotinaService.getAvaliacoesMeta(goal.id)
+        if (!isMounted) return
+        setTimeline(avs)
+
+        // Carregar comentários para cada avaliação
+        for (const av of avs) {
+          rotinaService.getComentariosAvaliacao(av.id).then((comms) => {
+            if (isMounted) {
+              setComentariosMap((prev) => ({ ...prev, [av.id]: comms }))
+            }
+          })
+        }
+      } catch (e) {
+        console.error('Erro ao carregar timeline da meta:', e)
+      } finally {
+        if (isMounted) setLoadingTimeline(false)
+      }
+    }
+    loadTimeline()
+    return () => {
+      isMounted = false
+    }
+  }, [goal])
 
   if (!goal) return null
+
+  const handleEnviarComentario = async (avaliacaoId: string) => {
+    const texto = novoComentario[avaliacaoId]?.trim()
+    if (!texto) return
+    setSendingComent(avaliacaoId)
+    try {
+      await rotinaService.adicionarComentario(avaliacaoId, texto)
+      const atualizados = await rotinaService.getComentariosAvaliacao(avaliacaoId)
+      setComentariosMap((prev) => ({ ...prev, [avaliacaoId]: atualizados }))
+      setNovoComentario((prev) => ({ ...prev, [avaliacaoId]: '' }))
+      toast({
+        title: 'Comentário enviado!',
+      })
+    } catch (e) {
+      toast({
+        title: 'Erro ao enviar comentário',
+        variant: 'destructive',
+      })
+    } finally {
+      setSendingComent(null)
+    }
+  }
 
   // Formata data do prazo para dd/mm/aaaa
   const formatPrazo = (dateStr?: string) => {
@@ -176,6 +246,169 @@ export function GoalDetailDrawer({ goal, onClose }: GoalDetailDrawerProps) {
                 <span className="text-xs px-2.5 py-1 rounded-full bg-[#242424] text-[#A3A3A3] font-bold border border-[#333]">
                   Sem atualização
                 </span>
+              </div>
+            )}
+          </div>
+
+          {/* Timeline de Avaliações Mensais e Comentários */}
+          <div className="space-y-4 pt-2 border-t border-[#262626]">
+            <div className="flex items-center justify-between pb-1">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-[#FFD400]" />
+                <h4 className="text-xs uppercase tracking-wider font-bold text-white">
+                  Histórico de Avaliações & Comentários
+                </h4>
+              </div>
+              <span className="text-[11px] text-[#9CA3AF] font-mono">
+                {timeline.length} registro(s)
+              </span>
+            </div>
+
+            {loadingTimeline ? (
+              <div className="p-4 text-center text-xs text-[#666] animate-pulse">
+                Carregando histórico...
+              </div>
+            ) : timeline.length === 0 ? (
+              <div className="p-4 rounded-xl bg-[#141414] border border-[#262626] text-xs text-[#666] text-center italic">
+                Nenhuma avaliação mensal preenchida ainda para esta meta.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {timeline.map((av) => {
+                  const comms = comentariosMap[av.id] || []
+                  const farolColor =
+                    av.farol === 'verde'
+                      ? '#22C55E'
+                      : av.farol === 'atencao'
+                        ? '#F59E0B'
+                        : av.farol === 'concluida'
+                          ? '#3B82F6'
+                          : '#EF4444'
+
+                  return (
+                    <div
+                      key={av.id}
+                      className="p-4 rounded-xl bg-[#141414] border border-[#262626] space-y-3"
+                    >
+                      {/* Topo da avaliação */}
+                      <div className="flex items-start justify-between gap-2 border-b border-[#222] pb-2">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="w-3 h-3 rounded-full shrink-0"
+                            style={{ backgroundColor: farolColor }}
+                          />
+                          <span className="text-xs font-bold text-white uppercase tracking-wider">
+                            {av.farol}
+                          </span>
+                          {av.expand?.ciclo && (
+                            <span className="text-[10px] font-mono text-[#9CA3AF] bg-[#1F1F1F] px-1.5 py-0.5 rounded">
+                              {av.expand.ciclo.titulo || av.expand.ciclo.referencia}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-[#666]">
+                          {new Date(av.created).toLocaleDateString('pt-BR')}
+                        </span>
+                      </div>
+
+                      {/* Avançou e Próximo Passo */}
+                      <div className="space-y-2 text-xs">
+                        <div>
+                          <span className="text-[10px] uppercase font-bold text-[#9CA3AF] block">
+                            O que avançou:
+                          </span>
+                          <p className="text-[#E5E5E5] leading-relaxed">{av.avancou}</p>
+                        </div>
+                        <div>
+                          <span className="text-[10px] uppercase font-bold text-[#9CA3AF] block">
+                            Próximo passo:
+                          </span>
+                          <p className="text-[#E5E5E5] leading-relaxed">{av.proximo_passo}</p>
+                        </div>
+
+                        {/* Pedido de ajuda se existir */}
+                        {av.ajuda_texto && (
+                          <div className="p-2.5 rounded-lg bg-[#F59E0B]/10 border border-[#F59E0B]/30 text-xs text-[#F59E0B]">
+                            <div className="flex items-center gap-1.5 font-bold mb-0.5">
+                              <HelpCircle className="w-3.5 h-3.5" />
+                              <span>Pedido de ajuda:</span>
+                            </div>
+                            <p className="text-white text-[11px]">{av.ajuda_texto}</p>
+                          </div>
+                        )}
+
+                        {/* Evidência */}
+                        {av.evidencia_link && (
+                          <div className="pt-1">
+                            <a
+                              href={av.evidencia_link}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1.5 text-xs text-[#FFD400] hover:underline"
+                            >
+                              <span>Ver link de evidência</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Comentários / Retorno */}
+                      <div className="pt-2 border-t border-[#222] space-y-2">
+                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#9CA3AF]">
+                          <MessageSquare className="w-3.5 h-3.5" />
+                          <span>Comentários ({comms.length})</span>
+                        </div>
+
+                        {comms.map((c) => (
+                          <div
+                            key={c.id}
+                            className="p-2 rounded bg-[#1A1A1A] text-xs text-[#D1D5DB] space-y-0.5"
+                          >
+                            <div className="flex items-center justify-between text-[10px] text-[#888]">
+                              <span className="font-bold text-[#FFD400]">
+                                {c.expand?.autor?.name || 'Administrador / Sponsor'}
+                              </span>
+                              <span>{new Date(c.created).toLocaleDateString('pt-BR')}</span>
+                            </div>
+                            <p className="text-[11px]">{c.texto}</p>
+                          </div>
+                        ))}
+
+                        {/* Input para adicionar comentário */}
+                        <div className="flex items-center gap-1.5 pt-1">
+                          <input
+                            type="text"
+                            value={novoComentario[av.id] || ''}
+                            onChange={(e) =>
+                              setNovoComentario({ ...novoComentario, [av.id]: e.target.value })
+                            }
+                            placeholder="Deixar um comentário / retorno..."
+                            className="flex-1 bg-[#1A1A1A] border border-[#2B2B2B] focus:border-[#FFD400] rounded-lg px-2.5 py-1.5 text-xs text-white placeholder-[#555] outline-none"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault()
+                                handleEnviarComentario(av.id)
+                              }
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleEnviarComentario(av.id)}
+                            disabled={sendingComent === av.id}
+                            className="p-2 rounded-lg bg-[#FFD400] text-black font-bold hover:bg-[#E5BE00] transition-colors"
+                          >
+                            {sendingComent === av.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <Send className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>

@@ -156,3 +156,70 @@ routerAdd('POST', '/backend/v1/ctx/first-access-password', (e) => {
     },
   })
 })
+
+// Endpoint para redefinição manual de senha pelo administrador
+// Permite que um admin defina uma nova senha para qualquer usuário/colaborador,
+// forçando privilégio de admin, ativando must_change_password e validando requisitos de segurança
+routerAdd('POST', '/backend/v1/ctx/admin-reset-password', (e) => {
+  // 1. Checar autenticação de admin ou superuser
+  const authRecord = e.auth
+  const isSuper = e.hasSuperuserAuth ? e.hasSuperuserAuth() : false
+  const isAdmin =
+    authRecord && (authRecord.get('role') === 'admin' || authRecord.getString('role') === 'admin')
+
+  if (!isSuper && !isAdmin) {
+    throw new ForbiddenError('Apenas administradores podem redefinir senhas de colaboradores.')
+  }
+
+  // 2. Extrair dados da requisição
+  const info = e.requestInfo()
+  const body = (info && info.body) || {}
+  const userId = (body.userId || body.user_id || '').trim()
+  const password = body.password || ''
+
+  if (!userId) {
+    throw new BadRequestError('Colaborador não selecionado.')
+  }
+
+  if (!password || typeof password !== 'string') {
+    throw new BadRequestError('A nova senha é obrigatória.')
+  }
+
+  if (password.length < 8) {
+    throw new BadRequestError('A nova senha deve ter no mínimo 8 caracteres.')
+  }
+
+  if (password === 'CTX@2027') {
+    throw new BadRequestError(
+      'A senha provisória CTX@2027 não pode ser utilizada como nova senha. Defina uma senha individual ou temporária personalizada com no mínimo 8 caracteres.',
+    )
+  }
+
+  // 3. Buscar usuário no PocketBase
+  let targetUser = null
+  try {
+    targetUser = e.app.findRecordById('_pb_users_auth_', userId)
+  } catch (_) {
+    throw new BadRequestError('Colaborador/usuário não encontrado no sistema.')
+  }
+
+  // 4. Aplicar a nova senha e reativar a flag must_change_password
+  targetUser.setPassword(password)
+  const isProtectedAdmin = targetUser.email() === 'miguel.santiago@ctxcenografia.com.br'
+  targetUser.set('must_change_password', isProtectedAdmin ? false : true)
+  targetUser.setVerified(true)
+
+  e.app.save(targetUser)
+
+  return e.json(200, {
+    success: true,
+    message: 'Senha do colaborador redefinida com sucesso!',
+    user: {
+      id: targetUser.id,
+      email: targetUser.email(),
+      name: targetUser.getString('name'),
+      role: targetUser.getString('role'),
+      must_change_password: targetUser.getBool('must_change_password'),
+    },
+  })
+})

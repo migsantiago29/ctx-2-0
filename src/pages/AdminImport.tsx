@@ -1393,7 +1393,7 @@ export default function AdminImport() {
     }
   }
 
-  // Redefinição manual de senha por admin
+  // Redefinição manual de senha por admin via endpoint seguro do servidor
   const handleAdminResetPassword = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedUserId || !newPassword) {
@@ -1405,7 +1405,9 @@ export default function AdminImport() {
       return
     }
 
-    if (newPassword.length < 8) {
+    const trimmedPassword = newPassword.trim()
+
+    if (trimmedPassword.length < 8) {
       toast({
         title: 'Senha muito curta',
         description: 'A senha deve conter pelo menos 8 dígitos.',
@@ -1414,22 +1416,45 @@ export default function AdminImport() {
       return
     }
 
+    if (trimmedPassword === 'CTX@2027') {
+      toast({
+        title: 'Senha não permitida',
+        description:
+          'A senha provisória CTX@2027 não pode ser utilizada na redefinição. Escolha uma senha segura individual.',
+        variant: 'destructive',
+      })
+      return
+    }
+
     setResettingPassword(true)
     try {
-      await pb.collection('users').update(selectedUserId, {
-        password: newPassword,
-        passwordConfirm: newPassword,
-        must_change_password: true,
+      const res = await pb.send<{
+        success: boolean
+        message?: string
+        user?: { id: string; name: string; email: string }
+      }>('/backend/v1/ctx/admin-reset-password', {
+        method: 'POST',
+        body: {
+          userId: selectedUserId,
+          password: trimmedPassword,
+        },
       })
+
+      if (!res || !res.success) {
+        throw new Error(res?.message || 'Falha ao redefinir a senha do colaborador.')
+      }
 
       toast({
         title: 'Senha redefinida com sucesso!',
         description:
-          'O colaborador precisará trocar essa senha no primeiro acesso conforme as diretrizes.',
+          res.message ||
+          'A senha foi atualizada. O colaborador precisará alterá-la no próximo login.',
       })
       setNewPassword('')
+      // Recarrega a lista de usuários para manter o estado atualizado
+      loadUsersAndColabs()
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Erro ao redefinir senha do colaborador'
+      const msg = getErrorMessage(err)
       toast({
         title: 'Falha na redefinição',
         description: msg,
@@ -2313,7 +2338,7 @@ export default function AdminImport() {
                 type="text"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="Ex.: CTX@2027 ou nova senha"
+                placeholder="Ex.: Nova senha (mínimo 8 dígitos, diferente de CTX@2027)"
                 required
                 className="w-full bg-[#171717] border border-[#262626] rounded-lg pl-9 pr-3 py-2 text-sm text-white focus:outline-none focus:border-[#FFD400] transition-colors"
               />

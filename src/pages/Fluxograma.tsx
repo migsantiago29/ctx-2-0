@@ -410,43 +410,36 @@ export default function Fluxograma() {
     if (!isAdmin) return
     setIsSaving(true)
     try {
-      const existingRecords = await pb
-        .collection('fluxograma_posicoes')
-        .getFullList<FluxogramaPosicao>()
-      const existingByProcId = new Map<string, FluxogramaPosicao>()
-      existingRecords.forEach((r) => {
-        if (r.processo_id) existingByProcId.set(r.processo_id, r)
-      })
+      // Montar lista com todas as posições ativas dos nós editados
+      const positionsPayload: {
+        processo_id: string
+        processo_codigo: string
+        x: number
+        y: number
+      }[] = []
 
-      const savePromises: Promise<unknown>[] = []
       editingPositions.forEach((pos, procId) => {
         const proc = processos.find((p) => p.id === procId)
         const codigo = proc?.codigo || ''
-        const existing = existingByProcId.get(procId)
-
-        if (existing) {
-          if (existing.x !== pos.x || existing.y !== pos.y) {
-            savePromises.push(
-              pb.collection('fluxograma_posicoes').update(existing.id, {
-                x: pos.x,
-                y: pos.y,
-                processo_codigo: codigo,
-              }),
-            )
-          }
-        } else {
-          savePromises.push(
-            pb.collection('fluxograma_posicoes').create({
-              processo_id: procId,
-              processo_codigo: codigo,
-              x: pos.x,
-              y: pos.y,
-            }),
-          )
-        }
+        positionsPayload.push({
+          processo_id: procId,
+          processo_codigo: codigo,
+          x: Math.round(pos.x),
+          y: Math.round(pos.y),
+        })
       })
 
-      await Promise.all(savePromises)
+      // Envio atômico em requisição única para o endpoint privilegiado server-side
+      // Evita o erro 429 Too Many Requests ao salvar 180+ nós em paralelo
+      await pb.send<{ success: boolean; message: string }>(
+        '/backend/v1/ctx/fluxograma/save-positions',
+        {
+          method: 'POST',
+          body: {
+            positions: positionsPayload,
+          },
+        },
+      )
 
       setSavedPositions(new Map(editingPositions))
       setHasUnsavedChanges(false)
@@ -478,8 +471,13 @@ export default function Fluxograma() {
 
     setIsSaving(true)
     try {
-      const records = await pb.collection('fluxograma_posicoes').getFullList<FluxogramaPosicao>()
-      await Promise.all(records.map((r) => pb.collection('fluxograma_posicoes').delete(r.id)))
+      // Limpeza atômica em requisição única para o endpoint privilegiado server-side
+      await pb.send<{ success: boolean; message: string }>(
+        '/backend/v1/ctx/fluxograma/reset-positions',
+        {
+          method: 'POST',
+        },
+      )
 
       setSavedPositions(new Map())
       setEditingPositions(new Map())

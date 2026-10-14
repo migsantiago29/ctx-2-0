@@ -14,8 +14,22 @@ import {
 import pb from '@/lib/pocketbase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { parseCsv } from '@/lib/csvParser'
+import { getErrorMessage } from '@/lib/pocketbase/errors'
 import type { UserProfile, Colaborador } from '@/types/ctx'
 import { toast } from '@/hooks/use-toast'
+
+interface RejectedItem {
+  etapa:
+    | 'Áreas'
+    | 'Usuários/Login'
+    | 'Colaboradores'
+    | 'Processos (1ª passada)'
+    | 'Processos (2ª passada)'
+  linha?: number
+  codigo?: string
+  motivo: string
+  payload?: Record<string, unknown>
+}
 
 interface ValidationReport {
   counts: {
@@ -35,7 +49,45 @@ interface ValidationReport {
     o01Check: boolean | null
     rh05Check: boolean | null
   }
-  errors: Array<{ etapa: string; linha?: number; codigo?: string; motivo: string }>
+  errors: RejectedItem[]
+}
+
+// Utilitário de pausa (throttling)
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+// Executa uma operação assíncrona com tentativas e backoff exponencial em caso de erro 429 (Too Many Requests)
+async function runWithRetry<T>(
+  fn: () => Promise<T>,
+  options?: { maxAttempts?: number; initialDelayMs?: number; maxDelayMs?: number },
+): Promise<T> {
+  const maxAttempts = options?.maxAttempts ?? 6
+  let delay = options?.initialDelayMs ?? 400
+  const maxDelay = options?.maxDelayMs ?? 5000
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn()
+    } catch (err: unknown) {
+      const is429 =
+        (err &&
+          typeof err === 'object' &&
+          'status' in err &&
+          (err as { status: number }).status === 429) ||
+        (err instanceof Error &&
+          (err.message.includes('429') || err.message.toLowerCase().includes('too many requests')))
+
+      if (is429 && attempt < maxAttempts) {
+        console.warn(
+          `[runWithRetry] 429 recebido. Aguardando ${delay}ms antes da tentativa ${attempt + 1}/${maxAttempts}...`,
+        )
+        await sleep(delay)
+        delay = Math.min(delay * 2, maxDelay)
+        continue
+      }
+      throw err
+    }
+  }
+  throw new Error('Falha após múltiplas tentativas')
 }
 
 export default function AdminImport() {
@@ -77,6 +129,73 @@ export default function AdminImport() {
     }
   }, [user])
 
+  // Função auxiliar para re-calcular checagens e contagens finais do banco
+  const refreshValidationReportCounts = async (
+    currentErrors: RejectedItem[],
+  ): Promise<ValidationReport> => {
+    const [freshAreas, freshColabs, freshUsers, allProcs] = await Promise.all([
+      runWithRetry(() => pb.collection('areas').getFullList()),
+      runWithRetry(() => pb.collection('colaboradores').getFullList<Colaborador>()),
+      runWithRetry(() => pb.collection('users').getFullList<UserProfile>()),
+      runWithRetry(() => pb.collection('processos').getFullList()),
+    ])
+
+    const procMapByCodigo = new Map<string, string>()
+    allProcs.forEach((p) => procMapByCodigo.set(p.codigo.trim().toUpperCase(), p.id))
+
+    let totalConexoes = 0
+    for (const p of allProcs) {
+      const suc = p.etapas_sucessoras || []
+      totalConexoes += suc.length
+    }
+
+    const william = freshColabs.find(
+      (c) =>
+        c.codigo?.toLowerCase().includes('william') ||
+        c.nome?.toLowerCase().includes('william machado'),
+    )
+
+    let o01Check: boolean | null = null
+    const o01 = allProcs.find((p) => p.codigo === 'O01')
+    if (o01) {
+      const o02Id = procMapByCodigo.get('O02')
+      const o03Id = procMapByCodigo.get('O03')
+      const suc = o01.etapas_sucessoras || []
+      const hasO02 = !!o02Id && suc.includes(o02Id)
+      const hasO03 = !!o03Id && suc.includes(o03Id)
+      o01Check = hasO02 && hasO03
+    }
+
+    let rh05Check: boolean | null = null
+    const rh05 = allProcs.find((p) => p.codigo === 'RH05')
+    if (rh05) {
+      const ant = rh05.etapas_anteriores || []
+      const suc = rh05.etapas_sucessoras || []
+      rh05Check = ant.length === 0 && suc.length === 0
+    }
+
+    return {
+      counts: {
+        areas: freshAreas.length,
+        areasExpected: 14,
+        colaboradores: freshColabs.length,
+        colaboradoresExpected: 21,
+        users: freshUsers.length,
+        usersExpected: 21,
+        processos: allProcs.length,
+        processosExpected: 181,
+        conexoes: totalConexoes,
+        conexoesExpected: 217,
+      },
+      checks: {
+        williamCheck: william ? !!william.sem_metas : null,
+        o01Check,
+        rh05Check,
+      },
+      errors: currentErrors,
+    }
+  }
+
   // Função principal de importação
   const handleStartImport = async () => {
     if (!fileAreas || !fileColabs || !fileProcs) {
@@ -92,26 +211,7 @@ export default function AdminImport() {
     setProgressMsg('Lendo arquivos CSV...')
     setReport(null)
 
-    const rep: ValidationReport = {
-      counts: {
-        areas: 0,
-        areasExpected: 14,
-        colaboradores: 0,
-        colaboradoresExpected: 21,
-        users: 0,
-        usersExpected: 21,
-        processos: 0,
-        processosExpected: 181,
-        conexoes: 0,
-        conexoesExpected: 217,
-      },
-      checks: {
-        williamCheck: null,
-        o01Check: null,
-        rh05Check: null,
-      },
-      errors: [],
-    }
+    const errors: RejectedItem[] = []
 
     try {
       // 1. Ler os três arquivos texto
@@ -130,7 +230,7 @@ export default function AdminImport() {
       setProgressMsg('Processando registros de áreas...')
 
       // Carregar áreas já existentes para idempotência
-      const existingAreas = await pb.collection('areas').getFullList()
+      const existingAreas = await runWithRetry(() => pb.collection('areas').getFullList())
       const areaMapByName = new Map<string, string>() // nome -> id
       for (const a of existingAreas) {
         areaMapByName.set(a.nome.trim().toLowerCase(), a.id)
@@ -140,7 +240,7 @@ export default function AdminImport() {
         const row = parsedAreas.rows[i]
         const nome = (row.nome || '').trim()
         if (!nome) {
-          rep.errors.push({
+          errors.push({
             etapa: 'Áreas',
             linha: i + 2,
             motivo: 'Nome da área vazio',
@@ -150,7 +250,6 @@ export default function AdminImport() {
 
         const ordem = parseInt(row.ordem_no_fluxo || '0', 10) || 0
         const tipoRaw = (row.tipo || '').trim().toLowerCase()
-        // tipo pode ser "área" ou "grupo de processos (marcos de produção)"
         const tipo =
           tipoRaw.includes('grupo') || tipoRaw.includes('marco') ? 'grupo de processos' : 'área'
 
@@ -164,25 +263,26 @@ export default function AdminImport() {
           const key = nome.toLowerCase()
           if (areaMapByName.has(key)) {
             const id = areaMapByName.get(key)!
-            await pb.collection('areas').update(id, areaPayload)
+            await runWithRetry(() => pb.collection('areas').update(id, areaPayload))
           } else {
-            const created = await pb.collection('areas').create(areaPayload)
+            const created = await runWithRetry(() => pb.collection('areas').create(areaPayload))
             areaMapByName.set(key, created.id)
           }
         } catch (err: unknown) {
-          const msg = err instanceof Error ? err.message : 'Erro ao salvar área'
-          rep.errors.push({
+          const msg = getErrorMessage(err)
+          errors.push({
             etapa: 'Áreas',
             linha: i + 2,
             codigo: nome,
             motivo: msg,
+            payload: areaPayload,
           })
         }
+        await sleep(30)
       }
 
       // Re-consultar áreas para obter IDs atualizados
-      const freshAreas = await pb.collection('areas').getFullList()
-      rep.counts.areas = freshAreas.length
+      const freshAreas = await runWithRetry(() => pb.collection('areas').getFullList())
       const areaIdMap = new Map<string, string>()
       freshAreas.forEach((a) => areaIdMap.set(a.nome.trim().toLowerCase(), a.id))
 
@@ -192,11 +292,15 @@ export default function AdminImport() {
       setCurrentStep('Importando Colaboradores & Logins...')
       setProgressMsg('Criando contas de usuário e registros de colaboradores...')
 
-      const existingUsers = await pb.collection('users').getFullList<UserProfile>()
+      const existingUsers = await runWithRetry(() =>
+        pb.collection('users').getFullList<UserProfile>(),
+      )
       const userMapByEmail = new Map<string, UserProfile>()
       existingUsers.forEach((u) => userMapByEmail.set(u.email.trim().toLowerCase(), u))
 
-      const existingColabs = await pb.collection('colaboradores').getFullList<Colaborador>()
+      const existingColabs = await runWithRetry(() =>
+        pb.collection('colaboradores').getFullList<Colaborador>(),
+      )
       const colabMapByCodigo = new Map<string, string>()
       existingColabs.forEach((c) => colabMapByCodigo.set(c.codigo.trim().toLowerCase(), c.id))
 
@@ -211,7 +315,7 @@ export default function AdminImport() {
         const sem_metas = semMetasRaw === 'sim' || semMetasRaw === 'true'
 
         if (!codigo || !nome || !email) {
-          rep.errors.push({
+          errors.push({
             etapa: 'Colaboradores',
             linha: i + 2,
             codigo,
@@ -220,53 +324,45 @@ export default function AdminImport() {
           continue
         }
 
-        // 1. Criar ou atualizar conta em users
+        // 1. Criar ou sincronizar conta de usuário via endpoint server-side privilegiado
         let userId = ''
         const existingUser = userMapByEmail.get(email)
 
         try {
-          if (existingUser) {
-            userId = existingUser.id
-            // Se já for o Miguel Santiago (ou já tiver admin), preserva role
-            const updatePayload: Record<string, unknown> = {
-              name: nome,
-              cargo,
-              area: areaNome,
-            }
-            if (email !== 'miguel.santiago@ctxcenografia.com.br') {
-              updatePayload.must_change_password = true
-              updatePayload.password = 'CTX@2027'
-              updatePayload.passwordConfirm = 'CTX@2027'
-            }
-            const updated = await pb.collection('users').update(userId, updatePayload)
-            userMapByEmail.set(email, updated as unknown as UserProfile)
-          } else {
-            const newUser = await pb.collection('users').create({
-              email,
-              name: nome,
-              cargo,
-              area: areaNome,
-              role: 'colaborador',
-              must_change_password: true,
-              password: 'CTX@2027',
-              passwordConfirm: 'CTX@2027',
-              verified: true,
-            })
-            userId = newUser.id
-            userMapByEmail.set(email, newUser as unknown as UserProfile)
+          const userSyncPayload = {
+            email,
+            nome,
+            cargo,
+            area: areaNome,
+            role: email === 'miguel.santiago@ctxcenografia.com.br' ? 'admin' : 'colaborador',
+            password: 'CTX@2027',
+            must_change_password: email === 'miguel.santiago@ctxcenografia.com.br' ? false : true,
+            update_password: !existingUser, // não sobrescreve senha se já existia
+          }
+
+          const syncRes = await runWithRetry(() =>
+            pb.send<{ success: boolean; user: UserProfile }>('/backend/v1/ctx/sync-user', {
+              method: 'POST',
+              body: userSyncPayload,
+            }),
+          )
+
+          if (syncRes && syncRes.user) {
+            userId = syncRes.user.id
+            userMapByEmail.set(email, syncRes.user)
           }
         } catch (err: unknown) {
-          const msg = err instanceof Error ? err.message : 'Erro ao processar conta do usuário'
-          rep.errors.push({
+          const msg = getErrorMessage(err)
+          errors.push({
             etapa: 'Usuários/Login',
             linha: i + 2,
             codigo,
             motivo: `${email}: ${msg}`,
+            payload: { email, nome, cargo, area: areaNome },
           })
         }
 
         // 2. Criar ou atualizar registro em colaboradores
-        // Achar relação com area se existir
         const areaId = areaIdMap.get(areaNome.toLowerCase()) || null
 
         const colabPayload = {
@@ -276,55 +372,46 @@ export default function AdminImport() {
           area: areaId,
           email,
           sem_metas,
-          usuario: userId || null,
+          usuario: userId || existingUser?.id || null,
         }
 
         try {
           const colabKey = codigo.toLowerCase()
           if (colabMapByCodigo.has(colabKey)) {
             const colabId = colabMapByCodigo.get(colabKey)!
-            await pb.collection('colaboradores').update(colabId, colabPayload)
+            await runWithRetry(() => pb.collection('colaboradores').update(colabId, colabPayload))
           } else {
-            const created = await pb.collection('colaboradores').create(colabPayload)
+            const created = await runWithRetry(() =>
+              pb.collection('colaboradores').create(colabPayload),
+            )
             colabMapByCodigo.set(colabKey, created.id)
           }
         } catch (err: unknown) {
-          const msg = err instanceof Error ? err.message : 'Erro ao salvar colaborador'
-          rep.errors.push({
+          const msg = getErrorMessage(err)
+          errors.push({
             etapa: 'Colaboradores',
             linha: i + 2,
             codigo,
             motivo: msg,
+            payload: colabPayload,
           })
         }
-      }
 
-      const freshColabs = await pb.collection('colaboradores').getFullList<Colaborador>()
-      const freshUsers = await pb.collection('users').getFullList<UserProfile>()
-      rep.counts.colaboradores = freshColabs.length
-      rep.counts.users = freshUsers.length
-
-      // Checagem do William Machado com sem_metas = sim
-      const william = freshColabs.find(
-        (c) =>
-          c.codigo.toLowerCase().includes('william') ||
-          c.nome.toLowerCase().includes('william machado'),
-      )
-      if (william) {
-        rep.checks.williamCheck = !!william.sem_metas
+        // Throttling entre colaboradores
+        await sleep(40)
       }
 
       // ==========================================================
       // PASSO 3: IMPORTAR PROCESSOS (DUAS PASSADAS)
       // ==========================================================
       setCurrentStep('Importando Processos — 1ª Passada...')
-      setProgressMsg('Criando todos os registros de processos...')
+      setProgressMsg('Criando todos os registros de processos (com espaçamento e retry)...')
 
-      const existingProcs = await pb.collection('processos').getFullList()
+      const existingProcs = await runWithRetry(() => pb.collection('processos').getFullList())
       const procMapByCodigo = new Map<string, string>() // codigo -> id
       existingProcs.forEach((p) => procMapByCodigo.set(p.codigo.trim().toUpperCase(), p.id))
 
-      // 1ª passada: criar/atualizar campos base (codigo, nome, area, observacao)
+      // 1ª passada: criar/atualizar campos base
       for (let i = 0; i < parsedProcs.rows.length; i++) {
         const row = parsedProcs.rows[i]
         const codigo = (row.codigo || '').trim().toUpperCase()
@@ -333,7 +420,7 @@ export default function AdminImport() {
         const observacao = (row.observacao || '').trim()
 
         if (!codigo || !nome || !area) {
-          rep.errors.push({
+          errors.push({
             etapa: 'Processos (1ª passada)',
             linha: i + 2,
             codigo,
@@ -352,27 +439,42 @@ export default function AdminImport() {
         try {
           if (procMapByCodigo.has(codigo)) {
             const id = procMapByCodigo.get(codigo)!
-            await pb.collection('processos').update(id, payload)
+            await runWithRetry(() => pb.collection('processos').update(id, payload), {
+              maxAttempts: 6,
+              initialDelayMs: 500,
+            })
           } else {
-            const created = await pb.collection('processos').create(payload)
+            const created = await runWithRetry(() => pb.collection('processos').create(payload), {
+              maxAttempts: 6,
+              initialDelayMs: 500,
+            })
             procMapByCodigo.set(codigo, created.id)
           }
         } catch (err: unknown) {
-          const msg = err instanceof Error ? err.message : 'Erro ao criar processo'
-          rep.errors.push({
+          const msg = getErrorMessage(err)
+          errors.push({
             etapa: 'Processos (1ª passada)',
             linha: i + 2,
             codigo,
             motivo: msg,
+            payload,
           })
+        }
+
+        // Throttling de 60ms por processo para não estourar o rate-limit do backend
+        await sleep(60)
+        if (i % 20 === 0) {
+          setProgressMsg(`Processos 1ª passada: ${i + 1}/${parsedProcs.rows.length} gravados...`)
         }
       }
 
+      // Atualizar lista completa de IDs de processos antes da 2ª passada
+      const updatedProcs = await runWithRetry(() => pb.collection('processos').getFullList())
+      updatedProcs.forEach((p) => procMapByCodigo.set(p.codigo.trim().toUpperCase(), p.id))
+
       // 2ª passada: resolver relações etapas_anteriores e etapas_sucessoras
       setCurrentStep('Importando Processos — 2ª Passada (Conexões)...')
-      setProgressMsg('Resolvendo vínculos entre etapas anteriores e sucessoras...')
-
-      let totalConexoes = 0
+      setProgressMsg('Resolvendo vínculos entre etapas com espaçamento e retry anti-429...')
 
       for (let i = 0; i < parsedProcs.rows.length; i++) {
         const row = parsedProcs.rows[i]
@@ -382,6 +484,7 @@ export default function AdminImport() {
 
         const parseCodes = (str?: string): string[] => {
           if (!str) return []
+          // Trata delimitadores ';' e múltiplos espaços
           return str
             .split(';')
             .map((s) => s.trim().toUpperCase())
@@ -397,7 +500,7 @@ export default function AdminImport() {
           if (id) {
             anterioresIds.push(id)
           } else {
-            rep.errors.push({
+            errors.push({
               etapa: 'Processos (2ª passada)',
               linha: i + 2,
               codigo,
@@ -412,7 +515,7 @@ export default function AdminImport() {
           if (id) {
             sucessorasIds.push(id)
           } else {
-            rep.errors.push({
+            errors.push({
               etapa: 'Processos (2ª passada)',
               linha: i + 2,
               codigo,
@@ -421,61 +524,233 @@ export default function AdminImport() {
           }
         }
 
-        totalConexoes += sucessorasIds.length
-
         try {
-          await pb.collection('processos').update(procId, {
-            etapas_anteriores: anterioresIds,
-            etapas_sucessoras: sucessorasIds,
-          })
+          await runWithRetry(
+            () =>
+              pb.collection('processos').update(procId, {
+                etapas_anteriores: anterioresIds,
+                etapas_sucessoras: sucessorasIds,
+              }),
+            { maxAttempts: 6, initialDelayMs: 500 },
+          )
         } catch (err: unknown) {
-          const msg = err instanceof Error ? err.message : 'Erro ao vincular etapas'
-          rep.errors.push({
+          const msg = getErrorMessage(err)
+          errors.push({
             etapa: 'Processos (2ª passada)',
             linha: i + 2,
             codigo,
             motivo: msg,
+            payload: {
+              procId,
+              anterioresIds,
+              sucessorasIds,
+            },
+          })
+        }
+
+        // Throttling de 65ms na 2ª passada para proteger o backend contra 429
+        await sleep(65)
+        if (i % 20 === 0) {
+          setProgressMsg(
+            `Processos 2ª passada: ${i + 1}/${parsedProcs.rows.length} conexões sincronizadas...`,
+          )
+        }
+      }
+
+      // Re-carregar banco e gerar relatório final
+      const finalReport = await refreshValidationReportCounts(errors)
+      setReport(finalReport)
+      await loadUsersAndColabs()
+
+      if (errors.length === 0) {
+        toast({
+          title: 'Importação 100% Concluída!',
+          description: 'Todos os dados e conexões foram gravados com sucesso sem rejeições.',
+        })
+      } else {
+        toast({
+          title: 'Importação finalizada com avisos',
+          description: `${errors.length} itens tiveram avisos/rejeições. Você pode tentar reprocessá-los abaixo.`,
+          variant: 'destructive',
+        })
+      }
+    } catch (err: unknown) {
+      console.error('Falha geral na importação:', err)
+      const msg = getErrorMessage(err)
+      toast({
+        title: 'Erro na importação',
+        description: msg,
+        variant: 'destructive',
+      })
+    } finally {
+      setImporting(false)
+      setCurrentStep('')
+      setProgressMsg('')
+    }
+  }
+
+  // Reprocessamento exclusivo dos itens rejeitados
+  const handleRetryRejected = async () => {
+    if (!report || report.errors.length === 0) return
+
+    setImporting(true)
+    setCurrentStep('Reprocessando linhas rejeitadas...')
+    setProgressMsg('Tentando novamente apenas os itens que falharam anteriormente...')
+
+    const itemsToRetry = [...report.errors]
+    const remainingErrors: RejectedItem[] = []
+
+    try {
+      // Carregar mapas em tempo real
+      const [areas, colabs, users, procs] = await Promise.all([
+        runWithRetry(() => pb.collection('areas').getFullList()),
+        runWithRetry(() => pb.collection('colaboradores').getFullList<Colaborador>()),
+        runWithRetry(() => pb.collection('users').getFullList<UserProfile>()),
+        runWithRetry(() => pb.collection('processos').getFullList()),
+      ])
+
+      const areaIdMap = new Map<string, string>()
+      areas.forEach((a) => areaIdMap.set(a.nome.trim().toLowerCase(), a.id))
+
+      const userMapByEmail = new Map<string, UserProfile>()
+      users.forEach((u) => userMapByEmail.set(u.email.trim().toLowerCase(), u))
+
+      const colabMapByCodigo = new Map<string, string>()
+      colabs.forEach((c) => colabMapByCodigo.set(c.codigo.trim().toLowerCase(), c.id))
+
+      const procMapByCodigo = new Map<string, string>()
+      procs.forEach((p) => procMapByCodigo.set(p.codigo.trim().toUpperCase(), p.id))
+
+      for (let i = 0; i < itemsToRetry.length; i++) {
+        const item = itemsToRetry[i]
+        setProgressMsg(
+          `Reprocessando item ${i + 1}/${itemsToRetry.length} (${item.etapa} - ${item.codigo || ''})...`,
+        )
+
+        try {
+          if (item.etapa === 'Áreas') {
+            const payload = item.payload as
+              | { nome: string; ordem_no_fluxo: number; tipo: string }
+              | undefined
+            const nome = payload?.nome || item.codigo || ''
+            if (!nome) throw new Error('Nome da área ausente')
+
+            const key = nome.toLowerCase()
+            const existingId = areaIdMap.get(key)
+            if (existingId) {
+              await runWithRetry(() =>
+                pb.collection('areas').update(existingId, payload || { nome }),
+              )
+            } else {
+              const created = await runWithRetry(() =>
+                pb.collection('areas').create(payload || { nome }),
+              )
+              areaIdMap.set(key, created.id)
+            }
+          } else if (item.etapa === 'Usuários/Login') {
+            const p = item.payload as
+              | { email: string; nome: string; cargo?: string; area?: string }
+              | undefined
+            const email = (p?.email || item.codigo || '').toLowerCase().trim()
+            const nome = p?.nome || item.codigo || email
+
+            const syncRes = await runWithRetry(() =>
+              pb.send<{ success: boolean; user: UserProfile }>('/backend/v1/ctx/sync-user', {
+                method: 'POST',
+                body: {
+                  email,
+                  nome,
+                  cargo: p?.cargo || '',
+                  area: p?.area || '',
+                  role: email === 'miguel.santiago@ctxcenografia.com.br' ? 'admin' : 'colaborador',
+                  password: 'CTX@2027',
+                  must_change_password:
+                    email === 'miguel.santiago@ctxcenografia.com.br' ? false : true,
+                  update_password: false,
+                },
+              }),
+            )
+            if (syncRes && syncRes.user) {
+              userMapByEmail.set(email, syncRes.user)
+            }
+          } else if (item.etapa === 'Colaboradores') {
+            const p = item.payload as Record<string, unknown> | undefined
+            const codigo = (item.codigo || (p?.codigo as string) || '').toLowerCase()
+            if (!codigo) throw new Error('Código do colaborador ausente')
+
+            const existingId = colabMapByCodigo.get(codigo)
+            if (existingId && p) {
+              await runWithRetry(() => pb.collection('colaboradores').update(existingId, p))
+            } else if (p) {
+              const created = await runWithRetry(() => pb.collection('colaboradores').create(p))
+              colabMapByCodigo.set(codigo, created.id)
+            }
+          } else if (item.etapa === 'Processos (1ª passada)') {
+            const p = item.payload as
+              | { codigo: string; nome: string; area: string; observacao?: string }
+              | undefined
+            const codigo = (item.codigo || p?.codigo || '').toUpperCase()
+            if (!codigo) throw new Error('Código do processo ausente')
+
+            const existingId = procMapByCodigo.get(codigo)
+            if (existingId && p) {
+              await runWithRetry(() => pb.collection('processos').update(existingId, p), {
+                maxAttempts: 6,
+              })
+            } else if (p) {
+              const created = await runWithRetry(() => pb.collection('processos').create(p), {
+                maxAttempts: 6,
+              })
+              procMapByCodigo.set(codigo, created.id)
+            }
+          } else if (item.etapa === 'Processos (2ª passada)') {
+            const p = item.payload as
+              | { procId: string; anterioresIds: string[]; sucessorasIds: string[] }
+              | undefined
+            const codigo = (item.codigo || '').toUpperCase()
+            const procId = p?.procId || procMapByCodigo.get(codigo)
+            if (!procId) throw new Error(`Processo ${codigo} não encontrado para vinculação`)
+
+            await runWithRetry(
+              () =>
+                pb.collection('processos').update(procId, {
+                  etapas_anteriores: p?.anterioresIds || [],
+                  etapas_sucessoras: p?.sucessorasIds || [],
+                }),
+              { maxAttempts: 6 },
+            )
+          }
+
+          await sleep(60)
+        } catch (err: unknown) {
+          remainingErrors.push({
+            ...item,
+            motivo: getErrorMessage(err),
           })
         }
       }
 
-      // Re-carregar processos e checar conexões
-      const allProcs = await pb.collection('processos').getFullList()
-      rep.counts.processos = allProcs.length
-      rep.counts.conexoes = totalConexoes
-
-      // Checagem: O01 com sucessoras O02 e O03
-      const o01 = allProcs.find((p) => p.codigo === 'O01')
-      if (o01) {
-        const o02Id = procMapByCodigo.get('O02')
-        const o03Id = procMapByCodigo.get('O03')
-        const suc = o01.etapas_sucessoras || []
-        const hasO02 = !!o02Id && suc.includes(o02Id)
-        const hasO03 = !!o03Id && suc.includes(o03Id)
-        rep.checks.o01Check = hasO02 && hasO03
-      }
-
-      // Checagem: RH05 sem conexões
-      const rh05 = allProcs.find((p) => p.codigo === 'RH05')
-      if (rh05) {
-        const ant = rh05.etapas_anteriores || []
-        const suc = rh05.etapas_sucessoras || []
-        rep.checks.rh05Check = ant.length === 0 && suc.length === 0
-      }
-
-      setReport(rep)
+      const refreshed = await refreshValidationReportCounts(remainingErrors)
+      setReport(refreshed)
       await loadUsersAndColabs()
 
-      toast({
-        title: 'Importação Concluída!',
-        description: 'Os dados foram importados com sucesso para o banco da CTX.',
-      })
+      if (remainingErrors.length === 0) {
+        toast({
+          title: 'Reprocessamento concluído com sucesso!',
+          description: 'Todas as linhas rejeitadas foram integradas perfeitamente.',
+        })
+      } else {
+        toast({
+          title: 'Reprocessamento parcial',
+          description: `${remainingErrors.length} de ${itemsToRetry.length} itens ainda não puderam ser salvos.`,
+          variant: 'destructive',
+        })
+      }
     } catch (err: unknown) {
-      console.error('Falha geral na importação:', err)
-      const msg = err instanceof Error ? err.message : 'Erro durante o processo de importação.'
+      console.error('Falha ao reprocessar rejeitados:', err)
       toast({
-        title: 'Erro na importação',
-        description: msg,
+        title: 'Erro ao reprocessar',
+        description: getErrorMessage(err),
         variant: 'destructive',
       })
     } finally {
@@ -935,10 +1210,21 @@ export default function AdminImport() {
           {/* Linhas não importadas ou advertências */}
           {report.errors.length > 0 && (
             <div className="space-y-3">
-              <h4 className="text-xs uppercase tracking-wider font-bold text-red-400 flex items-center gap-1.5">
-                <AlertTriangle className="w-4 h-4 text-red-400" />
-                Avisos e Linhas Rejeitadas ({report.errors.length})
-              </h4>
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs uppercase tracking-wider font-bold text-red-400 flex items-center gap-1.5">
+                  <AlertTriangle className="w-4 h-4 text-red-400" />
+                  Avisos e Linhas Rejeitadas ({report.errors.length})
+                </h4>
+                <button
+                  type="button"
+                  onClick={handleRetryRejected}
+                  disabled={importing}
+                  className="px-3 py-1.5 bg-red-900/30 hover:bg-red-900/50 border border-red-700/50 hover:border-red-500 text-red-200 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${importing ? 'animate-spin' : ''}`} />
+                  Tentar novamente nas linhas rejeitadas
+                </button>
+              </div>
               <div className="max-h-48 overflow-y-auto space-y-1.5 bg-[#141414] p-3 rounded-xl border border-red-950/40 font-mono text-[11px] text-[#D1D5DB]">
                 {report.errors.map((err, idx) => (
                   <div key={idx} className="flex items-start gap-2 border-b border-[#222] pb-1">

@@ -174,11 +174,13 @@ export default function AdminImport() {
     return null
   }
 
-  // Divide múltiplos códigos separados por ponto-e-vírgula ou vírgula
+  // Divide múltiplos códigos separados por ponto-e-vírgula, ponto-e-vírgula com espaço ou vírgula
   const splitCodes = (val?: unknown): string[] => {
     if (val === undefined || val === null) return []
-    const str = String(val).trim()
+    let str = String(val).trim()
     if (!str) return []
+    // Remove aspas residuais que possam ter sobrado
+    str = str.replace(/["']/g, '')
     return str
       .split(/[;,]/)
       .map((s) => s.trim())
@@ -486,6 +488,12 @@ export default function AdminImport() {
         const colabsText = await fileColabs.text()
         const parsedColabs = parseCsv(colabsText)
 
+        if (parsedColabs.headers.length > 0 && !parsedColabs.headers.includes('codigo')) {
+          throw new Error(
+            `Nenhuma coluna 'codigo' encontrada no arquivo de Colaboradores. Colunas lidas: ${parsedColabs.headers.join(', ')}.`,
+          )
+        }
+
         for (let i = 0; i < parsedColabs.rows.length; i++) {
           const row = parsedColabs.rows[i]
           const codigo = (row?.codigo ?? '').trim()
@@ -602,6 +610,12 @@ export default function AdminImport() {
 
         const procsText = await fileProcs.text()
         const parsedProcs = parseCsv(procsText)
+
+        if (parsedProcs.headers.length > 0 && !parsedProcs.headers.includes('codigo')) {
+          throw new Error(
+            `Nenhuma coluna 'codigo' encontrada no arquivo de Processos. Colunas lidas: ${parsedProcs.headers.join(', ')}.`,
+          )
+        }
 
         for (let i = 0; i < parsedProcs.rows.length; i++) {
           const row = parsedProcs.rows[i]
@@ -758,6 +772,12 @@ export default function AdminImport() {
         const projsText = await fileProjetos.text()
         const parsedProjs = parseCsv(projsText)
 
+        if (parsedProjs.headers.length > 0 && !parsedProjs.headers.includes('codigo')) {
+          throw new Error(
+            `Nenhuma coluna 'codigo' encontrada no arquivo de Projetos. Colunas lidas: ${parsedProjs.headers.join(', ')}.`,
+          )
+        }
+
         for (let i = 0; i < parsedProjs.rows.length; i++) {
           const row = parsedProjs.rows[i]
           const codigo = (row?.codigo ?? '').trim().toUpperCase()
@@ -851,6 +871,12 @@ export default function AdminImport() {
 
         const metasText = await fileMetas.text()
         const parsedMetas = parseCsv(metasText)
+
+        if (parsedMetas.headers.length > 0 && !parsedMetas.headers.includes('codigo')) {
+          throw new Error(
+            `Nenhuma coluna 'codigo' encontrada no arquivo de Metas. Colunas lidas: ${parsedMetas.headers.join(', ')}.`,
+          )
+        }
 
         for (let i = 0; i < parsedMetas.rows.length; i++) {
           const row = parsedMetas.rows[i]

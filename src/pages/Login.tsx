@@ -9,8 +9,8 @@ import { Label } from '@/components/ui/label'
 export default function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
-  const [email, setEmail] = useState('miguel.santiago@ctxcenografia.com.br')
-  const [password, setPassword] = useState('Skip@Pass')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -139,21 +139,6 @@ export default function Login() {
           </Button>
         </form>
 
-        <div className="mt-6 pt-6 border-t border-[#262626] text-center space-y-2">
-          <p className="text-xs text-[#9CA3AF]">
-            Novo colaborador na CTX?{' '}
-            <Link to="/signup" className="text-[#FFD400] font-medium hover:underline">
-              Criar conta
-            </Link>
-          </p>
-          <div className="bg-[#171717] p-2.5 rounded-lg border border-[#262626]/80 text-left">
-            <p className="text-[11px] text-[#9CA3AF] uppercase tracking-wider font-semibold mb-1">
-              Acesso Rápido de Demonstração
-            </p>
-            <p className="text-xs text-white/90 font-mono">miguel.santiago@ctxcenografia.com.br</p>
-            <p className="text-xs text-[#9CA3AF] font-mono">Senha: Skip@Pass</p>
-          </div>
-        </div>
       </div>
     </div>
   )

@@ -548,6 +548,7 @@ routerAdd('POST', '/backend/v1/ctx/admin-rotina', (e) => {
       nr.set('destinatario', uId)
       nr.set('tipo', 'lembrete')
       nr.set(
+        'texto',
         `⚠️ Lembrete: faltam metas a preencher no ciclo de ${tipoNome} (${ciclo.getString('referencia')}). Não deixe para depois!`,
       )
       nr.set('link', '/')
@@ -742,7 +743,38 @@ routerAdd('GET', '/backend/v1/ctx/export-csv', (e) => {
 })
 
 // 6. Cron automação: roda todo dia às 06h UTC
-cronAdd('rotina_ciclos_automation', '0 6 * * *', (e) => {
+cronAdd('rotina_ciclos_automation', '0 6 * * *', () => {
+  // Handlers de cron do PocketBase não recebem argumento: usar $app.
+  // Funções auxiliares precisam ficar dentro do handler (contexto isolado).
+  const e = { app: $app }
+  const parseData = (s) => new Date(String(s || '').replace(' ', 'T'))
+  const notificarCicloAberto = (tipo, referencia) => {
+    try {
+      const metasAtivas = $app.findRecordsByFilter('metas', 'status != "concluida"', '', 300, 0)
+      const userIds = new Set()
+      for (const m of metasAtivas) {
+        for (const rId of m.getStringSlice('responsaveis')) {
+          try {
+            const uId = $app.findRecordById('colaboradores', rId).getString('usuario')
+            if (uId) userIds.add(uId)
+          } catch (_) {}
+        }
+      }
+      const nomeTipo = tipo === 'pulso_semanal' ? 'Pulso semanal' : 'Avaliação mensal'
+      const notifCol = $app.findCollectionByNameOrId('notificacoes')
+      for (const uId of userIds) {
+        const nr = new Record(notifCol)
+        nr.set('destinatario', uId)
+        nr.set('tipo', 'ciclo_aberto')
+        nr.set('texto', `Novo ciclo aberto: ${nomeTipo} (${referencia}). Preencha suas metas no Meu Painel!`)
+        nr.set('link', '/')
+        nr.set('lida', false)
+        $app.save(nr)
+      }
+    } catch (errNotif) {
+      console.error('Erro ao notificar ciclo aberto (cron):', errNotif)
+    }
+  }
   try {
     let config = null
     try {
@@ -787,6 +819,7 @@ cronAdd('rotina_ciclos_automation', '0 6 * * *', (e) => {
         c.set('fechamento', fechamento.toISOString())
         c.set('status', 'aberto')
         e.app.save(c)
+        notificarCicloAberto('pulso_semanal', refSemana)
       }
     }
 
@@ -812,13 +845,14 @@ cronAdd('rotina_ciclos_automation', '0 6 * * *', (e) => {
         c.set('fechamento', fechamento.toISOString())
         c.set('status', 'aberto')
         e.app.save(c)
+        notificarCicloAberto('avaliacao_mensal', refMes)
       }
     }
 
     // C. Fechamento automático de ciclos vencidos
     const abertos = e.app.findRecordsByFilter('ciclos', 'status = "aberto"', '', 50, 0)
     for (const c of abertos) {
-      const fech = new Date(c.getString('fechamento'))
+      const fech = parseData(c.getString('fechamento'))
       if (agora > fech) {
         c.set('status', 'fechado')
         e.app.save(c)

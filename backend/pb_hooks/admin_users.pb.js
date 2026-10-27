@@ -124,8 +124,8 @@ routerAdd('POST', '/backend/v1/ctx/first-access-password', (e) => {
     throw new BadRequestError('A nova senha deve ter no mínimo 8 caracteres.')
   }
 
-  if (password === 'CTX@2027') {
-    throw new BadRequestError('A nova senha não pode ser a senha provisória CTX@2027.')
+  if (password === 'CTX@2027' || password === 'Skip@Pass') {
+    throw new BadRequestError('A nova senha não pode ser uma senha provisória (CTX@2027 ou Skip@Pass).')
   }
 
   if (password !== passwordConfirm) {

@@ -139,7 +139,7 @@ migrate(
     app.save(metasCol)
 
     // ==========================================================
-    // 3. Indicadores
+    // 3. indicadores
     //    - ordem (número)
     //    - alvo (texto)
     //    - valor_atual, valor_meta, tendencia, historico opcionais

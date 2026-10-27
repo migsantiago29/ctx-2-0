@@ -1,5 +1,7 @@
 # Guia Completo de Migração — CTX 2.0 (Skip Cloud para PocketBase Self-Hosted)
 
+<!-- Sincronização GitHub: commit inicial de exportação e artefatos de migração -->
+
 Este documento descreve detalhadamente a arquitetura do backend, regras de segurança, rotinas automatizadas, migrações, variáveis de ambiente e o procedimento passo a passo para executar e hospedar a aplicação **CTX 2.0** em infraestrutura própria (PocketBase self-hosted + frontend estático).
 
 ---

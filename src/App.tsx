@@ -15,6 +15,7 @@ import Fluxograma from './pages/Fluxograma'
 import Organograma from './pages/Organograma'
 import AdminImport from './pages/AdminImport'
 import AdminCiclos from './pages/AdminCiclos'
+import AdminExportacao from './pages/AdminExportacao'
 import RedefinirSenhaObrigatoria from './pages/RedefinirSenhaObrigatoria'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
@@ -51,6 +52,7 @@ const App = () => (
               <Route path="/organograma" element={<Organograma />} />
               <Route path="/admin/ciclos" element={<AdminCiclos />} />
               <Route path="/admin/import" element={<AdminImport />} />
+              <Route path="/admin/export" element={<AdminExportacao />} />
             </Route>
           </Route>
 

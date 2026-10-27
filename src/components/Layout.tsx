@@ -11,6 +11,7 @@ import {
   Compass,
   Activity,
   Sliders,
+  Download,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useProjectPermissions } from '@/hooks/useProjectPermissions'
@@ -41,6 +42,7 @@ export default function Layout() {
   const adminNavItems = [
     { name: 'Ciclos & Adesão', path: '/admin/ciclos', icon: Sliders },
     { name: 'Importação & Acessos', path: '/admin/import', icon: Shield },
+    { name: 'Exportação Completa', path: '/admin/export', icon: Download },
   ]
 
   const firstName = user?.name ? user.name.split(' ')[0] : 'Colaborador'

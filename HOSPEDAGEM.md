@@ -5,6 +5,7 @@ responde à API, executa a rotina diária e entrega as telas do app. Endereço: 
 
 - `fly.toml` — 1 máquina `shared-cpu-1x` 512 MB sempre ligada + volume `pb_data` de 1 GB em `/pb/pb_data`.
 - A publicação é feita pela integração do próprio Fly.io com o GitHub (dashboard → Launch → Deploy from GitHub).
+- Endereços públicos (dashboard → Overview → Networking): IPv4 compartilhado + IPv6 dedicado, ambos gratuitos. Sem eles o site não abre.
 
 ## Segredos (Fly.io → app → Secrets)
 | Nome | O que é |

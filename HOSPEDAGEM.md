@@ -4,13 +4,11 @@ Tudo roda numa única máquina pequena no Fly.io (região `gru`, São Paulo): o 
 responde à API, executa a rotina diária e entrega as telas do app. Endereço: https://ctx2-cenografia.fly.dev
 
 - `fly.toml` — 1 máquina `shared-cpu-1x` 512 MB sempre ligada + volume `pb_data` de 1 GB em `/pb/pb_data`.
-- `.github/workflows/primeira-instalacao.yml` — rodar uma única vez: cria app, volume, superusuário e publica.
-- `.github/workflows/publicar.yml` — publica automaticamente cada alteração na branch `main`.
+- A publicação é feita pela integração do próprio Fly.io com o GitHub (dashboard → Launch → Deploy from GitHub).
 
-## Segredos (GitHub → Settings → Secrets and variables → Actions)
+## Segredos (Fly.io → app → Secrets)
 | Nome | O que é |
 |---|---|
-| `FLY_API_TOKEN` | Token do Fly.io que permite publicar |
 | `PB_ADMIN_EMAIL` | E-mail do superusuário do painel `/_/` |
 | `PB_ADMIN_PASSWORD` | Senha forte do superusuário (só vale no primeiro boot; depois, trocar pelo painel) |
 

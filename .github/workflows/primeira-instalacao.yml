@@ -1,0 +1,28 @@
+# Rodar UMA vez (aba Actions → "Primeira instalação no Fly.io" → Run workflow).
+# Cria o app, o volume de dados (1 GB em São Paulo), guarda o superusuário e publica a primeira versão.
+name: Primeira instalação no Fly.io
+on: workflow_dispatch
+
+jobs:
+  instalar:
+    runs-on: ubuntu-latest
+    concurrency: deploy
+    env:
+      FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Criar o app (se ainda não existir)
+        run: |
+          APP=$(grep -E '^app = ' fly.toml | cut -d'"' -f2)
+          flyctl status -a "$APP" >/dev/null 2>&1 || flyctl apps create "$APP" --org personal
+      - name: Criar o volume de dados (se ainda não existir)
+        run: |
+          APP=$(grep -E '^app = ' fly.toml | cut -d'"' -f2)
+          flyctl volumes list -a "$APP" | grep -q pb_data || flyctl volumes create pb_data --region gru --size 1 -a "$APP" -y
+      - name: Guardar o superusuário do painel
+        run: |
+          APP=$(grep -E '^app = ' fly.toml | cut -d'"' -f2)
+          flyctl secrets set PB_ADMIN_EMAIL="${{ secrets.PB_ADMIN_EMAIL }}" PB_ADMIN_PASSWORD="${{ secrets.PB_ADMIN_PASSWORD }}" -a "$APP" --stage
+      - name: Publicar
+        run: flyctl deploy --remote-only --ha=false

@@ -4,10 +4,10 @@ set -e
 DATA_DIR="${PB_DATA_DIR:-/pb/pb_data}"
 APP_DIR="${PB_APP_DIR:-/pb}"
 
-# Cria/atualiza o superusuário (painel /_/) a partir das variáveis de ambiente, se informadas.
+# Cria o superusuário (painel /_/) no primeiro boot. Se já existir, não altera a senha.
 if [ -n "$PB_ADMIN_EMAIL" ] && [ -n "$PB_ADMIN_PASSWORD" ]; then
-  "$APP_DIR/pocketbase" superuser upsert "$PB_ADMIN_EMAIL" "$PB_ADMIN_PASSWORD" \
-    --dir="$DATA_DIR" --migrationsDir="$APP_DIR/pb_migrations"
+  "$APP_DIR/pocketbase" superuser create "$PB_ADMIN_EMAIL" "$PB_ADMIN_PASSWORD" \
+    --dir="$DATA_DIR" --migrationsDir="$APP_DIR/pb_migrations" || true
 fi
 
 exec "$APP_DIR/pocketbase" serve \

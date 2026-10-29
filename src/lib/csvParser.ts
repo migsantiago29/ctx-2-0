@@ -110,6 +110,55 @@ function parseCsvLineStandard(line: string, delimiter: string = ','): string[] |
 }
 
 /**
+ * Desfaz a regravação do Excel com separador ";" (ex.: 05_metas exportado do Skip).
+ * O Excel cortou cada linha original nos ";" das listas (`M01; M02`), pôs aspas nos pedaços
+ * e completou com ";;;;". Lê a linha como CSV separado por ";" e junta os pedaços de volta
+ * com ";", recuperando a linha original separada por vírgulas.
+ * Retorna null se as aspas não fecharem.
+ */
+function unwrapSemicolonExport(line: string): string | null {
+  const cells: string[] = []
+  let current = ''
+  let inQuotes = false
+  let atCellStart = true
+
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i]
+    if (inQuotes) {
+      if (c === '"') {
+        if (line[i + 1] === '"') {
+          current += '"'
+          i++
+        } else {
+          inQuotes = false
+        }
+      } else {
+        current += c
+      }
+    } else if (c === '"' && atCellStart) {
+      inQuotes = true
+      atCellStart = false
+    } else if (c === ';') {
+      cells.push(current)
+      current = ''
+      atCellStart = true
+    } else {
+      current += c
+      atCellStart = false
+    }
+  }
+
+  if (inQuotes) return null
+  cells.push(current)
+
+  // Remove as células vazias do preenchimento ";;;;" no fim
+  while (cells.length > 0 && cells[cells.length - 1].trim() === '') {
+    cells.pop()
+  }
+  return cells.join(';')
+}
+
+/**
  * Limpa aspas envolventes de um campo se existirem,
  * e desfaz aspas dobradas `""` -> `"`.
  */
@@ -273,6 +322,9 @@ export function parseCsv(text: string): ParsedCsvResult {
   const normalizedHeaders = headerCols.map((h) => normalizeHeaderKey(h))
   const expectedColsCount = normalizedHeaders.length
 
+  // Cabeçalho separado por vírgulas mas terminado em ";;;" = arquivo regravado pelo Excel com ";"
+  const isSemicolonExport = delimiter === ',' && /;\s*$/.test(rawHeaderLine)
+
   const parsedRows: Record<string, string>[] = []
 
   // 2. Processar cada linha de dados
@@ -288,7 +340,8 @@ export function parseCsv(text: string): ParsedCsvResult {
       continue
     }
 
-    const rowCols = parseAndRepairLine(rawLine, expectedColsCount, delimiter)
+    const unwrapped = isSemicolonExport ? unwrapSemicolonExport(rawLine) : null
+    const rowCols = parseAndRepairLine(unwrapped ?? rawLine, expectedColsCount, delimiter)
 
     // Descartar se todas as células forem vazias
     const hasAnyContent = rowCols.some((v) => (v ?? '').trim() !== '')

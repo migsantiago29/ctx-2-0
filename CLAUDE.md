@@ -12,7 +12,7 @@ O dono do projeto (Miguel) não é programador: explique mudanças em linguagem 
   - `rotina.pb.js` — avaliações, pulsos, comentários, administração dos ciclos, exportação CSV e o job diário `rotina_ciclos_automation` (06:00 UTC).
 - `backend/pb_migrations/` — estrutura do banco. `backend/pb_schema.json` é só referência (gerado pelo Skip).
 - `Dockerfile` + `deploy/start.sh` — uma única imagem: PocketBase serve a API e o frontend compilado (`pb_public`). Dados em `/pb/pb_data` (volume).
-- Hospedagem: Fly.io, app `ctx-2-0`, região `gru` (`fly.toml`). Publicação pela integração GitHub do próprio Fly.io (configurada pelo Miguel no dashboard). Detalhes em `HOSPEDAGEM.md`.
+- Hospedagem: Fly.io, app `ctx-2-0`, região `gru` (`fly.toml`). Publicação pelo GitHub Actions (`.github/workflows/publicar.yml`) a cada push na `main`, com o segredo `FLY_API_TOKEN` (deploy token do Fly). Detalhes em `HOSPEDAGEM.md`.
 - PocketBase fixado em `PB_VERSION` no Dockerfile. Atualize de propósito, lendo o changelog.
 
 ## Regras

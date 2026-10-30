@@ -62,11 +62,11 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="w-full max-w-md bg-[#111111] border border-[#262626] rounded-xl p-8 shadow-2xl relative z-10">
+    <div className="min-h-screen bg-ctx-0a0a0a flex items-center justify-center p-4 relative overflow-hidden">
+      <div className="w-full max-w-md bg-ctx-111111 border border-ctx-262626 rounded-xl p-8 shadow-2xl relative z-10">
         <Link
           to="/login"
-          className="inline-flex items-center gap-1.5 text-xs text-[#9CA3AF] hover:text-[#FFD400] mb-6 transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs text-ctx-9ca3af hover:text-ctx-brand mb-6 transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           Voltar ao login
@@ -77,14 +77,14 @@ export default function ResetPassword() {
             <div className="w-12 h-12 rounded-full bg-[#22C55E]/10 border border-[#22C55E]/40 text-[#22C55E] flex items-center justify-center mx-auto">
               <CheckCircle2 className="w-6 h-6" />
             </div>
-            <h1 className="text-xl font-bold text-white">Senha redefinida com sucesso!</h1>
-            <p className="text-sm text-[#9CA3AF]">Redirecionando para a página de login...</p>
+            <h1 className="text-xl font-bold text-ctx-fg">Senha redefinida com sucesso!</h1>
+            <p className="text-sm text-ctx-9ca3af">Redirecionando para a página de login...</p>
           </div>
         ) : (
           <>
             <div className="mb-6">
-              <h1 className="text-xl font-bold text-white">Nova senha</h1>
-              <p className="text-xs text-[#9CA3AF] mt-1">
+              <h1 className="text-xl font-bold text-ctx-fg">Nova senha</h1>
+              <p className="text-xs text-ctx-9ca3af mt-1">
                 Defina uma nova senha para a sua conta no CTX 2.0.
               </p>
             </div>
@@ -106,12 +106,12 @@ export default function ResetPassword() {
               <div className="space-y-1.5">
                 <Label
                   htmlFor="password"
-                  className="text-xs uppercase tracking-wider text-[#9CA3AF]"
+                  className="text-xs uppercase tracking-wider text-ctx-9ca3af"
                 >
                   Nova senha (mínimo 8 caracteres)
                 </Label>
                 <div className="relative">
-                  <Lock className="w-4 h-4 text-[#9CA3AF] absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Lock className="w-4 h-4 text-ctx-9ca3af absolute left-3 top-1/2 -translate-y-1/2" />
                   <Input
                     id="password"
                     type="password"
@@ -119,7 +119,7 @@ export default function ResetPassword() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="pl-9 bg-[#171717] border-[#262626] text-white focus-visible:ring-[#FFD400]"
+                    className="pl-9 bg-ctx-171717 border-ctx-262626 text-ctx-fg focus-visible:ring-[#FFD400]"
                   />
                 </div>
               </div>
@@ -127,12 +127,12 @@ export default function ResetPassword() {
               <div className="space-y-1.5">
                 <Label
                   htmlFor="passwordConfirm"
-                  className="text-xs uppercase tracking-wider text-[#9CA3AF]"
+                  className="text-xs uppercase tracking-wider text-ctx-9ca3af"
                 >
                   Confirmar nova senha
                 </Label>
                 <div className="relative">
-                  <Lock className="w-4 h-4 text-[#9CA3AF] absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Lock className="w-4 h-4 text-ctx-9ca3af absolute left-3 top-1/2 -translate-y-1/2" />
                   <Input
                     id="passwordConfirm"
                     type="password"
@@ -140,7 +140,7 @@ export default function ResetPassword() {
                     value={passwordConfirm}
                     onChange={(e) => setPasswordConfirm(e.target.value)}
                     placeholder="••••••••"
-                    className="pl-9 bg-[#171717] border-[#262626] text-white focus-visible:ring-[#FFD400]"
+                    className="pl-9 bg-ctx-171717 border-ctx-262626 text-ctx-fg focus-visible:ring-[#FFD400]"
                   />
                 </div>
               </div>

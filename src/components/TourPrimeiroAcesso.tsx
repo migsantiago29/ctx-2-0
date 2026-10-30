@@ -51,7 +51,7 @@ export function TourPrimeiroAcesso({ colaboradorNome, onComplete }: TourPrimeiro
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
       <div className="fixed inset-0 bg-black/85 backdrop-blur-md" />
 
-      <div className="relative w-full max-w-lg bg-[#111111] border border-[#2B2B2B] rounded-3xl shadow-2xl overflow-hidden p-6 sm:p-8 space-y-6 animate-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-lg bg-ctx-111111 border border-ctx-2b2b2b rounded-3xl shadow-2xl overflow-hidden p-6 sm:p-8 space-y-6 animate-in zoom-in-95 duration-200">
         {/* Barra superior de passos */}
         <div className="flex items-center justify-between pb-2">
           <div className="flex items-center gap-1.5">
@@ -63,25 +63,25 @@ export function TourPrimeiroAcesso({ colaboradorNome, onComplete }: TourPrimeiro
                     ? 'w-8 bg-[#FFD400]'
                     : s < etapa
                       ? 'w-4 bg-[#22C55E]'
-                      : 'w-4 bg-[#262626]'
+                      : 'w-4 bg-ctx-262626'
                 }`}
               />
             ))}
           </div>
-          <span className="text-[11px] font-mono text-[#888]">Passo {etapa} de 3</span>
+          <span className="text-[11px] font-mono text-ctx-888888">Passo {etapa} de 3</span>
         </div>
 
         {/* Ícone e Cabeçalho */}
         <div className="space-y-3">
-          <div className="w-12 h-12 rounded-2xl bg-[#FFD400]/10 border border-[#FFD400]/30 flex items-center justify-center text-[#FFD400]">
+          <div className="w-12 h-12 rounded-2xl bg-[#FFD400]/10 border border-[#FFD400]/30 flex items-center justify-center text-ctx-brand">
             <Icon className="w-6 h-6" />
           </div>
 
           <div className="space-y-1">
-            <span className="text-[10px] uppercase font-bold text-[#FFD400] tracking-wider block">
+            <span className="text-[10px] uppercase font-bold text-ctx-brand tracking-wider block">
               {current.tag}
             </span>
-            <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+            <h2 className="text-xl sm:text-2xl font-black text-ctx-fg tracking-tight">
               {current.title}
             </h2>
           </div>
@@ -89,9 +89,9 @@ export function TourPrimeiroAcesso({ colaboradorNome, onComplete }: TourPrimeiro
 
         {/* Descrição e Caixa de Destaque */}
         <div className="space-y-4">
-          <p className="text-xs sm:text-sm text-[#D1D5DB] leading-relaxed">{current.desc}</p>
+          <p className="text-xs sm:text-sm text-ctx-d1d5db leading-relaxed">{current.desc}</p>
 
-          <div className="p-3.5 rounded-xl bg-[#161616] border border-[#2B2B2B] text-xs text-[#FFD400] font-medium flex items-center gap-2">
+          <div className="p-3.5 rounded-xl bg-ctx-161616 border border-ctx-2b2b2b text-xs text-ctx-brand font-medium flex items-center gap-2">
             <Check className="w-4 h-4 text-[#22C55E] shrink-0" />
             <span>{current.destaque}</span>
           </div>
@@ -103,7 +103,7 @@ export function TourPrimeiroAcesso({ colaboradorNome, onComplete }: TourPrimeiro
             <button
               type="button"
               onClick={() => setEtapa(etapa - 1)}
-              className="py-2.5 px-4 rounded-xl text-xs font-bold text-[#9CA3AF] hover:text-white transition-colors"
+              className="py-2.5 px-4 rounded-xl text-xs font-bold text-ctx-9ca3af hover:text-ctx-fg transition-colors"
             >
               Voltar
             </button>

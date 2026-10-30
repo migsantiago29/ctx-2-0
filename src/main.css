@@ -48,11 +48,132 @@
     --sidebar-accent-foreground: 50 100% 50%;
     --sidebar-border: 0 0% 14.9%;
     --sidebar-ring: 50 100% 50%;
+
+    /* Cores do app (tokens ctx-*): o nome é a cor do modo escuro; o modo claro redefine abaixo */
+    --ctx-090909: 9 9 9;
+    --ctx-0a0a0a: 10 10 10;
+    --ctx-0d0d0d: 13 13 13;
+    --ctx-0e0e0e: 14 14 14;
+    --ctx-111111: 17 17 17;
+    --ctx-121212: 18 18 18;
+    --ctx-131313: 19 19 19;
+    --ctx-141414: 20 20 20;
+    --ctx-15140e: 21 20 14;
+    --ctx-161616: 22 22 22;
+    --ctx-171717: 23 23 23;
+    --ctx-181404: 24 20 4;
+    --ctx-181611: 24 22 17;
+    --ctx-181818: 24 24 24;
+    --ctx-191919: 25 25 25;
+    --ctx-1a1a1a: 26 26 26;
+    --ctx-1c1806: 28 24 6;
+    --ctx-1a1810: 26 24 16;
+    --ctx-181507: 24 21 7;
+    --ctx-201a07: 32 26 7;
+    --ctx-1c1c1c: 28 28 28;
+    --ctx-1e1e1e: 30 30 30;
+    --ctx-1f1f1f: 31 31 31;
+    --ctx-202020: 32 32 32;
+    --ctx-221c05: 34 28 5;
+    --ctx-222222: 34 34 34;
+    --ctx-242424: 36 36 36;
+    --ctx-252525: 37 37 37;
+    --ctx-262626: 38 38 38;
+    --ctx-282828: 40 40 40;
+    --ctx-2a2a2a: 42 42 42;
+    --ctx-2b2b2b: 43 43 43;
+    --ctx-2e2e2e: 46 46 46;
+    --ctx-2f2f2f: 47 47 47;
+    --ctx-333333: 51 51 51;
+    --ctx-525252: 82 82 82;
+    --ctx-555555: 85 85 85;
+    --ctx-666666: 102 102 102;
+    --ctx-737373: 115 115 115;
+    --ctx-777777: 119 119 119;
+    --ctx-888888: 136 136 136;
+    --ctx-9ca3af: 156 163 175;
+    --ctx-a3a3a3: 163 163 163;
+    --ctx-d1d5db: 209 213 219;
+    --ctx-e5e5e5: 229 229 229;
+    --ctx-e5e7eb: 229 231 235;
+    --ctx-fg: 255 255 255;
+    --ctx-brand: 255 212 0;
+    color-scheme: dark;
+  }
+
+  /* Modo claro: ativado pelo botão sol/lua (atributo data-theme no <html>) */
+  :root[data-theme='light'] {
+    --background: 240 5% 96%;
+    --foreground: 240 6% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 6% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 6% 10%;
+    --secondary: 240 5% 94%;
+    --secondary-foreground: 240 6% 10%;
+    --muted: 240 5% 94%;
+    --muted-foreground: 220 9% 46%;
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 240 6% 10%;
+    --sidebar-accent: 240 5% 94%;
+    --sidebar-accent-foreground: 36 84% 34%;
+    --sidebar-border: 240 6% 90%;
+    --ctx-090909: 244 244 245;
+    --ctx-0a0a0a: 244 244 245;
+    --ctx-0d0d0d: 244 244 245;
+    --ctx-0e0e0e: 244 244 245;
+    --ctx-111111: 255 255 255;
+    --ctx-121212: 255 255 255;
+    --ctx-131313: 255 255 255;
+    --ctx-141414: 255 255 255;
+    --ctx-15140e: 254 252 232;
+    --ctx-161616: 255 255 255;
+    --ctx-171717: 255 255 255;
+    --ctx-181404: 254 249 195;
+    --ctx-181611: 254 252 232;
+    --ctx-181818: 244 244 245;
+    --ctx-191919: 244 244 245;
+    --ctx-1a1a1a: 244 244 245;
+    --ctx-1c1806: 254 249 195;
+    --ctx-1a1810: 254 252 232;
+    --ctx-181507: 254 249 195;
+    --ctx-201a07: 254 240 138;
+    --ctx-1c1c1c: 244 244 245;
+    --ctx-1e1e1e: 244 244 245;
+    --ctx-1f1f1f: 239 239 241;
+    --ctx-202020: 239 239 241;
+    --ctx-221c05: 254 240 138;
+    --ctx-222222: 228 228 231;
+    --ctx-242424: 228 228 231;
+    --ctx-252525: 228 228 231;
+    --ctx-262626: 228 228 231;
+    --ctx-282828: 228 228 231;
+    --ctx-2a2a2a: 228 228 231;
+    --ctx-2b2b2b: 228 228 231;
+    --ctx-2e2e2e: 212 212 216;
+    --ctx-2f2f2f: 212 212 216;
+    --ctx-333333: 212 212 216;
+    --ctx-525252: 161 161 170;
+    --ctx-555555: 161 161 170;
+    --ctx-666666: 113 113 122;
+    --ctx-737373: 113 113 122;
+    --ctx-777777: 113 113 122;
+    --ctx-888888: 107 114 128;
+    --ctx-9ca3af: 107 114 128;
+    --ctx-a3a3a3: 113 113 122;
+    --ctx-d1d5db: 63 63 70;
+    --ctx-e5e5e5: 39 39 42;
+    --ctx-e5e7eb: 39 39 42;
+    --ctx-fg: 24 24 27;
+    --ctx-brand: 161 98 7;
+    color-scheme: light;
   }
 
   body {
-    background-color: #0a0a0a;
-    color: #ffffff;
+    background-color: rgb(var(--ctx-0a0a0a));
+    color: rgb(var(--ctx-fg));
     font-family:
       'Inter',
       -apple-system,

@@ -86,7 +86,7 @@ export function NotificationBell() {
       case 'lembrete':
         return <Flame className="w-4 h-4 text-[#EF4444]" />
       default:
-        return <Calendar className="w-4 h-4 text-[#FFD400]" />
+        return <Calendar className="w-4 h-4 text-ctx-brand" />
     }
   }
 
@@ -94,7 +94,7 @@ export function NotificationBell() {
     <div className="relative" ref={containerRef}>
       <button
         onClick={() => setOpen(!open)}
-        className="relative p-2 rounded-xl bg-[#141414] hover:bg-[#1C1C1C] border border-[#262626] text-[#9CA3AF] hover:text-white transition-all flex items-center justify-center"
+        className="relative p-2 rounded-xl bg-ctx-141414 hover:bg-ctx-1c1c1c border border-ctx-262626 text-ctx-9ca3af hover:text-ctx-fg transition-all flex items-center justify-center"
         aria-label="Notificações"
       >
         <Bell className="w-4 h-4" />
@@ -106,14 +106,14 @@ export function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-[#111111] border border-[#2B2B2B] rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-          <div className="p-3.5 border-b border-[#262626] flex items-center justify-between bg-[#141414]">
+        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-ctx-111111 border border-ctx-2b2b2b rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+          <div className="p-3.5 border-b border-ctx-262626 flex items-center justify-between bg-ctx-141414">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-white uppercase tracking-wider">
+              <span className="text-xs font-bold text-ctx-fg uppercase tracking-wider">
                 Notificações
               </span>
               {unreadCount > 0 && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#FFD400]/15 text-[#FFD400] font-bold">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#FFD400]/15 text-ctx-brand font-bold">
                   {unreadCount} nova{unreadCount > 1 ? 's' : ''}
                 </span>
               )}
@@ -122,7 +122,7 @@ export function NotificationBell() {
               <button
                 onClick={handleMarcarTodasLidas}
                 disabled={loading}
-                className="text-[11px] text-[#9CA3AF] hover:text-[#FFD400] flex items-center gap-1 transition-colors"
+                className="text-[11px] text-ctx-9ca3af hover:text-ctx-brand flex items-center gap-1 transition-colors"
               >
                 <CheckCheck className="w-3.5 h-3.5" />
                 <span>Marcar todas lidas</span>
@@ -130,9 +130,9 @@ export function NotificationBell() {
             )}
           </div>
 
-          <div className="max-h-80 overflow-y-auto divide-y divide-[#1F1F1F]">
+          <div className="max-h-80 overflow-y-auto divide-y divide-ctx-1f1f1f">
             {notificacoes.length === 0 ? (
-              <div className="p-8 text-center text-xs text-[#666]">
+              <div className="p-8 text-center text-xs text-ctx-666666">
                 Nenhuma notificação no momento.
               </div>
             ) : (
@@ -142,16 +142,16 @@ export function NotificationBell() {
                   onClick={() => handleMarcarLida(n)}
                   className={`p-3.5 text-xs transition-colors cursor-pointer flex items-start gap-3 ${
                     n.lida
-                      ? 'bg-transparent hover:bg-[#161616] text-[#A3A3A3]'
-                      : 'bg-[#FFD400]/5 hover:bg-[#FFD400]/10 text-white font-medium'
+                      ? 'bg-transparent hover:bg-ctx-161616 text-ctx-a3a3a3'
+                      : 'bg-[#FFD400]/5 hover:bg-[#FFD400]/10 text-ctx-fg font-medium'
                   }`}
                 >
-                  <div className="p-2 rounded-lg bg-[#1C1C1C] border border-[#2B2B2B] shrink-0 mt-0.5">
+                  <div className="p-2 rounded-lg bg-ctx-1c1c1c border border-ctx-2b2b2b shrink-0 mt-0.5">
                     {getIcon(n.tipo)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="leading-snug break-words">{n.texto}</p>
-                    <span className="text-[10px] text-[#666] block mt-1">
+                    <span className="text-[10px] text-ctx-666666 block mt-1">
                       {new Date(n.created).toLocaleString('pt-BR', {
                         day: '2-digit',
                         month: '2-digit',

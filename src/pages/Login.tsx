@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 export default function Login() {
   const { login } = useAuth()
@@ -31,7 +32,8 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-ctx-0a0a0a flex items-center justify-center p-4 relative overflow-hidden">
+      <ThemeToggle className="absolute top-4 right-4 z-20" />
       {/* Subtle yellow radial gradient background accent */}
       <div
         className="absolute -top-32 -right-32 w-96 h-96 rounded-full pointer-events-none opacity-20 blur-3xl"
@@ -46,19 +48,19 @@ export default function Login() {
         }}
       />
 
-      <div className="w-full max-w-md bg-[#111111] border border-[#262626] rounded-xl p-8 shadow-2xl relative z-10 transition-all">
+      <div className="w-full max-w-md bg-ctx-111111 border border-ctx-262626 rounded-xl p-8 shadow-2xl relative z-10 transition-all">
         {/* CTX 2.0 Logo Header */}
         <div className="flex flex-col items-center text-center mb-8">
           <div className="w-14 h-14 rounded-xl bg-[#FFD400] text-black font-black flex items-center justify-center text-xl tracking-wider shadow-lg shadow-[#FFD400]/20 mb-4">
             CTX
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">CTX 2.0</h1>
-          <p className="text-sm text-[#9CA3AF] mt-1">Gestão Estratégica, Metas & Cenografia</p>
+          <h1 className="text-2xl font-bold text-ctx-fg tracking-tight">CTX 2.0</h1>
+          <p className="text-sm text-ctx-9ca3af mt-1">Gestão Estratégica, Metas & Cenografia</p>
         </div>
 
         <div className="mb-6 text-center">
-          <h2 className="text-lg font-semibold text-white">Acesse sua conta</h2>
-          <p className="text-xs text-[#9CA3AF] mt-0.5">
+          <h2 className="text-lg font-semibold text-ctx-fg">Acesse sua conta</h2>
+          <p className="text-xs text-ctx-9ca3af mt-0.5">
             Visualize suas metas individuais e contribuições para os Projetos Estratégicos.
           </p>
         </div>
@@ -74,12 +76,12 @@ export default function Login() {
           <div className="space-y-1.5">
             <Label
               htmlFor="email"
-              className="text-xs uppercase tracking-wider text-[#9CA3AF] font-medium"
+              className="text-xs uppercase tracking-wider text-ctx-9ca3af font-medium"
             >
               E-mail corporativo
             </Label>
             <div className="relative">
-              <Mail className="w-4 h-4 text-[#9CA3AF] absolute left-3 top-1/2 -translate-y-1/2" />
+              <Mail className="w-4 h-4 text-ctx-9ca3af absolute left-3 top-1/2 -translate-y-1/2" />
               <Input
                 id="email"
                 type="email"
@@ -87,7 +89,7 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="seu.nome@ctxcenografia.com.br"
-                className="pl-9 bg-[#171717] border-[#262626] text-white placeholder:text-[#525252] focus-visible:ring-2 focus-visible:ring-[#FFD400] focus-visible:border-[#FFD400]"
+                className="pl-9 bg-ctx-171717 border-ctx-262626 text-ctx-fg placeholder:text-ctx-525252 focus-visible:ring-2 focus-visible:ring-[#FFD400] focus-visible:border-[#FFD400]"
               />
             </div>
           </div>
@@ -96,19 +98,19 @@ export default function Login() {
             <div className="flex items-center justify-between">
               <Label
                 htmlFor="password"
-                className="text-xs uppercase tracking-wider text-[#9CA3AF] font-medium"
+                className="text-xs uppercase tracking-wider text-ctx-9ca3af font-medium"
               >
                 Senha
               </Label>
               <Link
                 to="/forgot-password"
-                className="text-xs text-[#FFD400] hover:text-[#E6BF00] transition-colors"
+                className="text-xs text-ctx-brand hover:text-ctx-brand transition-colors"
               >
                 Esqueceu a senha?
               </Link>
             </div>
             <div className="relative">
-              <Lock className="w-4 h-4 text-[#9CA3AF] absolute left-3 top-1/2 -translate-y-1/2" />
+              <Lock className="w-4 h-4 text-ctx-9ca3af absolute left-3 top-1/2 -translate-y-1/2" />
               <Input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
@@ -116,12 +118,12 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="pl-9 pr-10 bg-[#171717] border-[#262626] text-white placeholder:text-[#525252] focus-visible:ring-2 focus-visible:ring-[#FFD400] focus-visible:border-[#FFD400]"
+                className="pl-9 pr-10 bg-ctx-171717 border-ctx-262626 text-ctx-fg placeholder:text-ctx-525252 focus-visible:ring-2 focus-visible:ring-[#FFD400] focus-visible:border-[#FFD400]"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-white transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-ctx-9ca3af hover:text-ctx-fg transition-colors"
                 aria-label={showPassword ? 'Ocultar senha' : 'Exibir senha'}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}

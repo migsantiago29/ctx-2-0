@@ -15,6 +15,12 @@
   </head>
 
   <body>
+    <script>
+      // Aplica o modo claro/escuro salvo antes de desenhar a tela (evita piscar)
+      try {
+        if (localStorage.getItem('ctx-theme') === 'light') document.documentElement.dataset.theme = 'light'
+      } catch (e) {}
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

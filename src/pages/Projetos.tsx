@@ -310,7 +310,7 @@ export default function Projetos() {
   return (
     <div className="space-y-6 pb-12 animate-fade-in">
       {/* Abas dos Projetos Estratégicos (P1..P5) */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-[#262626]">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-ctx-262626">
         {projetos.map((proj) => {
           const isSelected = proj.id === selectedProjetoId
           return (
@@ -320,7 +320,7 @@ export default function Projetos() {
               className={`px-4 py-2.5 rounded-xl font-bold text-xs whitespace-nowrap transition-all flex items-center gap-2 ${
                 isSelected
                   ? 'bg-[#FFD400] text-black shadow-md shadow-[#FFD400]/20'
-                  : 'bg-[#141414] text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E] border border-[#262626]'
+                  : 'bg-ctx-141414 text-ctx-9ca3af hover:text-ctx-fg hover:bg-ctx-1e1e1e border border-ctx-262626'
               }`}
             >
               <span className="font-mono">{proj.codigo}</span>
@@ -333,30 +333,30 @@ export default function Projetos() {
       {currentProjeto ? (
         <div className="space-y-6">
           {/* 1. Cabeçalho do Projeto */}
-          <div className="p-6 rounded-2xl bg-[#111111] border border-[#262626] space-y-4">
+          <div className="p-6 rounded-2xl bg-ctx-111111 border border-ctx-262626 space-y-4">
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs px-2.5 py-0.5 rounded bg-[#1C1C1C] border border-[#333] text-[#FFD400] font-black">
+                  <span className="font-mono text-xs px-2.5 py-0.5 rounded bg-ctx-1c1c1c border border-ctx-333333 text-ctx-brand font-black">
                     {currentProjeto.codigo}
                   </span>
-                  <span className="text-xs text-[#9CA3AF] uppercase tracking-wider font-semibold">
+                  <span className="text-xs text-ctx-9ca3af uppercase tracking-wider font-semibold">
                     Projeto Estratégico CTX 2.0
                   </span>
                 </div>
-                <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">
+                <h1 className="text-2xl md:text-3xl font-black text-ctx-fg tracking-tight">
                   {currentProjeto.nome}
                 </h1>
                 {currentProjeto.descricao && (
-                  <p className="text-sm text-[#9CA3AF] max-w-2xl leading-relaxed">
+                  <p className="text-sm text-ctx-9ca3af max-w-2xl leading-relaxed">
                     {currentProjeto.descricao}
                   </p>
                 )}
-                <div className="flex items-center gap-2 text-xs text-[#9CA3AF] pt-1">
-                  <Users className="w-4 h-4 text-[#FFD400]" />
+                <div className="flex items-center gap-2 text-xs text-ctx-9ca3af pt-1">
+                  <Users className="w-4 h-4 text-ctx-brand" />
                   <span>
                     Sponsor:{' '}
-                    <strong className="text-white">
+                    <strong className="text-ctx-fg">
                       {currentProjeto.expand?.sponsor?.nome || 'Não definido'}
                     </strong>
                   </span>
@@ -364,39 +364,39 @@ export default function Projetos() {
               </div>
 
               {/* Indicadores de Conclusão e Total */}
-              <div className="flex flex-wrap items-center gap-4 bg-[#141414] p-4 rounded-xl border border-[#262626] shrink-0">
+              <div className="flex flex-wrap items-center gap-4 bg-ctx-141414 p-4 rounded-xl border border-ctx-262626 shrink-0">
                 <div className="text-center px-2">
-                  <span className="block text-2xl font-mono font-black text-white">
+                  <span className="block text-2xl font-mono font-black text-ctx-fg">
                     {stats.total}
                   </span>
-                  <span className="text-[10px] uppercase font-bold text-[#666]">Total Metas</span>
+                  <span className="text-[10px] uppercase font-bold text-ctx-666666">Total Metas</span>
                 </div>
-                <div className="w-px h-10 bg-[#262626]" />
+                <div className="w-px h-10 bg-ctx-262626" />
                 <div className="text-center px-2">
                   <span className="block text-2xl font-mono font-black text-[#3B82F6]">
                     {stats.percentConcluida}%
                   </span>
-                  <span className="text-[10px] uppercase font-bold text-[#666]">Concluídas</span>
+                  <span className="text-[10px] uppercase font-bold text-ctx-666666">Concluídas</span>
                 </div>
               </div>
             </div>
 
             {/* Barra Segmentada de Faróis do Projeto */}
-            <div className="space-y-2 pt-2 border-t border-[#222]">
+            <div className="space-y-2 pt-2 border-t border-ctx-222222">
               <div className="flex flex-wrap items-center justify-between text-xs gap-2">
-                <span className="text-[#888]">Distribuição por Farol:</span>
+                <span className="text-ctx-888888">Distribuição por Farol:</span>
                 <div className="flex flex-wrap items-center gap-3 font-mono text-[11px]">
                   <span className="text-[#3B82F6] font-bold">● {stats.concluida} Concluída</span>
                   <span className="text-[#22C55E] font-bold">● {stats.verde} No ritmo</span>
                   <span className="text-[#F59E0B] font-bold">● {stats.atencao} Atenção</span>
                   <span className="text-[#EF4444] font-bold">● {stats.vermelho} Travado</span>
-                  <span className="text-[#666] font-bold">
+                  <span className="text-ctx-666666 font-bold">
                     ● {stats.sem_atualizacao} Sem atualização
                   </span>
                 </div>
               </div>
 
-              <div className="h-2.5 w-full bg-[#1C1C1C] rounded-full overflow-hidden flex border border-[#2B2B2B]">
+              <div className="h-2.5 w-full bg-ctx-1c1c1c rounded-full overflow-hidden flex border border-ctx-2b2b2b">
                 {stats.concluida > 0 && (
                   <div
                     style={{ width: `${(stats.concluida / stats.total) * 100}%` }}
@@ -424,7 +424,7 @@ export default function Projetos() {
                 {stats.sem_atualizacao > 0 && (
                   <div
                     style={{ width: `${(stats.sem_atualizacao / stats.total) * 100}%` }}
-                    className="bg-[#333333]"
+                    className="bg-ctx-333333"
                   />
                 )}
               </div>
@@ -437,7 +437,7 @@ export default function Projetos() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <HelpCircle className="w-5 h-5 text-[#F59E0B]" />
-                  <h3 className="text-sm font-black text-white uppercase tracking-wider">
+                  <h3 className="text-sm font-black text-ctx-fg uppercase tracking-wider">
                     Pedidos de Ajuda Abertos ({pedidosAjuda.length})
                   </h3>
                 </div>
@@ -463,29 +463,29 @@ export default function Projetos() {
                   return (
                     <div
                       key={help.id}
-                      className="p-4 rounded-xl bg-[#141414] border border-[#2B2B2B] flex flex-col justify-between space-y-3"
+                      className="p-4 rounded-xl bg-ctx-141414 border border-ctx-2b2b2b flex flex-col justify-between space-y-3"
                     >
                       <div className="space-y-1.5">
                         <div className="flex items-center justify-between text-[11px]">
-                          <span className="font-mono text-[#FFD400] font-bold">
+                          <span className="font-mono text-ctx-brand font-bold">
                             {meta?.codigo || 'Meta'}
                           </span>
-                          <span className="text-[#888]">
+                          <span className="text-ctx-888888">
                             {new Date(help.created).toLocaleDateString('pt-BR')}
                           </span>
                         </div>
-                        <h4 className="text-xs font-bold text-white">{meta?.titulo}</h4>
-                        <p className="text-xs text-[#E5E5E5] bg-[#1A1A1A] p-2.5 rounded-lg border border-[#262626] leading-relaxed">
+                        <h4 className="text-xs font-bold text-ctx-fg">{meta?.titulo}</h4>
+                        <p className="text-xs text-ctx-e5e5e5 bg-ctx-1a1a1a p-2.5 rounded-lg border border-ctx-262626 leading-relaxed">
                           "{help.ajuda_texto}"
                         </p>
-                        <p className="text-[10px] text-[#9CA3AF]">
-                          De: <strong className="text-white">{autorColab}</strong> → Para:{' '}
+                        <p className="text-[10px] text-ctx-9ca3af">
+                          De: <strong className="text-ctx-fg">{autorColab}</strong> → Para:{' '}
                           <strong className="text-[#F59E0B]">{helperColab}</strong>
                         </p>
                       </div>
 
                       {podeResolver && (
-                        <div className="pt-2 border-t border-[#222]">
+                        <div className="pt-2 border-t border-ctx-222222">
                           <button
                             type="button"
                             onClick={() => handleResolverAjuda(help.id)}
@@ -526,12 +526,12 @@ export default function Projetos() {
 
               return (
                 <div key={grupo.key} className="space-y-3">
-                  <div className="flex items-center gap-2 pb-1 border-b border-[#222]">
+                  <div className="flex items-center gap-2 pb-1 border-b border-ctx-222222">
                     <span
                       className="w-3 h-3 rounded-full"
                       style={{ backgroundColor: grupo.color }}
                     />
-                    <h3 className="text-xs uppercase font-extrabold tracking-wider text-white">
+                    <h3 className="text-xs uppercase font-extrabold tracking-wider text-ctx-fg">
                       {grupo.title} ({items.length})
                     </h3>
                   </div>
@@ -547,20 +547,20 @@ export default function Projetos() {
                         <div
                           key={m.id}
                           onClick={() => setSelectedGoal(m)}
-                          className="group bg-[#111111] border border-[#262626] hover:border-[#FFD400] rounded-2xl p-5 cursor-pointer transition-all flex flex-col justify-between space-y-3 hover:shadow-xl hover:shadow-[#FFD400]/5"
+                          className="group bg-ctx-111111 border border-ctx-262626 hover:border-[#FFD400] rounded-2xl p-5 cursor-pointer transition-all flex flex-col justify-between space-y-3 hover:shadow-xl hover:shadow-[#FFD400]/5"
                         >
                           <div className="space-y-2.5">
                             {/* Linha superior: Código + Tag Principal/Secundário */}
                             <div className="flex items-center justify-between">
-                              <span className="font-mono text-xs px-2 py-0.5 rounded bg-[#1C1C1C] border border-[#333] text-[#FFD400] font-bold">
+                              <span className="font-mono text-xs px-2 py-0.5 rounded bg-ctx-1c1c1c border border-ctx-333333 text-ctx-brand font-bold">
                                 {m.codigo}
                               </span>
 
                               <span
                                 className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
                                   isPrincipal
-                                    ? 'bg-[#FFD400]/15 text-[#FFD400] border border-[#FFD400]/30'
-                                    : 'bg-[#1F1F1F] text-[#9CA3AF] border border-[#333]'
+                                    ? 'bg-[#FFD400]/15 text-ctx-brand border border-[#FFD400]/30'
+                                    : 'bg-ctx-1f1f1f text-ctx-9ca3af border border-ctx-333333'
                                 }`}
                               >
                                 {isPrincipal ? 'Projeto Principal' : 'Secundário'}
@@ -568,14 +568,14 @@ export default function Projetos() {
                             </div>
 
                             {/* Título da meta */}
-                            <h4 className="text-sm font-bold text-white group-hover:text-[#FFD400] transition-colors leading-snug line-clamp-2">
+                            <h4 className="text-sm font-bold text-ctx-fg group-hover:text-ctx-brand transition-colors leading-snug line-clamp-2">
                               {m.titulo}
                             </h4>
 
                             {/* Responsáveis */}
                             {responsaveisList.length > 0 && (
-                              <div className="flex items-center gap-1.5 text-xs text-[#9CA3AF]">
-                                <Users className="w-3.5 h-3.5 text-[#FFD400] shrink-0" />
+                              <div className="flex items-center gap-1.5 text-xs text-ctx-9ca3af">
+                                <Users className="w-3.5 h-3.5 text-ctx-brand shrink-0" />
                                 <span className="truncate">
                                   {responsaveisList.map((r) => r.nome).join(', ')}
                                 </span>
@@ -586,25 +586,25 @@ export default function Projetos() {
                             {av ? (
                               podeVerDetalhes ? (
                                 <div className="space-y-1.5 pt-1 text-xs">
-                                  <div className="p-2 rounded-lg bg-[#161616] border border-[#222]">
-                                    <span className="text-[10px] uppercase font-bold text-[#FFD400] block mb-0.5">
+                                  <div className="p-2 rounded-lg bg-ctx-161616 border border-ctx-222222">
+                                    <span className="text-[10px] uppercase font-bold text-ctx-brand block mb-0.5">
                                       Avançou:
                                     </span>
-                                    <p className="text-[#D1D5DB] text-[11px] line-clamp-2">
+                                    <p className="text-ctx-d1d5db text-[11px] line-clamp-2">
                                       {av.avancou}
                                     </p>
                                   </div>
-                                  <div className="p-2 rounded-lg bg-[#161616] border border-[#222]">
-                                    <span className="text-[10px] uppercase font-bold text-[#FFD400] block mb-0.5">
+                                  <div className="p-2 rounded-lg bg-ctx-161616 border border-ctx-222222">
+                                    <span className="text-[10px] uppercase font-bold text-ctx-brand block mb-0.5">
                                       Próximo passo:
                                     </span>
-                                    <p className="text-[#D1D5DB] text-[11px] line-clamp-2">
+                                    <p className="text-ctx-d1d5db text-[11px] line-clamp-2">
                                       {av.proximo_passo}
                                     </p>
                                   </div>
                                 </div>
                               ) : (
-                                <div className="p-2.5 rounded-lg bg-[#141414] border border-[#222] flex items-center gap-2 text-xs text-[#666]">
+                                <div className="p-2.5 rounded-lg bg-ctx-141414 border border-ctx-222222 flex items-center gap-2 text-xs text-ctx-666666">
                                   <Lock className="w-3.5 h-3.5 shrink-0" />
                                   <span className="text-[11px]">
                                     Detalhamento visível aos responsáveis e sponsor.
@@ -615,7 +615,7 @@ export default function Projetos() {
                           </div>
 
                           {/* Rodapé: Farol e data */}
-                          <div className="pt-3 border-t border-[#262626] flex items-center justify-between text-xs">
+                          <div className="pt-3 border-t border-ctx-262626 flex items-center justify-between text-xs">
                             <span
                               className="font-bold uppercase tracking-wider text-[11px]"
                               style={{ color: grupo.color }}
@@ -627,7 +627,7 @@ export default function Projetos() {
                                   ? 'Travado'
                                   : grupo.key}
                             </span>
-                            <span className="text-[11px] text-[#888] group-hover:text-white flex items-center gap-1">
+                            <span className="text-[11px] text-ctx-888888 group-hover:text-ctx-fg flex items-center gap-1">
                               <span>Ver timeline</span>
                               <ChevronRight className="w-3.5 h-3.5" />
                             </span>
@@ -642,7 +642,7 @@ export default function Projetos() {
           </div>
         </div>
       ) : (
-        <div className="p-12 text-center text-xs text-[#666]">Nenhum projeto encontrado.</div>
+        <div className="p-12 text-center text-xs text-ctx-666666">Nenhum projeto encontrado.</div>
       )}
 
       {/* Drawer com histórico e comentários */}

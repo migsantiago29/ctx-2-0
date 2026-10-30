@@ -1494,15 +1494,15 @@ export default function AdminImport() {
   return (
     <div className="space-y-8 animate-fade-in pb-12 max-w-5xl mx-auto">
       {/* Header */}
-      <div className="border-b border-[#262626] pb-6">
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#FFD400]/10 border border-[#FFD400]/30 text-[#FFD400] text-xs font-semibold mb-2">
+      <div className="border-b border-ctx-262626 pb-6">
+        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#FFD400]/10 border border-[#FFD400]/30 text-ctx-brand text-xs font-semibold mb-2">
           <Database className="w-3.5 h-3.5" />
           Administração do Sistema
         </div>
-        <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
+        <h1 className="text-2xl md:text-3xl font-extrabold text-ctx-fg tracking-tight">
           Importação de Dados & Gestão de Acessos
         </h1>
-        <p className="text-sm text-[#9CA3AF] mt-1">
+        <p className="text-sm text-ctx-9ca3af mt-1">
           Área restrita à diretoria e administração CTX. Faça o upload das planilhas da Etapa 1
           (Áreas, Colaboradores, Processos) e Etapa 2 (Projetos, Metas, Indicadores) para popular o
           ambiente em tempo real.
@@ -1510,19 +1510,19 @@ export default function AdminImport() {
       </div>
 
       {/* SEÇÃO 1: UPLOADS EM CASCATA */}
-      <div className="bg-[#111111] border border-[#262626] rounded-2xl p-6 md:p-8 space-y-6 shadow-xl">
-        <div className="flex items-center justify-between border-b border-[#262626] pb-4">
+      <div className="bg-ctx-111111 border border-ctx-262626 rounded-2xl p-6 md:p-8 space-y-6 shadow-xl">
+        <div className="flex items-center justify-between border-b border-ctx-262626 pb-4">
           <div>
-            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <UploadCloud className="w-5 h-5 text-[#FFD400]" />
+            <h2 className="text-lg font-bold text-ctx-fg flex items-center gap-2">
+              <UploadCloud className="w-5 h-5 text-ctx-brand" />
               Importação em Cascata (Etapa 1 &amp; Etapa 2)
             </h2>
-            <p className="text-xs text-[#9CA3AF] mt-0.5">
+            <p className="text-xs text-ctx-9ca3af mt-0.5">
               1. Áreas &rarr; 2. Colaboradores &rarr; 3. Processos &rarr; 4. Projetos &rarr; 5.
               Metas &rarr; 6. Indicadores
             </p>
           </div>
-          <span className="text-[11px] font-mono uppercase bg-[#1C1C1C] border border-[#262626] text-[#FFD400] px-3 py-1 rounded-full">
+          <span className="text-[11px] font-mono uppercase bg-ctx-1c1c1c border border-ctx-262626 text-ctx-brand px-3 py-1 rounded-full">
             Suporta CSV
           </span>
         </div>
@@ -1530,7 +1530,7 @@ export default function AdminImport() {
         {/* Uploads em Cascata: Etapa 1 e Etapa 2 */}
         <div className="space-y-4">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono font-bold text-[#9CA3AF] uppercase tracking-wider">
+            <span className="text-xs font-mono font-bold text-ctx-9ca3af uppercase tracking-wider">
               Etapa 1: Estrutura Base
             </span>
           </div>
@@ -1541,7 +1541,7 @@ export default function AdminImport() {
               className={`p-5 rounded-xl border-2 border-dashed transition-all flex flex-col justify-between ${
                 fileAreas
                   ? 'border-[#22C55E]/60 bg-[#22C55E]/5'
-                  : 'border-[#262626] bg-[#141414] hover:border-[#FFD400]/40'
+                  : 'border-ctx-262626 bg-ctx-141414 hover:border-[#FFD400]/40'
               }`}
             >
               <div>
@@ -1552,16 +1552,16 @@ export default function AdminImport() {
                   {fileAreas ? (
                     <CheckCircle2 className="w-5 h-5 text-[#22C55E]" />
                   ) : (
-                    <FileSpreadsheet className="w-5 h-5 text-[#9CA3AF]" />
+                    <FileSpreadsheet className="w-5 h-5 text-ctx-9ca3af" />
                   )}
                 </div>
-                <h3 className="text-sm font-bold text-white">01_areas</h3>
-                <p className="text-[11px] text-[#9CA3AF] mt-1">
-                  Colunas: <span className="font-mono text-white">nome, ordem_no_fluxo, tipo</span>
+                <h3 className="text-sm font-bold text-ctx-fg">01_areas</h3>
+                <p className="text-[11px] text-ctx-9ca3af mt-1">
+                  Colunas: <span className="font-mono text-ctx-fg">nome, ordem_no_fluxo, tipo</span>
                 </p>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-[#262626]/80">
+              <div className="mt-4 pt-3 border-t border-ctx-262626/80">
                 <input
                   type="file"
                   id="file-areas"
@@ -1571,7 +1571,7 @@ export default function AdminImport() {
                 />
                 <label
                   htmlFor="file-areas"
-                  className="w-full py-2 px-3 bg-[#1F1F1F] hover:bg-[#2A2A2A] text-white text-xs font-semibold rounded-lg border border-[#333] transition-colors flex items-center justify-center gap-1.5 cursor-pointer truncate"
+                  className="w-full py-2 px-3 bg-ctx-1f1f1f hover:bg-ctx-2a2a2a text-ctx-fg text-xs font-semibold rounded-lg border border-ctx-333333 transition-colors flex items-center justify-center gap-1.5 cursor-pointer truncate"
                 >
                   {fileAreas ? fileAreas.name : 'Selecionar 01_areas.csv'}
                 </label>
@@ -1583,7 +1583,7 @@ export default function AdminImport() {
               className={`p-5 rounded-xl border-2 border-dashed transition-all flex flex-col justify-between ${
                 fileColabs
                   ? 'border-[#22C55E]/60 bg-[#22C55E]/5'
-                  : 'border-[#262626] bg-[#141414] hover:border-[#FFD400]/40'
+                  : 'border-ctx-262626 bg-ctx-141414 hover:border-[#FFD400]/40'
               }`}
             >
               <div>
@@ -1594,19 +1594,19 @@ export default function AdminImport() {
                   {fileColabs ? (
                     <CheckCircle2 className="w-5 h-5 text-[#22C55E]" />
                   ) : (
-                    <FileSpreadsheet className="w-5 h-5 text-[#9CA3AF]" />
+                    <FileSpreadsheet className="w-5 h-5 text-ctx-9ca3af" />
                   )}
                 </div>
-                <h3 className="text-sm font-bold text-white">02_colaboradores</h3>
-                <p className="text-[11px] text-[#9CA3AF] mt-1">
+                <h3 className="text-sm font-bold text-ctx-fg">02_colaboradores</h3>
+                <p className="text-[11px] text-ctx-9ca3af mt-1">
                   Colunas:{' '}
-                  <span className="font-mono text-white">
+                  <span className="font-mono text-ctx-fg">
                     codigo, nome, cargo, area, email, sem_metas
                   </span>
                 </p>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-[#262626]/80">
+              <div className="mt-4 pt-3 border-t border-ctx-262626/80">
                 <input
                   type="file"
                   id="file-colabs"
@@ -1616,7 +1616,7 @@ export default function AdminImport() {
                 />
                 <label
                   htmlFor="file-colabs"
-                  className="w-full py-2 px-3 bg-[#1F1F1F] hover:bg-[#2A2A2A] text-white text-xs font-semibold rounded-lg border border-[#333] transition-colors flex items-center justify-center gap-1.5 cursor-pointer truncate"
+                  className="w-full py-2 px-3 bg-ctx-1f1f1f hover:bg-ctx-2a2a2a text-ctx-fg text-xs font-semibold rounded-lg border border-ctx-333333 transition-colors flex items-center justify-center gap-1.5 cursor-pointer truncate"
                 >
                   {fileColabs ? fileColabs.name : 'Selecionar 02_colaboradores.csv'}
                 </label>
@@ -1628,7 +1628,7 @@ export default function AdminImport() {
               className={`p-5 rounded-xl border-2 border-dashed transition-all flex flex-col justify-between ${
                 fileProcs
                   ? 'border-[#22C55E]/60 bg-[#22C55E]/5'
-                  : 'border-[#262626] bg-[#141414] hover:border-[#FFD400]/40'
+                  : 'border-ctx-262626 bg-ctx-141414 hover:border-[#FFD400]/40'
               }`}
             >
               <div>
@@ -1639,19 +1639,19 @@ export default function AdminImport() {
                   {fileProcs ? (
                     <CheckCircle2 className="w-5 h-5 text-[#22C55E]" />
                   ) : (
-                    <FileSpreadsheet className="w-5 h-5 text-[#9CA3AF]" />
+                    <FileSpreadsheet className="w-5 h-5 text-ctx-9ca3af" />
                   )}
                 </div>
-                <h3 className="text-sm font-bold text-white">04_processos</h3>
-                <p className="text-[11px] text-[#9CA3AF] mt-1">
+                <h3 className="text-sm font-bold text-ctx-fg">04_processos</h3>
+                <p className="text-[11px] text-ctx-9ca3af mt-1">
                   Colunas:{' '}
-                  <span className="font-mono text-white">
+                  <span className="font-mono text-ctx-fg">
                     codigo, nome, area, etapas_anteriores, etapas_sucessoras
                   </span>
                 </p>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-[#262626]/80">
+              <div className="mt-4 pt-3 border-t border-ctx-262626/80">
                 <input
                   type="file"
                   id="file-procs"
@@ -1661,7 +1661,7 @@ export default function AdminImport() {
                 />
                 <label
                   htmlFor="file-procs"
-                  className="w-full py-2 px-3 bg-[#1F1F1F] hover:bg-[#2A2A2A] text-white text-xs font-semibold rounded-lg border border-[#333] transition-colors flex items-center justify-center gap-1.5 cursor-pointer truncate"
+                  className="w-full py-2 px-3 bg-ctx-1f1f1f hover:bg-ctx-2a2a2a text-ctx-fg text-xs font-semibold rounded-lg border border-ctx-333333 transition-colors flex items-center justify-center gap-1.5 cursor-pointer truncate"
                 >
                   {fileProcs ? fileProcs.name : 'Selecionar 04_processos.csv'}
                 </label>
@@ -1670,7 +1670,7 @@ export default function AdminImport() {
           </div>
 
           <div className="flex items-center gap-2 pt-2">
-            <span className="text-xs font-mono font-bold text-[#FFD400] uppercase tracking-wider">
+            <span className="text-xs font-mono font-bold text-ctx-brand uppercase tracking-wider">
               Etapa 2: Metas, Projetos & Indicadores
             </span>
           </div>
@@ -1681,7 +1681,7 @@ export default function AdminImport() {
               className={`p-5 rounded-xl border-2 border-dashed transition-all flex flex-col justify-between ${
                 fileProjetos
                   ? 'border-[#22C55E]/60 bg-[#22C55E]/5'
-                  : 'border-[#262626] bg-[#141414] hover:border-[#FFD400]/40'
+                  : 'border-ctx-262626 bg-ctx-141414 hover:border-[#FFD400]/40'
               }`}
             >
               <div>
@@ -1692,17 +1692,17 @@ export default function AdminImport() {
                   {fileProjetos ? (
                     <CheckCircle2 className="w-5 h-5 text-[#22C55E]" />
                   ) : (
-                    <FileSpreadsheet className="w-5 h-5 text-[#9CA3AF]" />
+                    <FileSpreadsheet className="w-5 h-5 text-ctx-9ca3af" />
                   )}
                 </div>
-                <h3 className="text-sm font-bold text-white">03_projetos_estrategicos</h3>
-                <p className="text-[11px] text-[#9CA3AF] mt-1">
+                <h3 className="text-sm font-bold text-ctx-fg">03_projetos_estrategicos</h3>
+                <p className="text-[11px] text-ctx-9ca3af mt-1">
                   Colunas:{' '}
-                  <span className="font-mono text-white">codigo, nome, descricao, sponsor</span>
+                  <span className="font-mono text-ctx-fg">codigo, nome, descricao, sponsor</span>
                 </p>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-[#262626]/80">
+              <div className="mt-4 pt-3 border-t border-ctx-262626/80">
                 <input
                   type="file"
                   id="file-projetos"
@@ -1712,7 +1712,7 @@ export default function AdminImport() {
                 />
                 <label
                   htmlFor="file-projetos"
-                  className="w-full py-2 px-3 bg-[#1F1F1F] hover:bg-[#2A2A2A] text-white text-xs font-semibold rounded-lg border border-[#333] transition-colors flex items-center justify-center gap-1.5 cursor-pointer truncate"
+                  className="w-full py-2 px-3 bg-ctx-1f1f1f hover:bg-ctx-2a2a2a text-ctx-fg text-xs font-semibold rounded-lg border border-ctx-333333 transition-colors flex items-center justify-center gap-1.5 cursor-pointer truncate"
                 >
                   {fileProjetos ? fileProjetos.name : 'Selecionar 03_projetos_estrategicos.csv'}
                 </label>
@@ -1724,7 +1724,7 @@ export default function AdminImport() {
               className={`p-5 rounded-xl border-2 border-dashed transition-all flex flex-col justify-between ${
                 fileMetas
                   ? 'border-[#22C55E]/60 bg-[#22C55E]/5'
-                  : 'border-[#262626] bg-[#141414] hover:border-[#FFD400]/40'
+                  : 'border-ctx-262626 bg-ctx-141414 hover:border-[#FFD400]/40'
               }`}
             >
               <div>
@@ -1735,19 +1735,19 @@ export default function AdminImport() {
                   {fileMetas ? (
                     <CheckCircle2 className="w-5 h-5 text-[#22C55E]" />
                   ) : (
-                    <FileSpreadsheet className="w-5 h-5 text-[#9CA3AF]" />
+                    <FileSpreadsheet className="w-5 h-5 text-ctx-9ca3af" />
                   )}
                 </div>
-                <h3 className="text-sm font-bold text-white">05_metas</h3>
-                <p className="text-[11px] text-[#9CA3AF] mt-1">
+                <h3 className="text-sm font-bold text-ctx-fg">05_metas</h3>
+                <p className="text-[11px] text-ctx-9ca3af mt-1">
                   Colunas:{' '}
-                  <span className="font-mono text-white">
+                  <span className="font-mono text-ctx-fg">
                     codigo, titulo, responsaveis, projeto_principal, prazo...
                   </span>
                 </p>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-[#262626]/80">
+              <div className="mt-4 pt-3 border-t border-ctx-262626/80">
                 <input
                   type="file"
                   id="file-metas"
@@ -1757,7 +1757,7 @@ export default function AdminImport() {
                 />
                 <label
                   htmlFor="file-metas"
-                  className="w-full py-2 px-3 bg-[#1F1F1F] hover:bg-[#2A2A2A] text-white text-xs font-semibold rounded-lg border border-[#333] transition-colors flex items-center justify-center gap-1.5 cursor-pointer truncate"
+                  className="w-full py-2 px-3 bg-ctx-1f1f1f hover:bg-ctx-2a2a2a text-ctx-fg text-xs font-semibold rounded-lg border border-ctx-333333 transition-colors flex items-center justify-center gap-1.5 cursor-pointer truncate"
                 >
                   {fileMetas ? fileMetas.name : 'Selecionar 05_metas.csv'}
                 </label>
@@ -1769,7 +1769,7 @@ export default function AdminImport() {
               className={`p-5 rounded-xl border-2 border-dashed transition-all flex flex-col justify-between ${
                 fileIndicadores
                   ? 'border-[#22C55E]/60 bg-[#22C55E]/5'
-                  : 'border-[#262626] bg-[#141414] hover:border-[#FFD400]/40'
+                  : 'border-ctx-262626 bg-ctx-141414 hover:border-[#FFD400]/40'
               }`}
             >
               <div>
@@ -1780,16 +1780,16 @@ export default function AdminImport() {
                   {fileIndicadores ? (
                     <CheckCircle2 className="w-5 h-5 text-[#22C55E]" />
                   ) : (
-                    <FileSpreadsheet className="w-5 h-5 text-[#9CA3AF]" />
+                    <FileSpreadsheet className="w-5 h-5 text-ctx-9ca3af" />
                   )}
                 </div>
-                <h3 className="text-sm font-bold text-white">06_indicadores</h3>
-                <p className="text-[11px] text-[#9CA3AF] mt-1">
-                  Colunas: <span className="font-mono text-white">meta, ordem, nome, alvo</span>
+                <h3 className="text-sm font-bold text-ctx-fg">06_indicadores</h3>
+                <p className="text-[11px] text-ctx-9ca3af mt-1">
+                  Colunas: <span className="font-mono text-ctx-fg">meta, ordem, nome, alvo</span>
                 </p>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-[#262626]/80">
+              <div className="mt-4 pt-3 border-t border-ctx-262626/80">
                 <input
                   type="file"
                   id="file-indicadores"
@@ -1799,7 +1799,7 @@ export default function AdminImport() {
                 />
                 <label
                   htmlFor="file-indicadores"
-                  className="w-full py-2 px-3 bg-[#1F1F1F] hover:bg-[#2A2A2A] text-white text-xs font-semibold rounded-lg border border-[#333] transition-colors flex items-center justify-center gap-1.5 cursor-pointer truncate"
+                  className="w-full py-2 px-3 bg-ctx-1f1f1f hover:bg-ctx-2a2a2a text-ctx-fg text-xs font-semibold rounded-lg border border-ctx-333333 transition-colors flex items-center justify-center gap-1.5 cursor-pointer truncate"
                 >
                   {fileIndicadores ? fileIndicadores.name : 'Selecionar 06_indicadores.csv'}
                 </label>
@@ -1809,10 +1809,10 @@ export default function AdminImport() {
         </div>
 
         {/* Informações e Botão de Ação */}
-        <div className="bg-[#161616] border border-[#262626] rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="text-xs text-[#9CA3AF] space-y-1">
-            <p className="flex items-center gap-1.5 text-white font-medium">
-              <ShieldAlert className="w-4 h-4 text-[#FFD400]" />
+        <div className="bg-ctx-161616 border border-ctx-262626 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="text-xs text-ctx-9ca3af space-y-1">
+            <p className="flex items-center gap-1.5 text-ctx-fg font-medium">
+              <ShieldAlert className="w-4 h-4 text-ctx-brand" />
               Garantia de Idempotência e Reimportação Segura
             </p>
             <p>
@@ -1851,26 +1851,26 @@ export default function AdminImport() {
 
         {/* Feedback em tempo de execução */}
         {importing && (
-          <div className="p-4 bg-[#141414] border border-[#FFD400]/30 rounded-xl space-y-2">
+          <div className="p-4 bg-ctx-141414 border border-[#FFD400]/30 rounded-xl space-y-2">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-semibold text-white">{currentStep}</span>
-              <span className="text-[#FFD400] animate-pulse font-mono">Processando</span>
+              <span className="font-semibold text-ctx-fg">{currentStep}</span>
+              <span className="text-ctx-brand animate-pulse font-mono">Processando</span>
             </div>
-            <p className="text-xs text-[#9CA3AF]">{progressMsg}</p>
+            <p className="text-xs text-ctx-9ca3af">{progressMsg}</p>
           </div>
         )}
       </div>
 
       {/* SEÇÃO 2: RELATÓRIO DE VALIDAÇÃO (SE EXECUTADO OU DADOS CARREGADOS) */}
       {report && (
-        <div className="bg-[#111111] border border-[#262626] rounded-2xl p-6 md:p-8 space-y-6 shadow-xl animate-in fade-in duration-300">
-          <div className="flex items-center justify-between border-b border-[#262626] pb-4">
+        <div className="bg-ctx-111111 border border-ctx-262626 rounded-2xl p-6 md:p-8 space-y-6 shadow-xl animate-in fade-in duration-300">
+          <div className="flex items-center justify-between border-b border-ctx-262626 pb-4">
             <div>
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
+              <h2 className="text-lg font-bold text-ctx-fg flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-[#22C55E]" />
                 Relatório de Validação da Importação
               </h2>
-              <p className="text-xs text-[#9CA3AF]">
+              <p className="text-xs text-ctx-9ca3af">
                 Contagens comparadas com os números esperados e checagens pontuais.
               </p>
             </div>
@@ -1878,18 +1878,18 @@ export default function AdminImport() {
 
           {/* Cards de Contagem — Etapa 1 e Etapa 2 */}
           <div className="space-y-3">
-            <span className="text-xs font-mono font-bold text-[#9CA3AF] uppercase">
+            <span className="text-xs font-mono font-bold text-ctx-9ca3af uppercase">
               Contagens da Estrutura Geral
             </span>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               {/* Áreas */}
-              <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] space-y-1">
-                <span className="text-[11px] uppercase tracking-wider text-[#9CA3AF] font-semibold">
+              <div className="bg-ctx-161616 p-4 rounded-xl border border-ctx-262626 space-y-1">
+                <span className="text-[11px] uppercase tracking-wider text-ctx-9ca3af font-semibold">
                   Áreas
                 </span>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-white">{report.counts.areas}</span>
-                  <span className="text-xs font-mono text-[#9CA3AF]">
+                  <span className="text-2xl font-black text-ctx-fg">{report.counts.areas}</span>
+                  <span className="text-xs font-mono text-ctx-9ca3af">
                     / {report.counts.areasExpected} esp.
                   </span>
                 </div>
@@ -1897,7 +1897,7 @@ export default function AdminImport() {
                   className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
                     report.counts.areas === report.counts.areasExpected
                       ? 'bg-[#22C55E]/15 text-[#22C55E]'
-                      : 'bg-[#FFD400]/15 text-[#FFD400]'
+                      : 'bg-[#FFD400]/15 text-ctx-brand'
                   }`}
                 >
                   {report.counts.areas === report.counts.areasExpected ? '100% OK' : 'Ajustado'}
@@ -1905,15 +1905,15 @@ export default function AdminImport() {
               </div>
 
               {/* Colaboradores */}
-              <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] space-y-1">
-                <span className="text-[11px] uppercase tracking-wider text-[#9CA3AF] font-semibold">
+              <div className="bg-ctx-161616 p-4 rounded-xl border border-ctx-262626 space-y-1">
+                <span className="text-[11px] uppercase tracking-wider text-ctx-9ca3af font-semibold">
                   Colaboradores
                 </span>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-white">
+                  <span className="text-2xl font-black text-ctx-fg">
                     {report.counts.colaboradores}
                   </span>
-                  <span className="text-xs font-mono text-[#9CA3AF]">
+                  <span className="text-xs font-mono text-ctx-9ca3af">
                     / {report.counts.colaboradoresExpected} esp.
                   </span>
                 </div>
@@ -1921,7 +1921,7 @@ export default function AdminImport() {
                   className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
                     report.counts.colaboradores === report.counts.colaboradoresExpected
                       ? 'bg-[#22C55E]/15 text-[#22C55E]'
-                      : 'bg-[#FFD400]/15 text-[#FFD400]'
+                      : 'bg-[#FFD400]/15 text-ctx-brand'
                   }`}
                 >
                   {report.counts.colaboradores === report.counts.colaboradoresExpected
@@ -1931,13 +1931,13 @@ export default function AdminImport() {
               </div>
 
               {/* Contas de Login */}
-              <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] space-y-1">
-                <span className="text-[11px] uppercase tracking-wider text-[#9CA3AF] font-semibold">
+              <div className="bg-ctx-161616 p-4 rounded-xl border border-ctx-262626 space-y-1">
+                <span className="text-[11px] uppercase tracking-wider text-ctx-9ca3af font-semibold">
                   Contas Login
                 </span>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-white">{report.counts.users}</span>
-                  <span className="text-xs font-mono text-[#9CA3AF]">
+                  <span className="text-2xl font-black text-ctx-fg">{report.counts.users}</span>
+                  <span className="text-xs font-mono text-ctx-9ca3af">
                     / {report.counts.usersExpected} esp.
                   </span>
                 </div>
@@ -1945,7 +1945,7 @@ export default function AdminImport() {
                   className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
                     report.counts.users === report.counts.usersExpected
                       ? 'bg-[#22C55E]/15 text-[#22C55E]'
-                      : 'bg-[#FFD400]/15 text-[#FFD400]'
+                      : 'bg-[#FFD400]/15 text-ctx-brand'
                   }`}
                 >
                   {report.counts.users === report.counts.usersExpected ? '100% OK' : 'Ajustado'}
@@ -1953,13 +1953,13 @@ export default function AdminImport() {
               </div>
 
               {/* Processos */}
-              <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] space-y-1">
-                <span className="text-[11px] uppercase tracking-wider text-[#9CA3AF] font-semibold">
+              <div className="bg-ctx-161616 p-4 rounded-xl border border-ctx-262626 space-y-1">
+                <span className="text-[11px] uppercase tracking-wider text-ctx-9ca3af font-semibold">
                   Processos
                 </span>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-white">{report.counts.processos}</span>
-                  <span className="text-xs font-mono text-[#9CA3AF]">
+                  <span className="text-2xl font-black text-ctx-fg">{report.counts.processos}</span>
+                  <span className="text-xs font-mono text-ctx-9ca3af">
                     / {report.counts.processosExpected} esp.
                   </span>
                 </div>
@@ -1967,7 +1967,7 @@ export default function AdminImport() {
                   className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
                     report.counts.processos === report.counts.processosExpected
                       ? 'bg-[#22C55E]/15 text-[#22C55E]'
-                      : 'bg-[#FFD400]/15 text-[#FFD400]'
+                      : 'bg-[#FFD400]/15 text-ctx-brand'
                   }`}
                 >
                   {report.counts.processos === report.counts.processosExpected
@@ -1977,13 +1977,13 @@ export default function AdminImport() {
               </div>
 
               {/* Conexões */}
-              <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] space-y-1">
-                <span className="text-[11px] uppercase tracking-wider text-[#9CA3AF] font-semibold">
+              <div className="bg-ctx-161616 p-4 rounded-xl border border-ctx-262626 space-y-1">
+                <span className="text-[11px] uppercase tracking-wider text-ctx-9ca3af font-semibold">
                   Conexões
                 </span>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-white">{report.counts.conexoes}</span>
-                  <span className="text-xs font-mono text-[#9CA3AF]">
+                  <span className="text-2xl font-black text-ctx-fg">{report.counts.conexoes}</span>
+                  <span className="text-xs font-mono text-ctx-9ca3af">
                     / {report.counts.conexoesExpected} esp.
                   </span>
                 </div>
@@ -1991,7 +1991,7 @@ export default function AdminImport() {
                   className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
                     report.counts.conexoes === report.counts.conexoesExpected
                       ? 'bg-[#22C55E]/15 text-[#22C55E]'
-                      : 'bg-[#FFD400]/15 text-[#FFD400]'
+                      : 'bg-[#FFD400]/15 text-ctx-brand'
                   }`}
                 >
                   {report.counts.conexoes === report.counts.conexoesExpected
@@ -2002,18 +2002,18 @@ export default function AdminImport() {
             </div>
 
             {/* Cards da Etapa 2 */}
-            <span className="text-xs font-mono font-bold text-[#FFD400] uppercase block pt-2">
+            <span className="text-xs font-mono font-bold text-ctx-brand uppercase block pt-2">
               Contagens da Etapa 2 (Projetos, Metas, Indicadores e Vínculos)
             </span>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               {/* Projetos */}
-              <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] space-y-1">
-                <span className="text-[11px] uppercase tracking-wider text-[#9CA3AF] font-semibold">
+              <div className="bg-ctx-161616 p-4 rounded-xl border border-ctx-262626 space-y-1">
+                <span className="text-[11px] uppercase tracking-wider text-ctx-9ca3af font-semibold">
                   Projetos
                 </span>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-white">{report.counts.projetos}</span>
-                  <span className="text-xs font-mono text-[#9CA3AF]">
+                  <span className="text-2xl font-black text-ctx-fg">{report.counts.projetos}</span>
+                  <span className="text-xs font-mono text-ctx-9ca3af">
                     / {report.counts.projetosExpected} esp.
                   </span>
                 </div>
@@ -2021,7 +2021,7 @@ export default function AdminImport() {
                   className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
                     report.counts.projetos === report.counts.projetosExpected
                       ? 'bg-[#22C55E]/15 text-[#22C55E]'
-                      : 'bg-[#FFD400]/15 text-[#FFD400]'
+                      : 'bg-[#FFD400]/15 text-ctx-brand'
                   }`}
                 >
                   {report.counts.projetos === report.counts.projetosExpected
@@ -2031,13 +2031,13 @@ export default function AdminImport() {
               </div>
 
               {/* Metas */}
-              <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] space-y-1">
-                <span className="text-[11px] uppercase tracking-wider text-[#9CA3AF] font-semibold">
+              <div className="bg-ctx-161616 p-4 rounded-xl border border-ctx-262626 space-y-1">
+                <span className="text-[11px] uppercase tracking-wider text-ctx-9ca3af font-semibold">
                   Metas
                 </span>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-white">{report.counts.metas}</span>
-                  <span className="text-xs font-mono text-[#9CA3AF]">
+                  <span className="text-2xl font-black text-ctx-fg">{report.counts.metas}</span>
+                  <span className="text-xs font-mono text-ctx-9ca3af">
                     / {report.counts.metasExpected} esp.
                   </span>
                 </div>
@@ -2045,7 +2045,7 @@ export default function AdminImport() {
                   className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
                     report.counts.metas === report.counts.metasExpected
                       ? 'bg-[#22C55E]/15 text-[#22C55E]'
-                      : 'bg-[#FFD400]/15 text-[#FFD400]'
+                      : 'bg-[#FFD400]/15 text-ctx-brand'
                   }`}
                 >
                   {report.counts.metas === report.counts.metasExpected ? '100% OK' : 'Ajustado'}
@@ -2053,15 +2053,15 @@ export default function AdminImport() {
               </div>
 
               {/* Indicadores */}
-              <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] space-y-1">
-                <span className="text-[11px] uppercase tracking-wider text-[#9CA3AF] font-semibold">
+              <div className="bg-ctx-161616 p-4 rounded-xl border border-ctx-262626 space-y-1">
+                <span className="text-[11px] uppercase tracking-wider text-ctx-9ca3af font-semibold">
                   Indicadores
                 </span>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-white">
+                  <span className="text-2xl font-black text-ctx-fg">
                     {report.counts.indicadores}
                   </span>
-                  <span className="text-xs font-mono text-[#9CA3AF]">
+                  <span className="text-xs font-mono text-ctx-9ca3af">
                     / {report.counts.indicadoresExpected} esp.
                   </span>
                 </div>
@@ -2069,7 +2069,7 @@ export default function AdminImport() {
                   className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
                     report.counts.indicadores === report.counts.indicadoresExpected
                       ? 'bg-[#22C55E]/15 text-[#22C55E]'
-                      : 'bg-[#FFD400]/15 text-[#FFD400]'
+                      : 'bg-[#FFD400]/15 text-ctx-brand'
                   }`}
                 >
                   {report.counts.indicadores === report.counts.indicadoresExpected
@@ -2079,15 +2079,15 @@ export default function AdminImport() {
               </div>
 
               {/* Vínculos Meta-Responsável */}
-              <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] space-y-1">
-                <span className="text-[11px] uppercase tracking-wider text-[#9CA3AF] font-semibold">
+              <div className="bg-ctx-161616 p-4 rounded-xl border border-ctx-262626 space-y-1">
+                <span className="text-[11px] uppercase tracking-wider text-ctx-9ca3af font-semibold">
                   Vínculos Resp.
                 </span>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-white">
+                  <span className="text-2xl font-black text-ctx-fg">
                     {report.counts.vinculosMetaResponsavel}
                   </span>
-                  <span className="text-xs font-mono text-[#9CA3AF]">
+                  <span className="text-xs font-mono text-ctx-9ca3af">
                     / {report.counts.vinculosMetaResponsavelExpected} esp.
                   </span>
                 </div>
@@ -2096,7 +2096,7 @@ export default function AdminImport() {
                     report.counts.vinculosMetaResponsavel ===
                     report.counts.vinculosMetaResponsavelExpected
                       ? 'bg-[#22C55E]/15 text-[#22C55E]'
-                      : 'bg-[#FFD400]/15 text-[#FFD400]'
+                      : 'bg-[#FFD400]/15 text-ctx-brand'
                   }`}
                 >
                   {report.counts.vinculosMetaResponsavel ===
@@ -2107,15 +2107,15 @@ export default function AdminImport() {
               </div>
 
               {/* Vínculos Meta-Processo */}
-              <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] space-y-1">
-                <span className="text-[11px] uppercase tracking-wider text-[#9CA3AF] font-semibold">
+              <div className="bg-ctx-161616 p-4 rounded-xl border border-ctx-262626 space-y-1">
+                <span className="text-[11px] uppercase tracking-wider text-ctx-9ca3af font-semibold">
                   Vínculos Proc.
                 </span>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-white">
+                  <span className="text-2xl font-black text-ctx-fg">
                     {report.counts.vinculosMetaProcesso}
                   </span>
-                  <span className="text-xs font-mono text-[#9CA3AF]">
+                  <span className="text-xs font-mono text-ctx-9ca3af">
                     / {report.counts.vinculosMetaProcessoExpected} esp.
                   </span>
                 </div>
@@ -2124,7 +2124,7 @@ export default function AdminImport() {
                     report.counts.vinculosMetaProcesso ===
                     report.counts.vinculosMetaProcessoExpected
                       ? 'bg-[#22C55E]/15 text-[#22C55E]'
-                      : 'bg-[#FFD400]/15 text-[#FFD400]'
+                      : 'bg-[#FFD400]/15 text-ctx-brand'
                   }`}
                 >
                   {report.counts.vinculosMetaProcesso === report.counts.vinculosMetaProcessoExpected
@@ -2136,68 +2136,68 @@ export default function AdminImport() {
           </div>
 
           {/* Checagens Específicas do Usuário (Etapa 1 e Etapa 2) */}
-          <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] space-y-3">
-            <h4 className="text-xs uppercase tracking-wider font-bold text-[#FFD400]">
+          <div className="bg-ctx-161616 p-4 rounded-xl border border-ctx-262626 space-y-3">
+            <h4 className="text-xs uppercase tracking-wider font-bold text-ctx-brand">
               Checagens Pontuais de Consistência
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
               {/* Check 1 */}
-              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#1F1F1F] border border-[#2B2B2B]">
+              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-ctx-1f1f1f border border-ctx-2b2b2b">
                 {report.checks.williamCheck === true ? (
                   <CheckCircle2 className="w-4 h-4 text-[#22C55E] shrink-0" />
                 ) : (
-                  <AlertTriangle className="w-4 h-4 text-[#FFD400] shrink-0" />
+                  <AlertTriangle className="w-4 h-4 text-ctx-brand shrink-0" />
                 )}
                 <span>
                   William Machado:{' '}
-                  <strong className="text-white">
+                  <strong className="text-ctx-fg">
                     sem_metas = {report.checks.williamCheck ? 'sim' : 'não'}
                   </strong>
                 </span>
               </div>
 
               {/* Check 2 */}
-              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#1F1F1F] border border-[#2B2B2B]">
+              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-ctx-1f1f1f border border-ctx-2b2b2b">
                 {report.checks.o01Check === true ? (
                   <CheckCircle2 className="w-4 h-4 text-[#22C55E] shrink-0" />
                 ) : (
-                  <AlertTriangle className="w-4 h-4 text-[#FFD400] shrink-0" />
+                  <AlertTriangle className="w-4 h-4 text-ctx-brand shrink-0" />
                 )}
                 <span>
                   Processo O01:{' '}
-                  <strong className="text-white">
+                  <strong className="text-ctx-fg">
                     {report.checks.o01Check ? 'conectado a O02 e O03' : 'conexões parciais'}
                   </strong>
                 </span>
               </div>
 
               {/* Check 3 */}
-              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#1F1F1F] border border-[#2B2B2B]">
+              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-ctx-1f1f1f border border-ctx-2b2b2b">
                 {report.checks.rh05Check === true ? (
                   <CheckCircle2 className="w-4 h-4 text-[#22C55E] shrink-0" />
                 ) : (
-                  <AlertTriangle className="w-4 h-4 text-[#FFD400] shrink-0" />
+                  <AlertTriangle className="w-4 h-4 text-ctx-brand shrink-0" />
                 )}
                 <span>
                   Processo RH05:{' '}
-                  <strong className="text-white">
+                  <strong className="text-ctx-fg">
                     {report.checks.rh05Check ? 'sem conexões (conforme planilha)' : 'com conexões'}
                   </strong>
                 </span>
               </div>
 
               {/* Check 4 (Etapa 2: MT38 Rafael e Mahara) */}
-              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#1F1F1F] border border-[#2B2B2B]">
+              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-ctx-1f1f1f border border-ctx-2b2b2b">
                 {report.checks.mt38ResponsaveisCheck === true ? (
                   <CheckCircle2 className="w-4 h-4 text-[#22C55E] shrink-0" />
                 ) : report.checks.mt38ResponsaveisCheck === false ? (
                   <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
                 ) : (
-                  <span className="w-2 h-2 rounded-full bg-[#666] shrink-0" />
+                  <span className="w-2 h-2 rounded-full bg-ctx-666666 shrink-0" />
                 )}
                 <span>
                   MT38 Responsáveis:{' '}
-                  <strong className="text-white">
+                  <strong className="text-ctx-fg">
                     {report.checks.mt38ResponsaveisCheck
                       ? 'Rafael e Mahara vinculados'
                       : 'Pendente upload'}
@@ -2206,17 +2206,17 @@ export default function AdminImport() {
               </div>
 
               {/* Check 5 (Etapa 2: Miguel responsável por MT52 a MT55) */}
-              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#1F1F1F] border border-[#2B2B2B]">
+              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-ctx-1f1f1f border border-ctx-2b2b2b">
                 {report.checks.miguelMetasCheck === true ? (
                   <CheckCircle2 className="w-4 h-4 text-[#22C55E] shrink-0" />
                 ) : report.checks.miguelMetasCheck === false ? (
                   <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
                 ) : (
-                  <span className="w-2 h-2 rounded-full bg-[#666] shrink-0" />
+                  <span className="w-2 h-2 rounded-full bg-ctx-666666 shrink-0" />
                 )}
                 <span>
                   Miguel (MT52 a MT55):{' '}
-                  <strong className="text-white">
+                  <strong className="text-ctx-fg">
                     {report.checks.miguelMetasCheck
                       ? 'Responsável pelas 4 metas'
                       : 'Pendente upload'}
@@ -2225,17 +2225,17 @@ export default function AdminImport() {
               </div>
 
               {/* Check 6 (Etapa 2: William sem metas) */}
-              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#1F1F1F] border border-[#2B2B2B]">
+              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-ctx-1f1f1f border border-ctx-2b2b2b">
                 {report.checks.williamSemMetasCheck === true ? (
                   <CheckCircle2 className="w-4 h-4 text-[#22C55E] shrink-0" />
                 ) : report.checks.williamSemMetasCheck === false ? (
                   <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
                 ) : (
-                  <span className="w-2 h-2 rounded-full bg-[#666] shrink-0" />
+                  <span className="w-2 h-2 rounded-full bg-ctx-666666 shrink-0" />
                 )}
                 <span>
                   William (sem_metas):{' '}
-                  <strong className="text-white">
+                  <strong className="text-ctx-fg">
                     {report.checks.williamSemMetasCheck
                       ? '0 metas atribuídas (OK)'
                       : 'Pendente upload'}
@@ -2244,17 +2244,17 @@ export default function AdminImport() {
               </div>
 
               {/* Check 7 (Etapa 2: Paulo Emílio sponsor de P2 e P5) */}
-              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#1F1F1F] border border-[#2B2B2B]">
+              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-ctx-1f1f1f border border-ctx-2b2b2b">
                 {report.checks.pauloEmilioSponsorCheck === true ? (
                   <CheckCircle2 className="w-4 h-4 text-[#22C55E] shrink-0" />
                 ) : report.checks.pauloEmilioSponsorCheck === false ? (
                   <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
                 ) : (
-                  <span className="w-2 h-2 rounded-full bg-[#666] shrink-0" />
+                  <span className="w-2 h-2 rounded-full bg-ctx-666666 shrink-0" />
                 )}
                 <span>
                   Paulo Emílio:{' '}
-                  <strong className="text-white">
+                  <strong className="text-ctx-fg">
                     {report.checks.pauloEmilioSponsorCheck
                       ? 'Sponsor oficial de P2 e P5'
                       : 'Pendente upload'}
@@ -2263,17 +2263,17 @@ export default function AdminImport() {
               </div>
 
               {/* Check 8 (Etapa 2: Nenhuma meta sem responsável ou projeto principal) */}
-              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-[#1F1F1F] border border-[#2B2B2B] md:col-span-2">
+              <div className="flex items-center gap-2 p-2.5 rounded-lg bg-ctx-1f1f1f border border-ctx-2b2b2b md:col-span-2">
                 {report.checks.todasMetasComResponsavelEProjetoCheck === true ? (
                   <CheckCircle2 className="w-4 h-4 text-[#22C55E] shrink-0" />
                 ) : report.checks.todasMetasComResponsavelEProjetoCheck === false ? (
                   <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />
                 ) : (
-                  <span className="w-2 h-2 rounded-full bg-[#666] shrink-0" />
+                  <span className="w-2 h-2 rounded-full bg-ctx-666666 shrink-0" />
                 )}
                 <span>
                   Integridade de Metas:{' '}
-                  <strong className="text-white">
+                  <strong className="text-ctx-fg">
                     {report.checks.todasMetasComResponsavelEProjetoCheck
                       ? '100% das metas têm responsável e projeto principal'
                       : 'Pendente upload de metas'}
@@ -2301,12 +2301,12 @@ export default function AdminImport() {
                   Tentar novamente nas linhas rejeitadas
                 </button>
               </div>
-              <div className="max-h-48 overflow-y-auto space-y-1.5 bg-[#141414] p-3 rounded-xl border border-red-950/40 font-mono text-[11px] text-[#D1D5DB]">
+              <div className="max-h-48 overflow-y-auto space-y-1.5 bg-ctx-141414 p-3 rounded-xl border border-red-950/40 font-mono text-[11px] text-ctx-d1d5db">
                 {report.errors.map((err, idx) => (
-                  <div key={idx} className="flex items-start gap-2 border-b border-[#222] pb-1">
-                    <span className="text-[#FFD400]">[{err.etapa}]</span>
-                    {err.linha && <span className="text-[#9CA3AF]">Linha {err.linha}:</span>}
-                    {err.codigo && <span className="text-white font-bold">{err.codigo}</span>}
+                  <div key={idx} className="flex items-start gap-2 border-b border-ctx-222222 pb-1">
+                    <span className="text-ctx-brand">[{err.etapa}]</span>
+                    {err.linha && <span className="text-ctx-9ca3af">Linha {err.linha}:</span>}
+                    {err.codigo && <span className="text-ctx-fg font-bold">{err.codigo}</span>}
                     <span className="text-red-300">- {err.motivo}</span>
                   </div>
                 ))}
@@ -2317,16 +2317,16 @@ export default function AdminImport() {
       )}
 
       {/* ATALHO RÁPIDO PARA ACOMPANHAMENTO DE CICLOS */}
-      <div className="bg-[#111111] border border-[#262626] rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
+      <div className="bg-ctx-111111 border border-ctx-262626 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xl">
         <div className="space-y-1">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#FFD400]/10 border border-[#FFD400]/30 text-[#FFD400] text-xs font-semibold">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#FFD400]/10 border border-[#FFD400]/30 text-ctx-brand text-xs font-semibold">
             <Database className="w-3.5 h-3.5" />
             <span>Rotina Operacional CTX 2.0</span>
           </div>
-          <h2 className="text-base font-bold text-white">
+          <h2 className="text-base font-bold text-ctx-fg">
             Acompanhamento por Ciclo & Gestão de Rotina
           </h2>
-          <p className="text-xs text-[#9CA3AF]">
+          <p className="text-xs text-ctx-9ca3af">
             Gerencie ciclos (fechar/reabrir, ajustar datas, criar manuais), pause ou reative a
             rotina geral, ligue/desligue o pulso semanal e envie lembretes aos pendentes.
           </p>
@@ -2341,13 +2341,13 @@ export default function AdminImport() {
       </div>
 
       {/* SEÇÃO 3: REDEFINIÇÃO MANUAL DE SENHAS PELO ADMIN */}
-      <div className="bg-[#111111] border border-[#262626] rounded-2xl p-6 md:p-8 space-y-6 shadow-xl">
-        <div className="border-b border-[#262626] pb-4">
-          <h2 className="text-lg font-bold text-white flex items-center gap-2">
-            <KeyRound className="w-5 h-5 text-[#FFD400]" />
+      <div className="bg-ctx-111111 border border-ctx-262626 rounded-2xl p-6 md:p-8 space-y-6 shadow-xl">
+        <div className="border-b border-ctx-262626 pb-4">
+          <h2 className="text-lg font-bold text-ctx-fg flex items-center gap-2">
+            <KeyRound className="w-5 h-5 text-ctx-brand" />
             Redefinição Manual de Senha de Colaborador
           </h2>
-          <p className="text-xs text-[#9CA3AF] mt-0.5">
+          <p className="text-xs text-ctx-9ca3af mt-0.5">
             Como os e-mails corporativos ainda não recebem mensagens externas, o Admin pode definir
             uma senha provisória ou nova senha diretamente por aqui.
           </p>
@@ -2355,14 +2355,14 @@ export default function AdminImport() {
 
         <form onSubmit={handleAdminResetPassword} className="space-y-4 max-w-xl">
           <div>
-            <label className="block text-xs font-semibold text-[#D1D5DB] mb-1.5">
+            <label className="block text-xs font-semibold text-ctx-d1d5db mb-1.5">
               Selecione o Colaborador
             </label>
             <select
               value={selectedUserId}
               onChange={(e) => setSelectedUserId(e.target.value)}
               required
-              className="w-full bg-[#171717] border border-[#262626] rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-[#FFD400] transition-colors"
+              className="w-full bg-ctx-171717 border border-ctx-262626 rounded-lg px-3 py-2 text-sm text-ctx-fg focus:outline-none focus:border-[#FFD400] transition-colors"
             >
               <option value="">Selecione um usuário...</option>
               {usersList.map((u) => {
@@ -2379,22 +2379,22 @@ export default function AdminImport() {
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[#D1D5DB] mb-1.5">
+            <label className="block text-xs font-semibold text-ctx-d1d5db mb-1.5">
               Nova Senha (mínimo 8 dígitos)
             </label>
             <div className="relative">
-              <Lock className="w-4 h-4 text-[#9CA3AF] absolute left-3 top-3" />
+              <Lock className="w-4 h-4 text-ctx-9ca3af absolute left-3 top-3" />
               <input
                 type="text"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Ex.: Nova senha (mínimo 8 dígitos, diferente de CTX@2027)"
                 required
-                className="w-full bg-[#171717] border border-[#262626] rounded-lg pl-9 pr-3 py-2 text-sm text-white focus:outline-none focus:border-[#FFD400] transition-colors"
+                className="w-full bg-ctx-171717 border border-ctx-262626 rounded-lg pl-9 pr-3 py-2 text-sm text-ctx-fg focus:outline-none focus:border-[#FFD400] transition-colors"
               />
             </div>
-            <p className="text-[11px] text-[#9CA3AF] mt-1">
-              A flag <span className="font-mono text-[#FFD400]">must_change_password</span> será
+            <p className="text-[11px] text-ctx-9ca3af mt-1">
+              A flag <span className="font-mono text-ctx-brand">must_change_password</span> será
               ativada para que o colaborador confirme ou altere no próximo login.
             </p>
           </div>

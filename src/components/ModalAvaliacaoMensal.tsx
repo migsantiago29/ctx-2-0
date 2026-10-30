@@ -206,32 +206,32 @@ export function ModalAvaliacaoMensal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
       <div className="fixed inset-0 bg-black/85 backdrop-blur-md" onClick={onClose} />
 
-      <div className="relative w-full max-w-2xl max-h-[95vh] bg-[#0E0E0E] border border-[#2B2B2B] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-2xl max-h-[95vh] bg-ctx-0e0e0e border border-ctx-2b2b2b rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-[#262626] bg-[#141414] flex items-center justify-between">
+        <div className="p-4 sm:p-5 border-b border-ctx-262626 bg-ctx-141414 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="font-mono text-xs px-2.5 py-0.5 rounded bg-[#FFD400] text-black font-extrabold">
               {currentMeta.codigo}
             </span>
             <div>
-              <h2 className="text-sm font-extrabold text-white">
+              <h2 className="text-sm font-extrabold text-ctx-fg">
                 Avaliação Mensal — {ciclo.titulo || ciclo.referencia}
               </h2>
-              <p className="text-[11px] text-[#9CA3AF]">
+              <p className="text-[11px] text-ctx-9ca3af">
                 Meta {currentIndex + 1} de {metas.length}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-[#9CA3AF] hover:text-white hover:bg-[#1F1F1F] transition-colors"
+            className="p-1.5 rounded-lg text-ctx-9ca3af hover:text-ctx-fg hover:bg-ctx-1f1f1f transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Progress Bar Top */}
-        <div className="h-1 w-full bg-[#1A1A1A]">
+        <div className="h-1 w-full bg-ctx-1a1a1a">
           <div
             className="h-full bg-[#FFD400] transition-all duration-300"
             style={{ width: `${((currentIndex + 1) / metas.length) * 100}%` }}
@@ -241,22 +241,22 @@ export function ModalAvaliacaoMensal({
         {/* Content Body */}
         <form onSubmit={handleNextOrFinish} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
           {/* Título e Projeto da Meta */}
-          <div className="p-4 rounded-xl bg-[#141414] border border-[#262626] space-y-1">
-            <span className="text-[10px] font-mono text-[#9CA3AF] uppercase">
+          <div className="p-4 rounded-xl bg-ctx-141414 border border-ctx-262626 space-y-1">
+            <span className="text-[10px] font-mono text-ctx-9ca3af uppercase">
               {currentMeta.expand?.projeto?.nome || 'Projeto Estratégico'}
             </span>
-            <h3 className="text-base font-extrabold text-white leading-snug">
+            <h3 className="text-base font-extrabold text-ctx-fg leading-snug">
               {currentMeta.titulo}
             </h3>
             {currentMeta.descricao && (
-              <p className="text-xs text-[#888] pt-1">{currentMeta.descricao}</p>
+              <p className="text-xs text-ctx-888888 pt-1">{currentMeta.descricao}</p>
             )}
           </div>
 
           {/* Farol (Obrigatório com explicação visível) */}
           <div className="space-y-2">
-            <label className="block text-xs font-bold text-white uppercase tracking-wider">
-              Farol da Meta <span className="text-[#FFD400]">*</span>
+            <label className="block text-xs font-bold text-ctx-fg uppercase tracking-wider">
+              Farol da Meta <span className="text-ctx-brand">*</span>
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {farolOptions.map((opt) => {
@@ -269,7 +269,7 @@ export function ModalAvaliacaoMensal({
                     className={`p-3 rounded-xl border text-left transition-all flex items-start gap-3 ${
                       isSelected
                         ? `${opt.border} ${opt.bgSelected} shadow-md`
-                        : 'border-[#262626] bg-[#141414] text-[#9CA3AF] hover:bg-[#1A1A1A] hover:text-white'
+                        : 'border-ctx-262626 bg-ctx-141414 text-ctx-9ca3af hover:bg-ctx-1a1a1a hover:text-ctx-fg'
                     }`}
                   >
                     <span
@@ -291,8 +291,8 @@ export function ModalAvaliacaoMensal({
 
           {/* O que avançou no mês? (1 linha, obrigatório) */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-white uppercase tracking-wider">
-              O que avançou no mês? <span className="text-[#FFD400]">*</span>
+            <label className="block text-xs font-bold text-ctx-fg uppercase tracking-wider">
+              O que avançou no mês? <span className="text-ctx-brand">*</span>
             </label>
             <input
               type="text"
@@ -300,14 +300,14 @@ export function ModalAvaliacaoMensal({
               value={currentState.avancou}
               onChange={(e) => updateCurrentState({ avancou: e.target.value })}
               placeholder="Ex.: Fechado piloto do ERP com 3 usuários da produção"
-              className="w-full bg-[#141414] border border-[#2B2B2B] focus:border-[#FFD400] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-[#555] outline-none transition-colors"
+              className="w-full bg-ctx-141414 border border-ctx-2b2b2b focus:border-[#FFD400] rounded-xl px-3.5 py-2.5 text-xs text-ctx-fg placeholder-ctx-555555 outline-none transition-colors"
             />
           </div>
 
           {/* Próximo passo (1 linha, obrigatório) */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-white uppercase tracking-wider">
-              Próximo passo <span className="text-[#FFD400]">*</span>
+            <label className="block text-xs font-bold text-ctx-fg uppercase tracking-wider">
+              Próximo passo <span className="text-ctx-brand">*</span>
             </label>
             <input
               type="text"
@@ -315,15 +315,15 @@ export function ModalAvaliacaoMensal({
               value={currentState.proximo_passo}
               onChange={(e) => updateCurrentState({ proximo_passo: e.target.value })}
               placeholder="Ex.: Configurar módulo financeiro e treinar a equipe"
-              className="w-full bg-[#141414] border border-[#2B2B2B] focus:border-[#FFD400] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-[#555] outline-none transition-colors"
+              className="w-full bg-ctx-141414 border border-ctx-2b2b2b focus:border-[#FFD400] rounded-xl px-3.5 py-2.5 text-xs text-ctx-fg placeholder-ctx-555555 outline-none transition-colors"
             />
           </div>
 
           {/* Precisa de ajuda? (opcional) */}
-          <div className="p-4 rounded-xl bg-[#141414] border border-[#262626] space-y-3">
+          <div className="p-4 rounded-xl bg-ctx-141414 border border-ctx-262626 space-y-3">
             <div className="flex items-center gap-2">
               <HelpCircle className="w-4 h-4 text-[#F59E0B]" />
-              <span className="text-xs font-bold text-white uppercase tracking-wider">
+              <span className="text-xs font-bold text-ctx-fg uppercase tracking-wider">
                 Precisa de ajuda? (Opcional)
               </span>
             </div>
@@ -331,7 +331,7 @@ export function ModalAvaliacaoMensal({
               <select
                 value={currentState.ajuda_colaborador}
                 onChange={(e) => updateCurrentState({ ajuda_colaborador: e.target.value })}
-                className="w-full bg-[#1C1C1C] border border-[#2B2B2B] focus:border-[#FFD400] rounded-lg px-3 py-2 text-xs text-white outline-none cursor-pointer"
+                className="w-full bg-ctx-1c1c1c border border-ctx-2b2b2b focus:border-[#FFD400] rounded-lg px-3 py-2 text-xs text-ctx-fg outline-none cursor-pointer"
               >
                 <option value="">Selecione um colaborador (se precisar de ajuda)</option>
                 {todosColaboradores.map((c) => (
@@ -347,24 +347,24 @@ export function ModalAvaliacaoMensal({
                   value={currentState.ajuda_texto}
                   onChange={(e) => updateCurrentState({ ajuda_texto: e.target.value })}
                   placeholder="Descreva brevemente o que você precisa..."
-                  className="w-full bg-[#1C1C1C] border border-[#2B2B2B] focus:border-[#FFD400] rounded-lg px-3 py-2 text-xs text-white placeholder-[#555] outline-none"
+                  className="w-full bg-ctx-1c1c1c border border-ctx-2b2b2b focus:border-[#FFD400] rounded-lg px-3 py-2 text-xs text-ctx-fg placeholder-ctx-555555 outline-none"
                 />
               )}
             </div>
           </div>
 
           {/* Evidência (opcional; obrigatória quando o farol for "Concluída") */}
-          <div className="p-4 rounded-xl bg-[#141414] border border-[#262626] space-y-3">
+          <div className="p-4 rounded-xl bg-ctx-141414 border border-ctx-262626 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                <LinkIcon className="w-3.5 h-3.5 text-[#FFD400]" />
+              <span className="text-xs font-bold text-ctx-fg uppercase tracking-wider flex items-center gap-1.5">
+                <LinkIcon className="w-3.5 h-3.5 text-ctx-brand" />
                 Evidência
                 {currentState.farol === 'concluida' ? (
                   <span className="text-[#EF4444] text-[10px] lowercase font-bold">
                     (obrigatória para meta concluída)
                   </span>
                 ) : (
-                  <span className="text-[#666] text-[10px] lowercase font-normal">(opcional)</span>
+                  <span className="text-ctx-666666 text-[10px] lowercase font-normal">(opcional)</span>
                 )}
               </span>
             </div>
@@ -375,12 +375,12 @@ export function ModalAvaliacaoMensal({
                 value={currentState.evidencia_link}
                 onChange={(e) => updateCurrentState({ evidencia_link: e.target.value })}
                 placeholder="Link da evidência (Google Drive, Notion, Sistema...)"
-                className="w-full bg-[#1C1C1C] border border-[#2B2B2B] focus:border-[#FFD400] rounded-lg px-3 py-2 text-xs text-white placeholder-[#555] outline-none"
+                className="w-full bg-ctx-1c1c1c border border-ctx-2b2b2b focus:border-[#FFD400] rounded-lg px-3 py-2 text-xs text-ctx-fg placeholder-ctx-555555 outline-none"
               />
 
               <div className="flex items-center gap-2">
-                <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#202020] hover:bg-[#282828] border border-[#333] text-xs text-[#D1D5DB] transition-colors">
-                  <Upload className="w-3.5 h-3.5 text-[#FFD400]" />
+                <label className="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-ctx-202020 hover:bg-ctx-282828 border border-ctx-333333 text-xs text-ctx-d1d5db transition-colors">
+                  <Upload className="w-3.5 h-3.5 text-ctx-brand" />
                   <span>
                     {currentState.evidencia_arquivo
                       ? currentState.evidencia_arquivo.name
@@ -411,12 +411,12 @@ export function ModalAvaliacaoMensal({
           </div>
 
           {/* Botões de Ação */}
-          <div className="pt-3 flex items-center justify-between gap-3 border-t border-[#262626]">
+          <div className="pt-3 flex items-center justify-between gap-3 border-t border-ctx-262626">
             {currentIndex > 0 ? (
               <button
                 type="button"
                 onClick={() => setCurrentIndex((i) => i - 1)}
-                className="py-2.5 px-4 rounded-xl border border-[#2B2B2B] bg-[#161616] hover:bg-[#202020] text-xs font-bold text-[#9CA3AF] hover:text-white flex items-center gap-1.5 transition-colors"
+                className="py-2.5 px-4 rounded-xl border border-ctx-2b2b2b bg-ctx-161616 hover:bg-ctx-202020 text-xs font-bold text-ctx-9ca3af hover:text-ctx-fg flex items-center gap-1.5 transition-colors"
               >
                 <ChevronLeft className="w-4 h-4" />
                 <span>Anterior</span>

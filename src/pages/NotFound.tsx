@@ -10,13 +10,13 @@ const NotFound = () => {
   }, [location.pathname])
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0A0A0A] text-white p-4">
-      <div className="text-center max-w-md bg-[#111] border border-[#262626] rounded-xl p-8 shadow-xl">
+    <div className="min-h-screen flex items-center justify-center bg-ctx-0a0a0a text-ctx-fg p-4">
+      <div className="text-center max-w-md bg-ctx-111111 border border-ctx-262626 rounded-xl p-8 shadow-xl">
         <div className="w-12 h-12 rounded-xl bg-[#FFD400] text-black font-black flex items-center justify-center text-lg mx-auto mb-4">
           CTX
         </div>
-        <h1 className="text-4xl font-extrabold mb-2 text-white">404</h1>
-        <p className="text-base text-[#9CA3AF] mb-6">Página não encontrada no CTX 2.0.</p>
+        <h1 className="text-4xl font-extrabold mb-2 text-ctx-fg">404</h1>
+        <p className="text-base text-ctx-9ca3af mb-6">Página não encontrada no CTX 2.0.</p>
         <a
           href="/"
           className="inline-flex items-center justify-center px-4 py-2.5 rounded-lg bg-[#FFD400] text-black font-bold hover:bg-[#E6BF00] transition-colors text-sm"

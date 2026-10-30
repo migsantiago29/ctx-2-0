@@ -633,15 +633,15 @@ export default function Fluxograma() {
   return (
     <div className="space-y-4 animate-fade-in pb-12 flex flex-col h-[calc(100vh-100px)]">
       {/* Top Header Bar */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-[#262626] pb-3 shrink-0">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-ctx-262626 pb-3 shrink-0">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-[#FFD400]/10 border border-[#FFD400]/30 text-[#FFD400] text-xs font-semibold mb-1">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-[#FFD400]/10 border border-[#FFD400]/30 text-ctx-brand text-xs font-semibold mb-1">
             <Workflow className="w-3.5 h-3.5" />
             Fluxograma CTX
           </div>
-          <h1 className="text-xl md:text-2xl font-extrabold text-white tracking-tight flex items-center gap-2">
+          <h1 className="text-xl md:text-2xl font-extrabold text-ctx-fg tracking-tight flex items-center gap-2">
             Fluxo Operacional de Ponta a Ponta
-            <span className="text-xs font-mono px-2 py-0.5 rounded bg-[#1A1A1A] text-[#9CA3AF] border border-[#262626]">
+            <span className="text-xs font-mono px-2 py-0.5 rounded bg-ctx-1a1a1a text-ctx-9ca3af border border-ctx-262626">
               {layout.nodes.length} processos • {layout.edges.length} conexões
             </span>
           </h1>
@@ -650,13 +650,13 @@ export default function Fluxograma() {
         {/* Action Controls Toolbar */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Toggle Diagrama | Lista (especial para Mobile) */}
-          <div className="bg-[#141414] border border-[#262626] rounded-lg p-0.5 flex items-center text-xs">
+          <div className="bg-ctx-141414 border border-ctx-262626 rounded-lg p-0.5 flex items-center text-xs">
             <button
               onClick={() => setViewMode('diagram')}
               className={`px-3 py-1.5 rounded-md font-semibold transition-all flex items-center gap-1.5 ${
                 viewMode === 'diagram'
                   ? 'bg-[#FFD400] text-black shadow-sm'
-                  : 'text-[#9CA3AF] hover:text-white'
+                  : 'text-ctx-9ca3af hover:text-ctx-fg'
               }`}
             >
               <Workflow className="w-3.5 h-3.5" />
@@ -667,7 +667,7 @@ export default function Fluxograma() {
               className={`px-3 py-1.5 rounded-md font-semibold transition-all flex items-center gap-1.5 ${
                 viewMode === 'list'
                   ? 'bg-[#FFD400] text-black shadow-sm'
-                  : 'text-[#9CA3AF] hover:text-white'
+                  : 'text-ctx-9ca3af hover:text-ctx-fg'
               }`}
             >
               <List className="w-3.5 h-3.5" />
@@ -680,7 +680,7 @@ export default function Fluxograma() {
             <select
               value={selectedAreaFilter}
               onChange={(e) => setSelectedAreaFilter(e.target.value)}
-              className="bg-[#141414] border border-[#262626] rounded-lg px-2.5 py-1.5 text-xs text-[#D1D5DB] focus:outline-none focus:border-[#FFD400] transition-colors cursor-pointer"
+              className="bg-ctx-141414 border border-ctx-262626 rounded-lg px-2.5 py-1.5 text-xs text-ctx-d1d5db focus:outline-none focus:border-[#FFD400] transition-colors cursor-pointer"
             >
               <option value="all">Todas as Áreas ({layout.nodes.length})</option>
               {availableAreas.map((areaName) => (
@@ -694,18 +694,18 @@ export default function Fluxograma() {
           {/* Search box with auto-complete */}
           <div className="relative">
             <div className="relative flex items-center">
-              <Search className="w-4 h-4 text-[#9CA3AF] absolute left-3 pointer-events-none" />
+              <Search className="w-4 h-4 text-ctx-9ca3af absolute left-3 pointer-events-none" />
               <input
                 type="text"
                 placeholder="Buscar por código ou nome..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-52 md:w-60 bg-[#141414] border border-[#262626] rounded-lg pl-9 pr-7 py-1.5 text-xs text-white placeholder-[#666] focus:outline-none focus:border-[#FFD400] transition-colors"
+                className="w-52 md:w-60 bg-ctx-141414 border border-ctx-262626 rounded-lg pl-9 pr-7 py-1.5 text-xs text-ctx-fg placeholder-ctx-666666 focus:outline-none focus:border-[#FFD400] transition-colors"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2 text-[#9CA3AF] hover:text-white"
+                  className="absolute right-2 text-ctx-9ca3af hover:text-ctx-fg"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -714,7 +714,7 @@ export default function Fluxograma() {
 
             {/* Results dropdown */}
             {searchResults.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-[#171717] border border-[#262626] rounded-lg shadow-2xl z-50 divide-y divide-[#222]">
+              <div className="absolute top-full left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-ctx-171717 border border-ctx-262626 rounded-lg shadow-2xl z-50 divide-y divide-ctx-222222">
                 {searchResults.slice(0, 10).map((n) => (
                   <button
                     key={n.id}
@@ -722,14 +722,14 @@ export default function Fluxograma() {
                       handleSelectSearchNode(n)
                       setSearchQuery('')
                     }}
-                    className="w-full p-2.5 text-left hover:bg-[#202020] transition-colors flex items-center justify-between"
+                    className="w-full p-2.5 text-left hover:bg-ctx-202020 transition-colors flex items-center justify-between"
                   >
                     <div className="min-w-0 pr-2">
-                      <span className="font-mono font-bold text-[#FFD400] text-xs mr-2">
+                      <span className="font-mono font-bold text-ctx-brand text-xs mr-2">
                         {n.codigo}
                       </span>
-                      <span className="text-xs text-white truncate">{n.nome}</span>
-                      <p className="text-[10px] text-[#9CA3AF] truncate">{n.area}</p>
+                      <span className="text-xs text-ctx-fg truncate">{n.nome}</span>
+                      <p className="text-[10px] text-ctx-9ca3af truncate">{n.area}</p>
                     </div>
                   </button>
                 ))}
@@ -739,27 +739,27 @@ export default function Fluxograma() {
 
           {/* Zoom Controls */}
           {viewMode === 'diagram' && (
-            <div className="flex items-center gap-1 bg-[#141414] border border-[#262626] rounded-lg p-0.5">
+            <div className="flex items-center gap-1 bg-ctx-141414 border border-ctx-262626 rounded-lg p-0.5">
               <button
                 onClick={handleZoomOut}
-                className="p-1.5 text-[#9CA3AF] hover:text-white hover:bg-[#202020] rounded"
+                className="p-1.5 text-ctx-9ca3af hover:text-ctx-fg hover:bg-ctx-202020 rounded"
                 title="Reduzir zoom"
               >
                 <ZoomOut className="w-4 h-4" />
               </button>
-              <span className="text-[10px] font-mono text-[#9CA3AF] px-1">
+              <span className="text-[10px] font-mono text-ctx-9ca3af px-1">
                 {Math.round(zoom * 100)}%
               </span>
               <button
                 onClick={handleZoomIn}
-                className="p-1.5 text-[#9CA3AF] hover:text-white hover:bg-[#202020] rounded"
+                className="p-1.5 text-ctx-9ca3af hover:text-ctx-fg hover:bg-ctx-202020 rounded"
                 title="Aumentar zoom"
               >
                 <ZoomIn className="w-4 h-4" />
               </button>
               <button
                 onClick={handleResetView}
-                className="p-1.5 text-[#9CA3AF] hover:text-white hover:bg-[#202020] rounded"
+                className="p-1.5 text-ctx-9ca3af hover:text-ctx-fg hover:bg-ctx-202020 rounded"
                 title="Resetar visão"
               >
                 <Maximize2 className="w-4 h-4" />
@@ -784,14 +784,14 @@ export default function Fluxograma() {
                     setSelectedNode(null)
                     setIsDrawerOpen(false)
                   }}
-                  className="px-3 py-1.5 rounded-lg bg-[#141414] hover:bg-[#1E1E1E] text-white border border-[#333] hover:border-[#FFD400] text-xs font-bold transition-all flex items-center gap-1.5"
+                  className="px-3 py-1.5 rounded-lg bg-ctx-141414 hover:bg-ctx-1e1e1e text-ctx-fg border border-ctx-333333 hover:border-[#FFD400] text-xs font-bold transition-all flex items-center gap-1.5"
                   title="Editar disposição dos processos no diagrama"
                 >
-                  <Edit3 className="w-3.5 h-3.5 text-[#FFD400]" />
+                  <Edit3 className="w-3.5 h-3.5 text-ctx-brand" />
                   <span>Editar Diagrama</span>
                 </button>
               ) : (
-                <div className="flex items-center gap-2 bg-[#171717] p-1 rounded-lg border border-[#FFD400]/40 shadow-lg">
+                <div className="flex items-center gap-2 bg-ctx-171717 p-1 rounded-lg border border-[#FFD400]/40 shadow-lg">
                   <button
                     disabled={isSaving}
                     onClick={handleSavePositions}
@@ -808,7 +808,7 @@ export default function Fluxograma() {
                   <button
                     disabled={isSaving}
                     onClick={handleResetToAutomatic}
-                    className="px-2.5 py-1.5 rounded-md bg-[#222] hover:bg-[#2A2A2A] text-[#D1D5DB] hover:text-white text-xs font-semibold transition-all flex items-center gap-1 border border-[#333]"
+                    className="px-2.5 py-1.5 rounded-md bg-ctx-222222 hover:bg-ctx-2a2a2a text-ctx-d1d5db hover:text-ctx-fg text-xs font-semibold transition-all flex items-center gap-1 border border-ctx-333333"
                     title="Limpar posições personalizadas e restaurar layout automático"
                   >
                     <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
@@ -818,7 +818,7 @@ export default function Fluxograma() {
                   <button
                     disabled={isSaving}
                     onClick={handleCancelOrExitEdit}
-                    className="px-2.5 py-1.5 rounded-md bg-[#1F1F1F] hover:bg-[#282828] text-[#9CA3AF] hover:text-white text-xs font-semibold transition-all"
+                    className="px-2.5 py-1.5 rounded-md bg-ctx-1f1f1f hover:bg-ctx-282828 text-ctx-9ca3af hover:text-ctx-fg text-xs font-semibold transition-all"
                     title="Sair do modo edição"
                   >
                     Sair
@@ -833,10 +833,10 @@ export default function Fluxograma() {
       {/* Barra de alerta do Modo Edição Ativo */}
       {isEditMode && (
         <div className="bg-[#FFD400]/10 border border-[#FFD400]/40 rounded-xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
-          <div className="flex items-center gap-2 text-white">
-            <Move className="w-4 h-4 text-[#FFD400] shrink-0" />
+          <div className="flex items-center gap-2 text-ctx-fg">
+            <Move className="w-4 h-4 text-ctx-brand shrink-0" />
             <span>
-              <strong className="text-[#FFD400]">Modo Edição Ativo:</strong> Clique e arraste
+              <strong className="text-ctx-brand">Modo Edição Ativo:</strong> Clique e arraste
               qualquer caixa de processo para posicioná-la livremente no canvas. As conexões
               seguirão a nova posição.
             </span>
@@ -846,13 +846,13 @@ export default function Fluxograma() {
               </span>
             )}
           </div>
-          <div className="flex items-center gap-3 text-[11px] text-[#A3A3A3]">
+          <div className="flex items-center gap-3 text-[11px] text-ctx-a3a3a3">
             <span className="hidden md:inline">Desktop-first: ideal para tela cheia e mouse</span>
             <div className="flex items-center gap-1.5">
               <button
                 onClick={handleSavePositions}
                 disabled={isSaving}
-                className="font-bold text-[#FFD400] hover:underline"
+                className="font-bold text-ctx-brand hover:underline"
               >
                 Salvar agora
               </button>
@@ -866,10 +866,10 @@ export default function Fluxograma() {
       )}
       {/* Empty State */}
       {layout.nodes.length === 0 && !loading && (
-        <div className="flex-1 bg-[#111111] border border-[#262626] rounded-2xl p-12 flex flex-col items-center justify-center text-center space-y-4">
-          <FileSpreadsheet className="w-12 h-12 text-[#FFD400] opacity-80" />
-          <h3 className="text-lg font-bold text-white">Nenhum processo no banco de dados</h3>
-          <p className="text-xs text-[#9CA3AF] max-w-md">
+        <div className="flex-1 bg-ctx-111111 border border-ctx-262626 rounded-2xl p-12 flex flex-col items-center justify-center text-center space-y-4">
+          <FileSpreadsheet className="w-12 h-12 text-ctx-brand opacity-80" />
+          <h3 className="text-lg font-bold text-ctx-fg">Nenhum processo no banco de dados</h3>
+          <p className="text-xs text-ctx-9ca3af max-w-md">
             O fluxo completo será gerado automaticamente quando o Administrador realizar o upload
             das 3 planilhas oficiais na seção de Administração.
           </p>
@@ -887,7 +887,7 @@ export default function Fluxograma() {
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
           onClick={handleCanvasClick}
-          className="flex-1 relative bg-[#090909] border border-[#262626] rounded-2xl overflow-hidden cursor-grab active:cursor-grabbing select-none"
+          className="flex-1 relative bg-ctx-090909 border border-ctx-262626 rounded-2xl overflow-hidden cursor-grab active:cursor-grabbing select-none"
         >
           {/* Canvas Wrapper transformado com pan e zoom */}
           <div
@@ -922,12 +922,12 @@ export default function Fluxograma() {
                     }}
                     className={`rounded-2xl border transition-all duration-300 ${
                       isMilestoneLane
-                        ? 'bg-[#181404]/60 border-[#FFD400]/40 ring-1 ring-[#FFD400]/20'
+                        ? 'bg-ctx-181404/60 border-[#FFD400]/40 ring-1 ring-[#FFD400]/20'
                         : isUserLane
-                          ? 'bg-[#15140e]/70 border-[#FFD400]/50 shadow-lg'
+                          ? 'bg-ctx-15140e/70 border-[#FFD400]/50 shadow-lg'
                           : isSelectedArea
-                            ? 'bg-[#161616] border-[#FFD400]/60'
-                            : 'bg-[#0d0d0d]/85 border-[#202020]'
+                            ? 'bg-ctx-161616 border-[#FFD400]/60'
+                            : 'bg-ctx-0d0d0d/85 border-ctx-202020'
                     }`}
                   >
                     {/* Cabeçalho da Raia (Nome da área no início da raia horizontal) */}
@@ -941,10 +941,10 @@ export default function Fluxograma() {
                       }}
                       className={`flex flex-col justify-center px-4 rounded-l-2xl border-r ${
                         isMilestoneLane
-                          ? 'bg-[#221c05] border-[#FFD400]/40'
+                          ? 'bg-ctx-221c05 border-[#FFD400]/40'
                           : isUserLane
-                            ? 'bg-[#1c1806] border-[#FFD400]/40'
-                            : 'bg-[#131313] border-[#222]'
+                            ? 'bg-ctx-1c1806 border-[#FFD400]/40'
+                            : 'bg-ctx-131313 border-ctx-222222'
                       }`}
                     >
                       <div className="flex items-center gap-1.5 mb-1">
@@ -954,18 +954,18 @@ export default function Fluxograma() {
                               ? 'bg-[#FFD400] text-black'
                               : isUserLane
                                 ? 'bg-[#FFD400] text-black'
-                                : 'bg-[#222] text-[#9CA3AF]'
+                                : 'bg-ctx-222222 text-ctx-9ca3af'
                           }`}
                         >
                           {String(lane.ordem).padStart(2, '0')}
                         </span>
                         {isMilestoneLane && (
-                          <span className="text-[9px] font-extrabold uppercase tracking-wider text-[#FFD400] px-1.5 py-0.5 rounded bg-[#FFD400]/10 border border-[#FFD400]/30">
+                          <span className="text-[9px] font-extrabold uppercase tracking-wider text-ctx-brand px-1.5 py-0.5 rounded bg-[#FFD400]/10 border border-[#FFD400]/30">
                             Marcos
                           </span>
                         )}
                         {isUserLane && !isMilestoneLane && (
-                          <span className="text-[9px] font-bold uppercase text-[#FFD400] px-1 py-0.5 rounded bg-[#FFD400]/10 border border-[#FFD400]/30">
+                          <span className="text-[9px] font-bold uppercase text-ctx-brand px-1 py-0.5 rounded bg-[#FFD400]/10 border border-[#FFD400]/30">
                             Sua Área
                           </span>
                         )}
@@ -975,16 +975,16 @@ export default function Fluxograma() {
                         title={lane.nome}
                         className={`text-sm font-extrabold leading-tight tracking-tight truncate ${
                           isMilestoneLane
-                            ? 'text-[#FFD400]'
+                            ? 'text-ctx-brand'
                             : isUserLane
-                              ? 'text-white'
-                              : 'text-[#E5E7EB]'
+                              ? 'text-ctx-fg'
+                              : 'text-ctx-e5e7eb'
                         }`}
                       >
                         {lane.nome}
                       </h3>
 
-                      <span className="text-[10px] font-mono text-[#737373] mt-1">
+                      <span className="text-[10px] font-mono text-ctx-737373 mt-1">
                         {lane.nodeCount} {lane.nodeCount === 1 ? 'processo' : 'processos'}
                       </span>
                     </div>
@@ -1040,7 +1040,7 @@ export default function Fluxograma() {
                   markerHeight="6"
                   orient="auto-start-reverse"
                 >
-                  <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#2E2E2E" />
+                  <path d="M 0 1.5 L 10 5 L 0 8.5 z" style={{ fill: 'rgb(var(--ctx-2e2e2e))' }} />
                 </marker>
 
                 {/* Marcador de seta de retorno / ciclo não selecionado (laranja suave) */}
@@ -1114,7 +1114,7 @@ export default function Fluxograma() {
                           width={40}
                           height={20}
                           rx={4}
-                          fill="#141414"
+                          style={{ fill: 'rgb(var(--ctx-141414))' }}
                           stroke={edge.label === 'Sim' ? '#22C55E' : '#EF4444'}
                           strokeWidth="1.2"
                         />
@@ -1211,7 +1211,7 @@ export default function Fluxograma() {
                       >
                         <polygon
                           points={`${node.width / 2},4 ${node.width - 6},${node.height / 2} ${node.width / 2},${node.height - 4} 6,${node.height / 2}`}
-                          fill={isDirectNeighbor ? '#201a07' : '#181507'}
+                          style={{ fill: isDirectNeighbor ? 'rgb(var(--ctx-201a07))' : 'rgb(var(--ctx-181507))' }}
                           stroke={
                             isDraggingThis
                               ? '#FFD400'
@@ -1245,21 +1245,21 @@ export default function Fluxograma() {
                       {/* Conteúdo textual centralizado no losango de Milestone */}
                       <div className="absolute inset-0 px-9 py-2.5 flex flex-col items-center justify-center text-center pointer-events-none">
                         <div className="flex items-center gap-1.5 justify-center mb-0.5">
-                          <span className="font-mono font-black text-xs text-[#FFD400] tracking-wider">
+                          <span className="font-mono font-black text-xs text-ctx-brand tracking-wider">
                             {node.codigo}
                           </span>
                           <span className="text-[9px] uppercase font-extrabold text-black bg-[#FFD400] px-1.5 py-0.2 rounded shadow-sm">
                             Milestone
                           </span>
-                          {isEditMode && <Move className="w-3 h-3 text-[#FFD400] opacity-80" />}
+                          {isEditMode && <Move className="w-3 h-3 text-ctx-brand opacity-80" />}
                         </div>
                         <p
                           title={node.nome}
-                          className="text-[12px] font-bold text-white line-clamp-2 leading-tight drop-shadow-sm"
+                          className="text-[12px] font-bold text-ctx-fg line-clamp-2 leading-tight drop-shadow-sm"
                         >
                           {node.nome}
                         </p>
-                        <span className="text-[9px] font-mono text-[#A3A3A3] mt-0.5">
+                        <span className="text-[9px] font-mono text-ctx-a3a3a3 mt-0.5">
                           &larr; {node.etapasAnterioresIds.length} | &rarr;{' '}
                           {node.etapasSucessorasIds.length}
                         </span>
@@ -1312,7 +1312,7 @@ export default function Fluxograma() {
                       >
                         <polygon
                           points={`${node.width / 2},4 ${node.width - 6},${node.height / 2} ${node.width / 2},${node.height - 4} 6,${node.height / 2}`}
-                          fill={isDirectNeighbor ? '#1a1810' : '#141414'}
+                          style={{ fill: isDirectNeighbor ? 'rgb(var(--ctx-1a1810))' : 'rgb(var(--ctx-141414))' }}
                           stroke={
                             isDraggingThis
                               ? '#FFD400'
@@ -1346,18 +1346,18 @@ export default function Fluxograma() {
                       {/* Conteúdo textual centralizado no losango de Decisão */}
                       <div className="absolute inset-0 px-8 py-3 flex flex-col items-center justify-center text-center pointer-events-none">
                         <div className="flex items-center gap-1.5 justify-center mb-0.5">
-                          <span className="font-mono font-black text-xs text-[#FFD400]">
+                          <span className="font-mono font-black text-xs text-ctx-brand">
                             {node.codigo}
                           </span>
                           <span className="text-[10px] uppercase font-bold text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">
                             Decisão
                           </span>
-                          {isEditMode && <Move className="w-3 h-3 text-[#FFD400] opacity-80" />}
+                          {isEditMode && <Move className="w-3 h-3 text-ctx-brand opacity-80" />}
                         </div>
-                        <span className="text-[10px] font-semibold text-[#9CA3AF] mb-1">
+                        <span className="text-[10px] font-semibold text-ctx-9ca3af mb-1">
                           {node.area}
                         </span>
-                        <p className="text-[11px] font-bold text-white line-clamp-2 leading-tight">
+                        <p className="text-[11px] font-bold text-ctx-fg line-clamp-2 leading-tight">
                           {node.nome}
                         </p>
                       </div>
@@ -1390,7 +1390,7 @@ export default function Fluxograma() {
                       : 'box-shadow 0.2s ease, transform 0.2s ease',
                   }}
                   className={`border rounded-xl p-3 shadow-lg ${cursorClass} z-20 flex flex-col justify-between ${
-                    isDirectNeighbor ? 'bg-[#181611]' : 'bg-[#121212]'
+                    isDirectNeighbor ? 'bg-ctx-181611' : 'bg-ctx-121212'
                   } ${
                     isDraggingThis
                       ? 'border-[#FFD400] ring-4 ring-[#FFD400]/40 scale-105 z-40 shadow-2xl'
@@ -1402,19 +1402,19 @@ export default function Fluxograma() {
                             ? 'border-[#FFD400]/80 hover:border-[#FFD400] hover:scale-102 hover:shadow-xl'
                             : hasYellowBorder
                               ? 'border-2 border-[#FFD400] hover:scale-102'
-                              : 'border-[#262626] hover:border-[#FFD400]/60 hover:scale-102'
+                              : 'border-ctx-262626 hover:border-[#FFD400]/60 hover:scale-102'
                   }`}
                 >
                   {/* Topo do Card: Código em destaque amarelo + Nome da Área completo */}
                   <div className="flex items-center justify-between gap-2 shrink-0">
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <span className="font-mono font-black text-xs text-[#FFD400] tracking-wide">
+                      <span className="font-mono font-black text-xs text-ctx-brand tracking-wide">
                         {node.codigo}
                       </span>
                       {isEditMode && (
                         <span
                           title="Arraste para reposicionar este nó"
-                          className="p-0.5 rounded bg-[#FFD400]/15 text-[#FFD400]"
+                          className="p-0.5 rounded bg-[#FFD400]/15 text-ctx-brand"
                         >
                           <Move className="w-2.5 h-2.5" />
                         </span>
@@ -1422,7 +1422,7 @@ export default function Fluxograma() {
                     </div>
                     <span
                       title={node.area}
-                      className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-[#1C1C1C] text-[#A3A3A3] border border-[#2B2B2B] truncate max-w-[170px]"
+                      className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-ctx-1c1c1c text-ctx-a3a3a3 border border-ctx-2b2b2b truncate max-w-[170px]"
                     >
                       {node.area}
                     </span>
@@ -1432,32 +1432,32 @@ export default function Fluxograma() {
                   <div className="my-auto py-1">
                     <p
                       title={node.nome}
-                      className="text-[12px] font-medium text-white leading-snug line-clamp-3 select-none"
+                      className="text-[12px] font-medium text-ctx-fg leading-snug line-clamp-3 select-none"
                     >
                       {node.nome}
                     </p>
                   </div>
 
                   {/* Rodapé: contadores de dependência anterior/sucessora e etiquetas */}
-                  <div className="flex items-center justify-between text-[9px] font-mono text-[#777] pt-1.5 border-t border-[#202020] shrink-0">
+                  <div className="flex items-center justify-between text-[9px] font-mono text-ctx-777777 pt-1.5 border-t border-ctx-202020 shrink-0">
                     <span>
                       &larr; {node.etapasAnterioresIds.length} | &rarr;{' '}
                       {node.etapasSucessorasIds.length}
                     </span>
                     <div className="flex items-center gap-1">
                       {isEditMode ? (
-                        <span className="text-[8px] font-bold text-[#FFD400] uppercase font-sans">
+                        <span className="text-[8px] font-bold text-ctx-brand uppercase font-sans">
                           Arraste Livre
                         </span>
                       ) : (
                         <>
                           {isUserArea && (
-                            <span className="text-[8px] font-bold text-[#FFD400] uppercase">
+                            <span className="text-[8px] font-bold text-ctx-brand uppercase">
                               Sua Área
                             </span>
                           )}
                           {isUserGoalProc && (
-                            <span className="text-[8px] font-bold text-[#FFD400] uppercase">
+                            <span className="text-[8px] font-bold text-ctx-brand uppercase">
                               Sua Meta
                             </span>
                           )}
@@ -1496,12 +1496,12 @@ export default function Fluxograma() {
           )}
 
           {/* Minimapa Flutuante (canto inferior direito) */}
-          <div className="absolute bottom-4 right-4 w-48 h-36 bg-[#141414]/90 border border-[#262626] rounded-xl p-2.5 shadow-2xl backdrop-blur-md hidden sm:block pointer-events-none z-30">
-            <div className="flex items-center justify-between text-[9px] uppercase font-bold text-[#9CA3AF] mb-1.5">
+          <div className="absolute bottom-4 right-4 w-48 h-36 bg-ctx-141414/90 border border-ctx-262626 rounded-xl p-2.5 shadow-2xl backdrop-blur-md hidden sm:block pointer-events-none z-30">
+            <div className="flex items-center justify-between text-[9px] uppercase font-bold text-ctx-9ca3af mb-1.5">
               <span>Visão Geral do Fluxo</span>
-              <Compass className="w-3.5 h-3.5 text-[#FFD400]" />
+              <Compass className="w-3.5 h-3.5 text-ctx-brand" />
             </div>
-            <div className="relative w-full h-[96px] bg-[#0A0A0A] rounded border border-[#222] overflow-hidden">
+            <div className="relative w-full h-[96px] bg-ctx-0a0a0a rounded border border-ctx-222222 overflow-hidden">
               {/* Pontos dos nós */}
               {layout.nodes.map((n) => {
                 const mapX = (n.x / layout.width) * 170
@@ -1514,7 +1514,7 @@ export default function Fluxograma() {
                     className={`absolute rounded-full ${
                       isNodeSelected
                         ? 'bg-[#FFD400] w-2 h-2 -ml-0.5 -mt-0.5 z-10'
-                        : 'bg-[#555] w-1 h-1'
+                        : 'bg-ctx-555555 w-1 h-1'
                     }`}
                   />
                 )
@@ -1569,20 +1569,20 @@ export default function Fluxograma() {
             return (
               <div
                 key={areaNome}
-                className={`bg-[#111111] border rounded-2xl p-5 space-y-3 ${
-                  isUserLane ? 'border-[#FFD400]' : 'border-[#262626]'
+                className={`bg-ctx-111111 border rounded-2xl p-5 space-y-3 ${
+                  isUserLane ? 'border-[#FFD400]' : 'border-ctx-262626'
                 }`}
               >
-                <div className="flex items-center justify-between border-b border-[#262626] pb-3">
+                <div className="flex items-center justify-between border-b border-ctx-262626 pb-3">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-bold text-white">{areaNome}</h3>
+                    <h3 className="text-sm font-bold text-ctx-fg">{areaNome}</h3>
                     {isUserLane && (
-                      <span className="text-[10px] font-bold text-[#FFD400] bg-[#FFD400]/10 px-2 py-0.5 rounded border border-[#FFD400]/30">
+                      <span className="text-[10px] font-bold text-ctx-brand bg-[#FFD400]/10 px-2 py-0.5 rounded border border-[#FFD400]/30">
                         Sua Área
                       </span>
                     )}
                   </div>
-                  <span className="text-xs font-mono text-[#9CA3AF]">{procs.length} processos</span>
+                  <span className="text-xs font-mono text-ctx-9ca3af">{procs.length} processos</span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
@@ -1594,19 +1594,19 @@ export default function Fluxograma() {
                       <div
                         key={node.id}
                         onClick={() => handleToggleNodeSelection(node)}
-                        className={`p-3.5 rounded-xl border bg-[#161616] cursor-pointer hover:border-[#FFD400] transition-colors flex flex-col justify-between ${
+                        className={`p-3.5 rounded-xl border bg-ctx-161616 cursor-pointer hover:border-[#FFD400] transition-colors flex flex-col justify-between ${
                           selectedNode?.id === node.id
                             ? 'border-[#FFD400] ring-2 ring-[#FFD400]/70 shadow-[0_0_15px_rgba(255,212,0,0.25)]'
                             : relatedNodeIds.has(node.id) && selectedNode !== null
                               ? 'border-[#FFD400]/70 ring-1 ring-[#FFD400]/40'
                               : hasYellowBorder
                                 ? 'border-[#FFD400]'
-                                : 'border-[#262626]'
+                                : 'border-ctx-262626'
                         }`}
                       >
                         <div className="space-y-1.5">
                           <div className="flex items-center justify-between">
-                            <span className="font-mono font-bold text-xs text-[#FFD400]">
+                            <span className="font-mono font-bold text-xs text-ctx-brand">
                               {node.codigo}
                             </span>
                             {node.isDecision && (
@@ -1615,12 +1615,12 @@ export default function Fluxograma() {
                               </span>
                             )}
                           </div>
-                          <p className="text-xs font-medium text-white line-clamp-3 leading-snug">
+                          <p className="text-xs font-medium text-ctx-fg line-clamp-3 leading-snug">
                             {node.nome}
                           </p>
                         </div>
 
-                        <div className="mt-3 pt-2 border-t border-[#222] flex items-center justify-between text-[10px] text-[#9CA3AF]">
+                        <div className="mt-3 pt-2 border-t border-ctx-222222 flex items-center justify-between text-[10px] text-ctx-9ca3af">
                           <span>&larr; {node.etapasAnterioresIds.length} anteriores</span>
                           <span>&rarr; {node.etapasSucessorasIds.length} sucessores</span>
                         </div>
@@ -1642,18 +1642,18 @@ export default function Fluxograma() {
             onClick={() => setIsDrawerOpen(false)}
           />
 
-          <div className="relative w-full md:w-[480px] bg-[#111111] border-l border-[#262626] h-full flex flex-col shadow-2xl z-10 animate-in slide-in-from-right duration-250 overflow-hidden">
+          <div className="relative w-full md:w-[480px] bg-ctx-111111 border-l border-ctx-262626 h-full flex flex-col shadow-2xl z-10 animate-in slide-in-from-right duration-250 overflow-hidden">
             {/* Header */}
-            <div className="p-5 border-b border-[#262626] flex items-center justify-between bg-[#141414]">
+            <div className="p-5 border-b border-ctx-262626 flex items-center justify-between bg-ctx-141414">
               <div className="flex items-center gap-2">
-                <Workflow className="w-4 h-4 text-[#FFD400]" />
-                <span className="text-xs uppercase tracking-wider font-bold text-[#9CA3AF]">
+                <Workflow className="w-4 h-4 text-ctx-brand" />
+                <span className="text-xs uppercase tracking-wider font-bold text-ctx-9ca3af">
                   Detalhes do Processo
                 </span>
               </div>
               <button
                 onClick={() => setIsDrawerOpen(false)}
-                className="p-1.5 rounded-lg text-[#9CA3AF] hover:text-white hover:bg-[#1E1E1E]"
+                className="p-1.5 rounded-lg text-ctx-9ca3af hover:text-ctx-fg hover:bg-ctx-1e1e1e"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1662,21 +1662,21 @@ export default function Fluxograma() {
             {/* Conteúdo scrollável */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               {/* Processo Card */}
-              <div className="bg-[#161616] p-4 rounded-xl border border-[#262626] space-y-2.5">
+              <div className="bg-ctx-161616 p-4 rounded-xl border border-ctx-262626 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-base font-black text-[#FFD400]">
+                  <span className="font-mono text-base font-black text-ctx-brand">
                     {selectedNodeDetails.node.codigo}
                   </span>
-                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[#1F1F1F] text-white border border-[#2E2E2E]">
+                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-ctx-1f1f1f text-ctx-fg border border-ctx-2e2e2e">
                     {selectedNodeDetails.node.area}
                   </span>
                 </div>
-                <h2 className="text-base font-bold text-white leading-snug">
+                <h2 className="text-base font-bold text-ctx-fg leading-snug">
                   {selectedNodeDetails.node.nome}
                 </h2>
                 {selectedNodeDetails.node.observacao && (
-                  <div className="mt-2 p-2.5 rounded bg-[#1C1C1C] border border-[#FFD400]/30 text-xs text-[#D1D5DB]">
-                    <span className="font-semibold text-[#FFD400] block mb-0.5">
+                  <div className="mt-2 p-2.5 rounded bg-ctx-1c1c1c border border-[#FFD400]/30 text-xs text-ctx-d1d5db">
+                    <span className="font-semibold text-ctx-brand block mb-0.5">
                       Observação / Regra:
                     </span>
                     {selectedNodeDetails.node.observacao}
@@ -1686,9 +1686,9 @@ export default function Fluxograma() {
 
               {/* Vem de (Etapas Anteriores) */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between pb-1 border-b border-[#262626]">
-                  <h4 className="text-xs uppercase tracking-wider font-bold text-white flex items-center gap-2">
-                    <ArrowLeft className="w-4 h-4 text-[#FFD400]" />
+                <div className="flex items-center justify-between pb-1 border-b border-ctx-262626">
+                  <h4 className="text-xs uppercase tracking-wider font-bold text-ctx-fg flex items-center gap-2">
+                    <ArrowLeft className="w-4 h-4 text-ctx-brand" />
                     Vem de ({selectedNodeDetails.anteriores.length})
                   </h4>
                 </div>
@@ -1699,21 +1699,21 @@ export default function Fluxograma() {
                       <div
                         key={ant.id}
                         onClick={() => setSelectedNode(ant)}
-                        className="p-3 rounded-lg bg-[#161616] border border-[#262626] hover:border-[#FFD400] transition-colors cursor-pointer flex items-center justify-between gap-2"
+                        className="p-3 rounded-lg bg-ctx-161616 border border-ctx-262626 hover:border-[#FFD400] transition-colors cursor-pointer flex items-center justify-between gap-2"
                       >
                         <div className="min-w-0">
-                          <span className="font-mono font-bold text-[#FFD400] text-xs mr-2">
+                          <span className="font-mono font-bold text-ctx-brand text-xs mr-2">
                             {ant.codigo}
                           </span>
-                          <span className="text-xs text-white">{ant.nome}</span>
-                          <p className="text-[10px] text-[#9CA3AF] mt-0.5">{ant.area}</p>
+                          <span className="text-xs text-ctx-fg">{ant.nome}</span>
+                          <p className="text-[10px] text-ctx-9ca3af mt-0.5">{ant.area}</p>
                         </div>
-                        <ArrowRight className="w-4 h-4 text-[#9CA3AF] shrink-0" />
+                        <ArrowRight className="w-4 h-4 text-ctx-9ca3af shrink-0" />
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="p-3 rounded-lg bg-[#161616] border border-[#262626] text-xs text-[#9CA3AF]">
+                  <div className="p-3 rounded-lg bg-ctx-161616 border border-ctx-262626 text-xs text-ctx-9ca3af">
                     Início de fluxo — sem etapas anteriores.
                   </div>
                 )}
@@ -1721,9 +1721,9 @@ export default function Fluxograma() {
 
               {/* Vai para (Etapas Sucessoras) */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between pb-1 border-b border-[#262626]">
-                  <h4 className="text-xs uppercase tracking-wider font-bold text-white flex items-center gap-2">
-                    <ArrowRight className="w-4 h-4 text-[#FFD400]" />
+                <div className="flex items-center justify-between pb-1 border-b border-ctx-262626">
+                  <h4 className="text-xs uppercase tracking-wider font-bold text-ctx-fg flex items-center gap-2">
+                    <ArrowRight className="w-4 h-4 text-ctx-brand" />
                     Vai para ({selectedNodeDetails.sucessoras.length})
                   </h4>
                 </div>
@@ -1734,31 +1734,31 @@ export default function Fluxograma() {
                       <div
                         key={suc.id}
                         onClick={() => setSelectedNode(suc)}
-                        className="p-3 rounded-lg bg-[#161616] border border-[#262626] hover:border-[#FFD400] transition-colors cursor-pointer flex items-center justify-between gap-2"
+                        className="p-3 rounded-lg bg-ctx-161616 border border-ctx-262626 hover:border-[#FFD400] transition-colors cursor-pointer flex items-center justify-between gap-2"
                       >
                         <div className="min-w-0">
-                          <span className="font-mono font-bold text-[#FFD400] text-xs mr-2">
+                          <span className="font-mono font-bold text-ctx-brand text-xs mr-2">
                             {suc.codigo}
                           </span>
-                          <span className="text-xs text-white">{suc.nome}</span>
-                          <p className="text-[10px] text-[#9CA3AF] mt-0.5">{suc.area}</p>
+                          <span className="text-xs text-ctx-fg">{suc.nome}</span>
+                          <p className="text-[10px] text-ctx-9ca3af mt-0.5">{suc.area}</p>
                         </div>
-                        <ArrowRight className="w-4 h-4 text-[#9CA3AF] shrink-0" />
+                        <ArrowRight className="w-4 h-4 text-ctx-9ca3af shrink-0" />
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="p-3 rounded-lg bg-[#161616] border border-[#262626] text-xs text-[#9CA3AF]">
+                  <div className="p-3 rounded-lg bg-ctx-161616 border border-ctx-262626 text-xs text-ctx-9ca3af">
                     Fim de fluxo — sem etapas sucessoras mapeadas.
                   </div>
                 )}
               </div>
 
               {/* Metas vinculadas a este processo */}
-              <div className="space-y-3 pt-2 border-t border-[#262626]">
-                <div className="flex items-center justify-between pb-1 border-b border-[#262626]">
-                  <h4 className="text-xs uppercase tracking-wider font-bold text-white flex items-center gap-2">
-                    <Target className="w-4 h-4 text-[#FFD400]" />
+              <div className="space-y-3 pt-2 border-t border-ctx-262626">
+                <div className="flex items-center justify-between pb-1 border-b border-ctx-262626">
+                  <h4 className="text-xs uppercase tracking-wider font-bold text-ctx-fg flex items-center gap-2">
+                    <Target className="w-4 h-4 text-ctx-brand" />
                     Metas Vinculadas ({metasDoProcessoSelecionado.length})
                   </h4>
                 </div>
@@ -1773,11 +1773,11 @@ export default function Fluxograma() {
                       return (
                         <div
                           key={meta.id}
-                          className="p-3.5 rounded-xl bg-[#161616] border border-[#262626] space-y-2"
+                          className="p-3.5 rounded-xl bg-ctx-161616 border border-ctx-262626 space-y-2"
                         >
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="font-mono text-xs px-2 py-0.5 rounded bg-[#1C1C1C] border border-[#333] text-[#FFD400] font-bold">
+                              <span className="font-mono text-xs px-2 py-0.5 rounded bg-ctx-1c1c1c border border-ctx-333333 text-ctx-brand font-bold">
                                 {meta.codigo}
                               </span>
                               {meta.expand?.projeto && (
@@ -1786,27 +1786,27 @@ export default function Fluxograma() {
                                 </span>
                               )}
                               {meta.expand?.projeto_secundario && (
-                                <span className="text-[10px] px-2 py-0.5 rounded-full border border-[#FFD400]/70 text-[#FFD400] font-bold bg-transparent">
+                                <span className="text-[10px] px-2 py-0.5 rounded-full border border-[#FFD400]/70 text-ctx-brand font-bold bg-transparent">
                                   {meta.expand.projeto_secundario.nome}
                                 </span>
                               )}
                             </div>
                             {meta.trimestre && (
-                              <span className="text-[10px] font-mono text-[#9CA3AF]">
+                              <span className="text-[10px] font-mono text-ctx-9ca3af">
                                 {meta.trimestre}
                               </span>
                             )}
                           </div>
 
-                          <h5 className="text-xs font-bold text-white leading-snug">
+                          <h5 className="text-xs font-bold text-ctx-fg leading-snug">
                             {meta.titulo}
                           </h5>
 
                           {respNames && (
-                            <div className="flex items-center gap-1.5 text-[11px] text-[#9CA3AF] pt-1 border-t border-[#222]">
-                              <Users className="w-3 h-3 text-[#FFD400] shrink-0" />
+                            <div className="flex items-center gap-1.5 text-[11px] text-ctx-9ca3af pt-1 border-t border-ctx-222222">
+                              <Users className="w-3 h-3 text-ctx-brand shrink-0" />
                               <span className="truncate">
-                                Responsável(is): <strong className="text-white">{respNames}</strong>
+                                Responsável(is): <strong className="text-ctx-fg">{respNames}</strong>
                               </span>
                             </div>
                           )}
@@ -1815,7 +1815,7 @@ export default function Fluxograma() {
                     })}
                   </div>
                 ) : (
-                  <div className="p-3 rounded-lg bg-[#161616] border border-[#262626] text-xs text-[#9CA3AF]">
+                  <div className="p-3 rounded-lg bg-ctx-161616 border border-ctx-262626 text-xs text-ctx-9ca3af">
                     Nenhuma meta diretamente vinculada a este processo.
                   </div>
                 )}
@@ -1823,10 +1823,10 @@ export default function Fluxograma() {
             </div>
 
             {/* Footer */}
-            <div className="p-4 border-t border-[#262626] bg-[#141414]">
+            <div className="p-4 border-t border-ctx-262626 bg-ctx-141414">
               <button
                 onClick={() => setIsDrawerOpen(false)}
-                className="w-full py-2.5 bg-[#1C1C1C] hover:bg-[#262626] text-white text-xs font-semibold rounded-lg border border-[#333] transition-colors"
+                className="w-full py-2.5 bg-ctx-1c1c1c hover:bg-ctx-262626 text-ctx-fg text-xs font-semibold rounded-lg border border-ctx-333333 transition-colors"
               >
                 Fechar painel
               </button>
@@ -1838,24 +1838,24 @@ export default function Fluxograma() {
       {/* DIÁLOGO MODAL: CONFIRMAÇÃO DE SAÍDA COM ALTERAÇÕES NÃO SALVAS */}
       {showExitConfirmDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-[#141414] border border-[#2B2B2B] rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+          <div className="bg-ctx-141414 border border-ctx-2b2b2b rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
             <div className="flex items-start gap-3">
               <div className="p-2.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 shrink-0">
                 <AlertTriangle className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-white">Alterações não salvas</h3>
-                <p className="text-xs text-[#9CA3AF] mt-1 leading-relaxed">
+                <h3 className="text-base font-bold text-ctx-fg">Alterações não salvas</h3>
+                <p className="text-xs text-ctx-9ca3af mt-1 leading-relaxed">
                   Você arrastou processos no diagrama mas ainda não salvou a nova disposição. Se
                   sair agora, as posições editadas nesta sessão serão descartadas.
                 </p>
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center justify-end gap-2 pt-2 border-t border-[#222]">
+            <div className="flex flex-col sm:flex-row items-center justify-end gap-2 pt-2 border-t border-ctx-222222">
               <button
                 onClick={() => setShowExitConfirmDialog(false)}
-                className="w-full sm:w-auto px-4 py-2 rounded-lg bg-[#1E1E1E] hover:bg-[#282828] text-white text-xs font-semibold transition-colors"
+                className="w-full sm:w-auto px-4 py-2 rounded-lg bg-ctx-1e1e1e hover:bg-ctx-282828 text-ctx-fg text-xs font-semibold transition-colors"
               >
                 Continuar editando
               </button>

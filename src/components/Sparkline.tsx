@@ -14,7 +14,7 @@ export default function Sparkline({
   height = 24,
 }: SparklineProps) {
   if (!data || data.length === 0) {
-    return <span className="text-[11px] text-[#9CA3AF]">—</span>
+    return <span className="text-[11px] text-ctx-9ca3af">—</span>
   }
 
   const min = Math.min(...data)
@@ -85,7 +85,7 @@ export function TrendBadge({
     )
   }
   return (
-    <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-[#FFD400] bg-[#FFD400]/10 px-1.5 py-0.5 rounded">
+    <span className="inline-flex items-center gap-0.5 text-xs font-semibold text-ctx-brand bg-[#FFD400]/10 px-1.5 py-0.5 rounded">
       <Minus className="w-3 h-3" />
       Estável
     </span>

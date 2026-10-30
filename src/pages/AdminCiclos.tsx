@@ -358,16 +358,16 @@ export default function AdminCiclos() {
   return (
     <div className="space-y-8 pb-12 animate-fade-in">
       {/* Cabeçalho */}
-      <div className="border-b border-[#262626] pb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="border-b border-ctx-262626 pb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#FFD400]/10 border border-[#FFD400]/30 text-[#FFD400] text-xs font-semibold mb-2">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#FFD400]/10 border border-[#FFD400]/30 text-ctx-brand text-xs font-semibold mb-2">
             <Sliders className="w-3.5 h-3.5" />
             <span>Gestão Estratégica</span>
           </div>
-          <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">
+          <h1 className="text-2xl md:text-3xl font-black text-ctx-fg tracking-tight">
             Ciclos & Adesão
           </h1>
-          <p className="text-xs md:text-sm text-[#9CA3AF] mt-1">
+          <p className="text-xs md:text-sm text-ctx-9ca3af mt-1">
             Controle do acompanhamento semanal/mensal, disparo de lembretes e exportação para a
             Reunião Mensal de Resultados.
           </p>
@@ -383,15 +383,15 @@ export default function AdminCiclos() {
       </div>
 
       {/* 1. PAINEL DE CONTROLE DA ROTINA (ATIVAR / PAUSAR) */}
-      <div className="p-6 rounded-2xl bg-[#111111] border border-[#262626] grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="p-6 rounded-2xl bg-ctx-111111 border border-ctx-262626 grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Rotina Geral */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-xs uppercase font-extrabold tracking-wider text-white block">
+              <span className="text-xs uppercase font-extrabold tracking-wider text-ctx-fg block">
                 Rotina de Acompanhamento
               </span>
-              <p className="text-xs text-[#9CA3AF] mt-0.5">
+              <p className="text-xs text-ctx-9ca3af mt-0.5">
                 {config?.rotina_ativa
                   ? 'Ativa — Ciclos automáticos estão rodando conforme o cron'
                   : 'Desligada — A rotina começa pausada até o lançamento oficial'}
@@ -414,7 +414,7 @@ export default function AdminCiclos() {
             disabled={actionLoading}
             className={`w-full py-2.5 px-4 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 transition-all ${
               config?.rotina_ativa
-                ? 'bg-[#1F1F1F] hover:bg-[#2A2A2A] text-[#EF4444] border border-[#333]'
+                ? 'bg-ctx-1f1f1f hover:bg-ctx-2a2a2a text-[#EF4444] border border-ctx-333333'
                 : 'bg-[#22C55E] hover:bg-[#1EAE52] text-black shadow-lg shadow-[#22C55E]/20'
             }`}
           >
@@ -433,13 +433,13 @@ export default function AdminCiclos() {
         </div>
 
         {/* Pulso Semanal Ativo / Desligado */}
-        <div className="space-y-3 md:border-l md:border-[#222] md:pl-6">
+        <div className="space-y-3 md:border-l md:border-ctx-222222 md:pl-6">
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-xs uppercase font-extrabold tracking-wider text-white block">
+              <span className="text-xs uppercase font-extrabold tracking-wider text-ctx-fg block">
                 Pulso Semanal (1 minuto)
               </span>
-              <p className="text-xs text-[#9CA3AF] mt-0.5">
+              <p className="text-xs text-ctx-9ca3af mt-0.5">
                 {config?.pulso_ativo
                   ? 'Ativo — Segunda a sexta-feira às 18h'
                   : 'Desligado — Somente avaliação mensal'}
@@ -448,8 +448,8 @@ export default function AdminCiclos() {
             <span
               className={`px-2.5 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
                 config?.pulso_ativo
-                  ? 'bg-[#FFD400]/15 text-[#FFD400] border border-[#FFD400]/30'
-                  : 'bg-[#333] text-[#888]'
+                  ? 'bg-[#FFD400]/15 text-ctx-brand border border-[#FFD400]/30'
+                  : 'bg-ctx-333333 text-ctx-888888'
               }`}
             >
               {config?.pulso_ativo ? 'Ligado' : 'Desligado'}
@@ -460,7 +460,7 @@ export default function AdminCiclos() {
             type="button"
             onClick={handleTogglePulso}
             disabled={actionLoading}
-            className="w-full py-2.5 px-4 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 bg-[#1C1C1C] hover:bg-[#262626] text-white border border-[#333] transition-all"
+            className="w-full py-2.5 px-4 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 bg-ctx-1c1c1c hover:bg-ctx-262626 text-ctx-fg border border-ctx-333333 transition-all"
           >
             <span>{config?.pulso_ativo ? 'Desligar Pulso Semanal' : 'Ligar Pulso Semanal'}</span>
           </button>
@@ -471,8 +471,8 @@ export default function AdminCiclos() {
       <section className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-[#FFD400]" />
-            <h2 className="text-xs uppercase font-extrabold tracking-wider text-white">
+            <Clock className="w-4 h-4 text-ctx-brand" />
+            <h2 className="text-xs uppercase font-extrabold tracking-wider text-ctx-fg">
               Acompanhamento por Ciclo
             </h2>
           </div>
@@ -480,11 +480,11 @@ export default function AdminCiclos() {
           {/* Seletor de Ciclo */}
           {ciclos.length > 0 && (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-[#9CA3AF]">Ciclo:</span>
+              <span className="text-xs text-ctx-9ca3af">Ciclo:</span>
               <select
                 value={selectedCicloId}
                 onChange={(e) => setSelectedCicloId(e.target.value)}
-                className="bg-[#141414] border border-[#2B2B2B] rounded-xl px-3 py-1.5 text-xs text-white font-bold outline-none cursor-pointer"
+                className="bg-ctx-141414 border border-ctx-2b2b2b rounded-xl px-3 py-1.5 text-xs text-ctx-fg font-bold outline-none cursor-pointer"
               >
                 {ciclos.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -498,28 +498,28 @@ export default function AdminCiclos() {
         </div>
 
         {cicloSelecionado ? (
-          <div className="p-6 rounded-2xl bg-[#111111] border border-[#262626] space-y-6">
+          <div className="p-6 rounded-2xl bg-ctx-111111 border border-ctx-262626 space-y-6">
             {/* Topo do Ciclo Selecionado */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-[#222]">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-ctx-222222">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs px-2.5 py-0.5 rounded bg-[#1C1C1C] border border-[#333] text-[#FFD400] font-black">
+                  <span className="font-mono text-xs px-2.5 py-0.5 rounded bg-ctx-1c1c1c border border-ctx-333333 text-ctx-brand font-black">
                     {cicloSelecionado.referencia}
                   </span>
                   <span
                     className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
                       cicloSelecionado.status === 'aberto'
                         ? 'bg-[#22C55E]/15 text-[#22C55E] border border-[#22C55E]/30'
-                        : 'bg-[#666]/15 text-[#888]'
+                        : 'bg-ctx-666666/15 text-ctx-888888'
                     }`}
                   >
                     {cicloSelecionado.status}
                   </span>
                 </div>
-                <h3 className="text-base font-extrabold text-white">
+                <h3 className="text-base font-extrabold text-ctx-fg">
                   {cicloSelecionado.titulo || cicloSelecionado.referencia}
                 </h3>
-                <p className="text-xs text-[#888]">
+                <p className="text-xs text-ctx-888888">
                   Período: {new Date(cicloSelecionado.abertura).toLocaleDateString('pt-BR')} até{' '}
                   {new Date(cicloSelecionado.fechamento).toLocaleDateString('pt-BR')}
                 </p>
@@ -531,10 +531,10 @@ export default function AdminCiclos() {
                   type="button"
                   onClick={() => abrirModalAjustarDatas(cicloSelecionado)}
                   disabled={actionLoading}
-                  className="px-3.5 py-2 rounded-xl bg-[#1A1A1A] hover:bg-[#252525] border border-[#333] text-xs font-bold text-white transition-colors flex items-center gap-1.5"
+                  className="px-3.5 py-2 rounded-xl bg-ctx-1a1a1a hover:bg-ctx-252525 border border-ctx-333333 text-xs font-bold text-ctx-fg transition-colors flex items-center gap-1.5"
                   title="Ajustar datas e título do ciclo"
                 >
-                  <Edit3 className="w-3.5 h-3.5 text-[#FFD400]" />
+                  <Edit3 className="w-3.5 h-3.5 text-ctx-brand" />
                   <span>Ajustar Datas</span>
                 </button>
 
@@ -542,7 +542,7 @@ export default function AdminCiclos() {
                   type="button"
                   onClick={() => handleToggleStatusCiclo(cicloSelecionado)}
                   disabled={actionLoading}
-                  className="px-3.5 py-2 rounded-xl bg-[#1A1A1A] hover:bg-[#252525] border border-[#333] text-xs font-bold text-white transition-colors flex items-center gap-1.5"
+                  className="px-3.5 py-2 rounded-xl bg-ctx-1a1a1a hover:bg-ctx-252525 border border-ctx-333333 text-xs font-bold text-ctx-fg transition-colors flex items-center gap-1.5"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span>
@@ -571,14 +571,14 @@ export default function AdminCiclos() {
             {/* Barra de Taxa de Adesão */}
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-white uppercase tracking-wider">
+                <span className="font-bold text-ctx-fg uppercase tracking-wider">
                   Taxa de Adesão do Ciclo
                 </span>
-                <span className="font-mono text-sm font-black text-[#FFD400]">
+                <span className="font-mono text-sm font-black text-ctx-brand">
                   {taxaAdesao}% ({totalEntregues} de {totalMetasCiclo} metas respondidas)
                 </span>
               </div>
-              <div className="h-3 w-full bg-[#1A1A1A] rounded-full overflow-hidden border border-[#242424]">
+              <div className="h-3 w-full bg-ctx-1a1a1a rounded-full overflow-hidden border border-ctx-242424">
                 <div
                   className="h-full bg-[#FFD400] rounded-full transition-all duration-500"
                   style={{ width: `${taxaAdesao}%` }}
@@ -589,31 +589,31 @@ export default function AdminCiclos() {
             {/* Lista de Colaboradores Pendentes */}
             <div className="space-y-3 pt-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs uppercase font-extrabold tracking-wider text-white">
+                <span className="text-xs uppercase font-extrabold tracking-wider text-ctx-fg">
                   Colaboradores com Metas Pendentes ({pendentesList.length})
                 </span>
-                <span className="text-[11px] text-[#888]">
+                <span className="text-[11px] text-ctx-888888">
                   Notificação direta no app do colaborador
                 </span>
               </div>
 
               {pendentesList.length === 0 ? (
-                <div className="p-6 rounded-xl bg-[#141414] border border-[#262626] text-center text-xs text-[#22C55E] font-bold flex items-center justify-center gap-2">
+                <div className="p-6 rounded-xl bg-ctx-141414 border border-ctx-262626 text-center text-xs text-[#22C55E] font-bold flex items-center justify-center gap-2">
                   <CheckCircle2 className="w-4 h-4" />
                   <span>Parabéns! 100% das metas foram preenchidas neste ciclo.</span>
                 </div>
               ) : (
-                <div className="divide-y divide-[#1F1F1F] border border-[#262626] rounded-xl overflow-hidden bg-[#141414]">
+                <div className="divide-y divide-ctx-1f1f1f border border-ctx-262626 rounded-xl overflow-hidden bg-ctx-141414">
                   {pendentesList.map(({ colaborador, metasPendentes }) => (
                     <div
                       key={colaborador.id}
                       className="p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
                     >
                       <div>
-                        <span className="font-bold text-white block">{colaborador.nome}</span>
-                        <span className="text-[11px] text-[#888]">
+                        <span className="font-bold text-ctx-fg block">{colaborador.nome}</span>
+                        <span className="text-[11px] text-ctx-888888">
                           {colaborador.cargo || 'Colaborador'} •{' '}
-                          <span className="text-[#FFD400]">
+                          <span className="text-ctx-brand">
                             {metasPendentes.length} meta{metasPendentes.length > 1 ? 's' : ''}{' '}
                             pendente(s): {metasPendentes.map((m) => m.codigo).join(', ')}
                           </span>
@@ -624,7 +624,7 @@ export default function AdminCiclos() {
                         type="button"
                         onClick={() => handleLembrar(colaborador.id)}
                         disabled={lembrando}
-                        className="py-1.5 px-3 rounded-lg bg-[#1F1F1F] hover:bg-[#2A2A2A] text-[#FFD400] border border-[#333] text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shrink-0"
+                        className="py-1.5 px-3 rounded-lg bg-ctx-1f1f1f hover:bg-ctx-2a2a2a text-ctx-brand border border-ctx-333333 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors shrink-0"
                       >
                         <Send className="w-3 h-3" />
                         <span>Lembrar</span>
@@ -636,21 +636,21 @@ export default function AdminCiclos() {
             </div>
           </div>
         ) : (
-          <div className="p-12 text-center text-xs text-[#666]">
+          <div className="p-12 text-center text-xs text-ctx-666666">
             Nenhum ciclo cadastrado ainda. Ative a rotina ou crie um ciclo manual acima.
           </div>
         )}
       </section>
 
       {/* 3. EXPORTAÇÃO CSV PARA A REUNIÃO MENSAL DE RESULTADOS */}
-      <section className="p-6 rounded-2xl bg-[#111111] border border-[#262626] space-y-4">
+      <section className="p-6 rounded-2xl bg-ctx-111111 border border-ctx-262626 space-y-4">
         <div className="flex items-center gap-2">
-          <FileSpreadsheet className="w-4 h-4 text-[#FFD400]" />
-          <h2 className="text-xs uppercase font-extrabold tracking-wider text-white">
+          <FileSpreadsheet className="w-4 h-4 text-ctx-brand" />
+          <h2 className="text-xs uppercase font-extrabold tracking-wider text-ctx-fg">
             Exportar Dados em CSV (Reunião Mensal de Resultados)
           </h2>
         </div>
-        <p className="text-xs text-[#9CA3AF]">
+        <p className="text-xs text-ctx-9ca3af">
           Baixe os dados estruturados de avaliações mensais e pulsos para preparar os materiais da
           Reunião Mensal de Resultados da Diretoria.
         </p>
@@ -658,11 +658,11 @@ export default function AdminCiclos() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-2">
           {/* Tipo */}
           <div className="space-y-1">
-            <label className="text-[10px] uppercase font-bold text-[#888]">Tipo de Dado</label>
+            <label className="text-[10px] uppercase font-bold text-ctx-888888">Tipo de Dado</label>
             <select
               value={exportTipo}
               onChange={(e) => setExportTipo(e.target.value as 'avaliacoes' | 'pulsos')}
-              className="w-full bg-[#161616] border border-[#2B2B2B] rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer"
+              className="w-full bg-ctx-161616 border border-ctx-2b2b2b rounded-xl px-3 py-2 text-xs text-ctx-fg outline-none cursor-pointer"
             >
               <option value="avaliacoes">Avaliações Mensais (Farol, Avanços, Próximo Passo)</option>
               <option value="pulsos">Pulsos Semanais (Avancei, Travado, Bloqueios)</option>
@@ -671,11 +671,11 @@ export default function AdminCiclos() {
 
           {/* Ciclo */}
           <div className="space-y-1">
-            <label className="text-[10px] uppercase font-bold text-[#888]">Ciclo (opcional)</label>
+            <label className="text-[10px] uppercase font-bold text-ctx-888888">Ciclo (opcional)</label>
             <select
               value={exportCicloId}
               onChange={(e) => setExportCicloId(e.target.value)}
-              className="w-full bg-[#161616] border border-[#2B2B2B] rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer"
+              className="w-full bg-ctx-161616 border border-ctx-2b2b2b rounded-xl px-3 py-2 text-xs text-ctx-fg outline-none cursor-pointer"
             >
               <option value="">Todos os Ciclos</option>
               {ciclos.map((c) => (
@@ -688,13 +688,13 @@ export default function AdminCiclos() {
 
           {/* Projeto */}
           <div className="space-y-1">
-            <label className="text-[10px] uppercase font-bold text-[#888]">
+            <label className="text-[10px] uppercase font-bold text-ctx-888888">
               Projeto (opcional)
             </label>
             <select
               value={exportProjetoId}
               onChange={(e) => setExportProjetoId(e.target.value)}
-              className="w-full bg-[#161616] border border-[#2B2B2B] rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer"
+              className="w-full bg-ctx-161616 border border-ctx-2b2b2b rounded-xl px-3 py-2 text-xs text-ctx-fg outline-none cursor-pointer"
             >
               <option value="">Todos os Projetos Estratégicos</option>
               {projetos.map((p) => (
@@ -707,11 +707,11 @@ export default function AdminCiclos() {
 
           {/* Área */}
           <div className="space-y-1">
-            <label className="text-[10px] uppercase font-bold text-[#888]">Área (opcional)</label>
+            <label className="text-[10px] uppercase font-bold text-ctx-888888">Área (opcional)</label>
             <select
               value={exportAreaId}
               onChange={(e) => setExportAreaId(e.target.value)}
-              className="w-full bg-[#161616] border border-[#2B2B2B] rounded-xl px-3 py-2 text-xs text-white outline-none cursor-pointer"
+              className="w-full bg-ctx-161616 border border-ctx-2b2b2b rounded-xl px-3 py-2 text-xs text-ctx-fg outline-none cursor-pointer"
             >
               <option value="">Todas as Áreas</option>
               {areas.map((a) => (
@@ -743,18 +743,18 @@ export default function AdminCiclos() {
             onClick={() => setNovoCicloModal(false)}
           />
 
-          <div className="relative w-full max-w-md bg-[#111111] border border-[#2B2B2B] rounded-2xl shadow-2xl overflow-hidden p-6 space-y-4 animate-in zoom-in-95 duration-150">
-            <h3 className="text-sm font-extrabold text-white">Criar Novo Ciclo Manual</h3>
+          <div className="relative w-full max-w-md bg-ctx-111111 border border-ctx-2b2b2b rounded-2xl shadow-2xl overflow-hidden p-6 space-y-4 animate-in zoom-in-95 duration-150">
+            <h3 className="text-sm font-extrabold text-ctx-fg">Criar Novo Ciclo Manual</h3>
 
             <form onSubmit={handleCriarCiclo} className="space-y-3 text-xs">
               <div>
-                <label className="block text-[#9CA3AF] mb-1 font-bold">Tipo</label>
+                <label className="block text-ctx-9ca3af mb-1 font-bold">Tipo</label>
                 <select
                   value={novoTipo}
                   onChange={(e) =>
                     setNovoTipo(e.target.value as 'pulso_semanal' | 'avaliacao_mensal')
                   }
-                  className="w-full bg-[#161616] border border-[#2B2B2B] rounded-lg p-2 text-white outline-none"
+                  className="w-full bg-ctx-161616 border border-ctx-2b2b2b rounded-lg p-2 text-ctx-fg outline-none"
                 >
                   <option value="avaliacao_mensal">Avaliação Mensal (Abre 25 fecha 05)</option>
                   <option value="pulso_semanal">Pulso Semanal (Abre seg fecha sex)</option>
@@ -762,7 +762,7 @@ export default function AdminCiclos() {
               </div>
 
               <div>
-                <label className="block text-[#9CA3AF] mb-1 font-bold">
+                <label className="block text-ctx-9ca3af mb-1 font-bold">
                   Referência (ex.: 2026-11 ou 2026-S45)
                 </label>
                 <input
@@ -771,40 +771,40 @@ export default function AdminCiclos() {
                   value={novaRef}
                   onChange={(e) => setNovaRef(e.target.value)}
                   placeholder="2026-11"
-                  className="w-full bg-[#161616] border border-[#2B2B2B] rounded-lg p-2 text-white outline-none"
+                  className="w-full bg-ctx-161616 border border-ctx-2b2b2b rounded-lg p-2 text-ctx-fg outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-[#9CA3AF] mb-1 font-bold">Título de exibição</label>
+                <label className="block text-ctx-9ca3af mb-1 font-bold">Título de exibição</label>
                 <input
                   type="text"
                   value={novoTitulo}
                   onChange={(e) => setNovoTitulo(e.target.value)}
                   placeholder="Avaliação Mensal de Novembro 2026"
-                  className="w-full bg-[#161616] border border-[#2B2B2B] rounded-lg p-2 text-white outline-none"
+                  className="w-full bg-ctx-161616 border border-ctx-2b2b2b rounded-lg p-2 text-ctx-fg outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[#9CA3AF] mb-1 font-bold">Abertura</label>
+                  <label className="block text-ctx-9ca3af mb-1 font-bold">Abertura</label>
                   <input
                     type="date"
                     required
                     value={novaAbertura}
                     onChange={(e) => setNovaAbertura(e.target.value)}
-                    className="w-full bg-[#161616] border border-[#2B2B2B] rounded-lg p-2 text-white outline-none"
+                    className="w-full bg-ctx-161616 border border-ctx-2b2b2b rounded-lg p-2 text-ctx-fg outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-[#9CA3AF] mb-1 font-bold">Fechamento</label>
+                  <label className="block text-ctx-9ca3af mb-1 font-bold">Fechamento</label>
                   <input
                     type="date"
                     required
                     value={novoFechamento}
                     onChange={(e) => setNovoFechamento(e.target.value)}
-                    className="w-full bg-[#161616] border border-[#2B2B2B] rounded-lg p-2 text-white outline-none"
+                    className="w-full bg-ctx-161616 border border-ctx-2b2b2b rounded-lg p-2 text-ctx-fg outline-none"
                   />
                 </div>
               </div>
@@ -813,7 +813,7 @@ export default function AdminCiclos() {
                 <button
                   type="button"
                   onClick={() => setNovoCicloModal(false)}
-                  className="px-4 py-2 rounded-xl bg-[#1A1A1A] text-[#9CA3AF] hover:text-white"
+                  className="px-4 py-2 rounded-xl bg-ctx-1a1a1a text-ctx-9ca3af hover:text-ctx-fg"
                 >
                   Cancelar
                 </button>
@@ -838,56 +838,56 @@ export default function AdminCiclos() {
             onClick={() => setAjustarModal(false)}
           />
 
-          <div className="relative w-full max-w-md bg-[#111111] border border-[#2B2B2B] rounded-2xl shadow-2xl overflow-hidden p-6 space-y-4 animate-in zoom-in-95 duration-150">
-            <div className="flex items-center gap-2 border-b border-[#222] pb-3">
-              <Edit3 className="w-4 h-4 text-[#FFD400]" />
-              <h3 className="text-sm font-extrabold text-white">
+          <div className="relative w-full max-w-md bg-ctx-111111 border border-ctx-2b2b2b rounded-2xl shadow-2xl overflow-hidden p-6 space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-2 border-b border-ctx-222222 pb-3">
+              <Edit3 className="w-4 h-4 text-ctx-brand" />
+              <h3 className="text-sm font-extrabold text-ctx-fg">
                 Ajustar Datas e Detalhes do Ciclo
               </h3>
             </div>
 
             <form onSubmit={handleSalvarAjusteDatas} className="space-y-3 text-xs">
               <div>
-                <label className="block text-[#9CA3AF] mb-1 font-bold">Referência</label>
+                <label className="block text-ctx-9ca3af mb-1 font-bold">Referência</label>
                 <input
                   type="text"
                   required
                   value={editReferencia}
                   onChange={(e) => setEditReferencia(e.target.value)}
-                  className="w-full bg-[#161616] border border-[#2B2B2B] rounded-lg p-2 text-white outline-none"
+                  className="w-full bg-ctx-161616 border border-ctx-2b2b2b rounded-lg p-2 text-ctx-fg outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-[#9CA3AF] mb-1 font-bold">Título de exibição</label>
+                <label className="block text-ctx-9ca3af mb-1 font-bold">Título de exibição</label>
                 <input
                   type="text"
                   value={editTitulo}
                   onChange={(e) => setEditTitulo(e.target.value)}
                   placeholder="Título descritivo do ciclo"
-                  className="w-full bg-[#161616] border border-[#2B2B2B] rounded-lg p-2 text-white outline-none"
+                  className="w-full bg-ctx-161616 border border-ctx-2b2b2b rounded-lg p-2 text-ctx-fg outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[#9CA3AF] mb-1 font-bold">Data de Abertura</label>
+                  <label className="block text-ctx-9ca3af mb-1 font-bold">Data de Abertura</label>
                   <input
                     type="date"
                     required
                     value={editAbertura}
                     onChange={(e) => setEditAbertura(e.target.value)}
-                    className="w-full bg-[#161616] border border-[#2B2B2B] rounded-lg p-2 text-white outline-none"
+                    className="w-full bg-ctx-161616 border border-ctx-2b2b2b rounded-lg p-2 text-ctx-fg outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-[#9CA3AF] mb-1 font-bold">Data de Fechamento</label>
+                  <label className="block text-ctx-9ca3af mb-1 font-bold">Data de Fechamento</label>
                   <input
                     type="date"
                     required
                     value={editFechamento}
                     onChange={(e) => setEditFechamento(e.target.value)}
-                    className="w-full bg-[#161616] border border-[#2B2B2B] rounded-lg p-2 text-white outline-none"
+                    className="w-full bg-ctx-161616 border border-ctx-2b2b2b rounded-lg p-2 text-ctx-fg outline-none"
                   />
                 </div>
               </div>
@@ -896,7 +896,7 @@ export default function AdminCiclos() {
                 <button
                   type="button"
                   onClick={() => setAjustarModal(false)}
-                  className="px-4 py-2 rounded-xl bg-[#1A1A1A] text-[#9CA3AF] hover:text-white"
+                  className="px-4 py-2 rounded-xl bg-ctx-1a1a1a text-ctx-9ca3af hover:text-ctx-fg"
                 >
                   Cancelar
                 </button>

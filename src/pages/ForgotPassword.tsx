@@ -29,11 +29,11 @@ export default function ForgotPassword() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="w-full max-w-md bg-[#111111] border border-[#262626] rounded-xl p-8 shadow-2xl relative z-10">
+    <div className="min-h-screen bg-ctx-0a0a0a flex items-center justify-center p-4 relative overflow-hidden">
+      <div className="w-full max-w-md bg-ctx-111111 border border-ctx-262626 rounded-xl p-8 shadow-2xl relative z-10">
         <Link
           to="/login"
-          className="inline-flex items-center gap-1.5 text-xs text-[#9CA3AF] hover:text-[#FFD400] mb-6 transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs text-ctx-9ca3af hover:text-ctx-brand mb-6 transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           Voltar ao login
@@ -41,11 +41,11 @@ export default function ForgotPassword() {
 
         {submitted ? (
           <div className="text-center py-4 space-y-4">
-            <div className="w-12 h-12 rounded-full bg-[#FFD400]/10 border border-[#FFD400]/40 text-[#FFD400] flex items-center justify-center mx-auto">
+            <div className="w-12 h-12 rounded-full bg-[#FFD400]/10 border border-[#FFD400]/40 text-ctx-brand flex items-center justify-center mx-auto">
               <CheckCircle2 className="w-6 h-6" />
             </div>
-            <h1 className="text-xl font-bold text-white">E-mail enviado!</h1>
-            <p className="text-sm text-[#9CA3AF]">
+            <h1 className="text-xl font-bold text-ctx-fg">E-mail enviado!</h1>
+            <p className="text-sm text-ctx-9ca3af">
               Verifique seu e-mail para redefinir sua senha. Caso a conta exista em nossa base, um
               link seguro foi enviado.
             </p>
@@ -58,8 +58,8 @@ export default function ForgotPassword() {
         ) : (
           <>
             <div className="mb-6">
-              <h1 className="text-xl font-bold text-white">Recuperar senha</h1>
-              <p className="text-xs text-[#9CA3AF] mt-1">
+              <h1 className="text-xl font-bold text-ctx-fg">Recuperar senha</h1>
+              <p className="text-xs text-ctx-9ca3af mt-1">
                 Informe o seu e-mail corporativo cadastrado para receber as instruções de
                 recuperação.
               </p>
@@ -73,11 +73,11 @@ export default function ForgotPassword() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="email" className="text-xs uppercase tracking-wider text-[#9CA3AF]">
+                <Label htmlFor="email" className="text-xs uppercase tracking-wider text-ctx-9ca3af">
                   E-mail corporativo
                 </Label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 text-[#9CA3AF] absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Mail className="w-4 h-4 text-ctx-9ca3af absolute left-3 top-1/2 -translate-y-1/2" />
                   <Input
                     id="email"
                     type="email"
@@ -85,7 +85,7 @@ export default function ForgotPassword() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="seu.nome@ctxcenografia.com.br"
-                    className="pl-9 bg-[#171717] border-[#262626] text-white focus-visible:ring-[#FFD400]"
+                    className="pl-9 bg-ctx-171717 border-ctx-262626 text-ctx-fg focus-visible:ring-[#FFD400]"
                   />
                 </div>
               </div>

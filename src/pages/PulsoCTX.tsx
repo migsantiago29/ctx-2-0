@@ -221,13 +221,13 @@ export default function PulsoCTX() {
   return (
     <div className="space-y-8 pb-12 animate-fade-in">
       {/* Header */}
-      <div className="border-b border-[#262626] pb-5">
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#FFD400]/10 border border-[#FFD400]/30 text-[#FFD400] text-xs font-semibold mb-2">
+      <div className="border-b border-ctx-262626 pb-5">
+        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#FFD400]/10 border border-[#FFD400]/30 text-ctx-brand text-xs font-semibold mb-2">
           <Activity className="w-3.5 h-3.5" />
           <span>Visão Geral da Empresa</span>
         </div>
-        <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">Pulso CTX</h1>
-        <p className="text-xs md:text-sm text-[#9CA3AF] mt-1">
+        <h1 className="text-2xl md:text-3xl font-black text-ctx-fg tracking-tight">Pulso CTX</h1>
+        <p className="text-xs md:text-sm text-ctx-9ca3af mt-1">
           Acompanhamento transparente do progresso estratégico da CTX Cenografia para todos os
           colaboradores.
         </p>
@@ -236,20 +236,20 @@ export default function PulsoCTX() {
       {/* 1. NÚMEROS GERAIS */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {/* Total de Metas */}
-        <div className="p-5 rounded-2xl bg-[#111111] border border-[#262626] space-y-2">
-          <div className="flex items-center justify-between text-xs text-[#9CA3AF]">
+        <div className="p-5 rounded-2xl bg-ctx-111111 border border-ctx-262626 space-y-2">
+          <div className="flex items-center justify-between text-xs text-ctx-9ca3af">
             <span className="font-bold uppercase tracking-wider text-[10px]">Total de Metas</span>
-            <Target className="w-4 h-4 text-[#FFD400]" />
+            <Target className="w-4 h-4 text-ctx-brand" />
           </div>
-          <span className="block text-3xl font-mono font-black text-white">
+          <span className="block text-3xl font-mono font-black text-ctx-fg">
             {numerosGerais.total}
           </span>
-          <span className="block text-[11px] text-[#666]">Nos 5 Projetos Estratégicos</span>
+          <span className="block text-[11px] text-ctx-666666">Nos 5 Projetos Estratégicos</span>
         </div>
 
         {/* Metas Concluídas */}
-        <div className="p-5 rounded-2xl bg-[#111111] border border-[#262626] space-y-2">
-          <div className="flex items-center justify-between text-xs text-[#9CA3AF]">
+        <div className="p-5 rounded-2xl bg-ctx-111111 border border-ctx-262626 space-y-2">
+          <div className="flex items-center justify-between text-xs text-ctx-9ca3af">
             <span className="font-bold uppercase tracking-wider text-[10px]">Concluídas</span>
             <CheckCircle2 className="w-4 h-4 text-[#3B82F6]" />
           </div>
@@ -257,16 +257,16 @@ export default function PulsoCTX() {
             <span className="text-3xl font-mono font-black text-[#3B82F6]">
               {numerosGerais.percentConcluida}%
             </span>
-            <span className="text-xs text-[#888] font-mono">
+            <span className="text-xs text-ctx-888888 font-mono">
               ({numerosGerais.concluida}/{numerosGerais.total})
             </span>
           </div>
-          <span className="block text-[11px] text-[#666]">Critério atingido com evidência</span>
+          <span className="block text-[11px] text-ctx-666666">Critério atingido com evidência</span>
         </div>
 
         {/* Distribuição por Farol (Em Andamento) */}
-        <div className="p-5 rounded-2xl bg-[#111111] border border-[#262626] space-y-2">
-          <div className="flex items-center justify-between text-xs text-[#9CA3AF]">
+        <div className="p-5 rounded-2xl bg-ctx-111111 border border-ctx-262626 space-y-2">
+          <div className="flex items-center justify-between text-xs text-ctx-9ca3af">
             <span className="font-bold uppercase tracking-wider text-[10px]">No Ritmo</span>
             <TrendingUp className="w-4 h-4 text-[#22C55E]" />
           </div>
@@ -274,23 +274,23 @@ export default function PulsoCTX() {
             <span className="text-3xl font-mono font-black text-[#22C55E]">
               {numerosGerais.verde}
             </span>
-            <span className="text-xs text-[#888] font-mono">metas</span>
+            <span className="text-xs text-ctx-888888 font-mono">metas</span>
           </div>
-          <span className="block text-[11px] text-[#666]">
+          <span className="block text-[11px] text-ctx-666666">
             {numerosGerais.atencao} em atenção • {numerosGerais.vermelho} travadas
           </span>
         </div>
 
         {/* Adesão ao Último Ciclo */}
-        <div className="p-5 rounded-2xl bg-[#111111] border border-[#262626] space-y-2">
-          <div className="flex items-center justify-between text-xs text-[#9CA3AF]">
+        <div className="p-5 rounded-2xl bg-ctx-111111 border border-ctx-262626 space-y-2">
+          <div className="flex items-center justify-between text-xs text-ctx-9ca3af">
             <span className="font-bold uppercase tracking-wider text-[10px]">Adesão ao Ciclo</span>
-            <Calendar className="w-4 h-4 text-[#FFD400]" />
+            <Calendar className="w-4 h-4 text-ctx-brand" />
           </div>
-          <span className="block text-3xl font-mono font-black text-[#FFD400]">
+          <span className="block text-3xl font-mono font-black text-ctx-brand">
             {numerosGerais.adesaoUltimoCiclo}%
           </span>
-          <span className="block text-[11px] text-[#666]">
+          <span className="block text-[11px] text-ctx-666666">
             {ultimoCiclo ? `Ciclo ${ultimoCiclo.referencia}` : 'Aguardando primeiro ciclo'}
           </span>
         </div>
@@ -299,8 +299,8 @@ export default function PulsoCTX() {
       {/* 2. ANDAMENTO POR PROJETO ESTRATÉGICO */}
       <section className="space-y-4">
         <div className="flex items-center gap-2">
-          <Compass className="w-4 h-4 text-[#FFD400]" />
-          <h2 className="text-xs uppercase font-extrabold tracking-wider text-white">
+          <Compass className="w-4 h-4 text-ctx-brand" />
+          <h2 className="text-xs uppercase font-extrabold tracking-wider text-ctx-fg">
             Andamento por Projeto Estratégico
           </h2>
         </div>
@@ -311,27 +311,27 @@ export default function PulsoCTX() {
             return (
               <div
                 key={p.id}
-                className="p-5 rounded-2xl bg-[#111111] border border-[#262626] space-y-3"
+                className="p-5 rounded-2xl bg-ctx-111111 border border-ctx-262626 space-y-3"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="space-y-0.5">
-                    <span className="font-mono text-xs px-2 py-0.5 rounded bg-[#1C1C1C] border border-[#333] text-[#FFD400] font-bold">
+                    <span className="font-mono text-xs px-2 py-0.5 rounded bg-ctx-1c1c1c border border-ctx-333333 text-ctx-brand font-bold">
                       {p.codigo}
                     </span>
-                    <h3 className="text-sm font-bold text-white leading-snug">{p.nome}</h3>
-                    <p className="text-[11px] text-[#888]">
+                    <h3 className="text-sm font-bold text-ctx-fg leading-snug">{p.nome}</h3>
+                    <p className="text-[11px] text-ctx-888888">
                       Sponsor: {p.expand?.sponsor?.nome || 'Não definido'}
                     </p>
                   </div>
                   <div className="text-right font-mono shrink-0">
                     <span className="text-lg font-black text-[#3B82F6]">{p.percentConcluida}%</span>
-                    <span className="block text-[10px] text-[#666]">{p.totalMetas} metas</span>
+                    <span className="block text-[10px] text-ctx-666666">{p.totalMetas} metas</span>
                   </div>
                 </div>
 
                 {/* Barra segmentada */}
                 <div className="space-y-1.5 pt-1">
-                  <div className="h-2.5 w-full bg-[#1C1C1C] rounded-full overflow-hidden flex border border-[#2B2B2B]">
+                  <div className="h-2.5 w-full bg-ctx-1c1c1c rounded-full overflow-hidden flex border border-ctx-2b2b2b">
                     {p.concluida > 0 && (
                       <div
                         style={{ width: `${(p.concluida / total) * 100}%` }}
@@ -359,12 +359,12 @@ export default function PulsoCTX() {
                     {p.sem_atualizacao > 0 && (
                       <div
                         style={{ width: `${(p.sem_atualizacao / total) * 100}%` }}
-                        className="bg-[#333333]"
+                        className="bg-ctx-333333"
                       />
                     )}
                   </div>
 
-                  <div className="flex flex-wrap items-center justify-between text-[10px] text-[#888] font-mono pt-0.5">
+                  <div className="flex flex-wrap items-center justify-between text-[10px] text-ctx-888888 font-mono pt-0.5">
                     <span className="text-[#3B82F6]" title="Concluída">
                       ● {p.concluida}
                     </span>
@@ -377,7 +377,7 @@ export default function PulsoCTX() {
                     <span className="text-[#EF4444]" title="Travado">
                       ● {p.vermelho}
                     </span>
-                    <span className="text-[#666]" title="Sem atualização">
+                    <span className="text-ctx-666666" title="Sem atualização">
                       ● {p.sem_atualizacao}
                     </span>
                   </div>
@@ -392,18 +392,18 @@ export default function PulsoCTX() {
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-[#FFD400]" />
-            <h2 className="text-xs uppercase font-extrabold tracking-wider text-white">
+            <Building2 className="w-4 h-4 text-ctx-brand" />
+            <h2 className="text-xs uppercase font-extrabold tracking-wider text-ctx-fg">
               Adesão por Área no Ciclo Atual
             </h2>
           </div>
-          <span className="text-[11px] text-[#9CA3AF]">
+          <span className="text-[11px] text-ctx-9ca3af">
             Visão coletiva por departamento (sem rankings individuais)
           </span>
         </div>
 
         {adesaoPorArea.length === 0 ? (
-          <div className="p-6 rounded-2xl bg-[#111111] border border-[#262626] text-center text-xs text-[#666]">
+          <div className="p-6 rounded-2xl bg-ctx-111111 border border-ctx-262626 text-center text-xs text-ctx-666666">
             Nenhum ciclo fechado com metas registradas por área até o momento.
           </div>
         ) : (
@@ -411,23 +411,23 @@ export default function PulsoCTX() {
             {adesaoPorArea.map((item) => (
               <div
                 key={item.areaId}
-                className="p-4 rounded-xl bg-[#111111] border border-[#262626] space-y-2.5"
+                className="p-4 rounded-xl bg-ctx-111111 border border-ctx-262626 space-y-2.5"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-white truncate">{item.nome}</span>
-                  <span className="text-xs font-mono font-bold text-[#FFD400]">
+                  <span className="text-xs font-bold text-ctx-fg truncate">{item.nome}</span>
+                  <span className="text-xs font-mono font-bold text-ctx-brand">
                     {item.percentAdesao}%
                   </span>
                 </div>
 
-                <div className="h-2 w-full bg-[#1C1C1C] rounded-full overflow-hidden border border-[#242424]">
+                <div className="h-2 w-full bg-ctx-1c1c1c rounded-full overflow-hidden border border-ctx-242424">
                   <div
                     className="h-full bg-[#FFD400] rounded-full transition-all duration-500"
                     style={{ width: `${item.percentAdesao}%` }}
                   />
                 </div>
 
-                <div className="flex items-center justify-between text-[10px] text-[#666]">
+                <div className="flex items-center justify-between text-[10px] text-ctx-666666">
                   <span>
                     {item.entregues} de {item.totalMetas} metas avaliadas
                   </span>
@@ -442,17 +442,17 @@ export default function PulsoCTX() {
       {/* 4. MURAL DE CONQUISTAS */}
       <section className="space-y-4">
         <div className="flex items-center gap-2">
-          <Trophy className="w-4 h-4 text-[#FFD400]" />
-          <h2 className="text-xs uppercase font-extrabold tracking-wider text-white">
+          <Trophy className="w-4 h-4 text-ctx-brand" />
+          <h2 className="text-xs uppercase font-extrabold tracking-wider text-ctx-fg">
             Mural de Conquistas da CTX
           </h2>
         </div>
 
         {muralConquistas.length === 0 ? (
-          <div className="p-8 rounded-2xl bg-[#111111] border border-[#262626] text-center space-y-2">
-            <Sparkles className="w-8 h-8 text-[#FFD400]/40 mx-auto" />
-            <h3 className="text-sm font-bold text-white">Nenhuma meta concluída ainda</h3>
-            <p className="text-xs text-[#888] max-w-sm mx-auto">
+          <div className="p-8 rounded-2xl bg-ctx-111111 border border-ctx-262626 text-center space-y-2">
+            <Sparkles className="w-8 h-8 text-ctx-brand/40 mx-auto" />
+            <h3 className="text-sm font-bold text-ctx-fg">Nenhuma meta concluída ainda</h3>
+            <p className="text-xs text-ctx-888888 max-w-sm mx-auto">
               Conforme os ciclos de avaliação avançarem e as metas forem cumpridas, elas aparecerão
               aqui com as comemorações da equipe!
             </p>
@@ -466,28 +466,28 @@ export default function PulsoCTX() {
               return (
                 <div
                   key={item.meta.id}
-                  className="p-5 rounded-2xl bg-[#111111] border border-[#22C55E]/40 shadow-lg shadow-[#22C55E]/5 space-y-3"
+                  className="p-5 rounded-2xl bg-ctx-111111 border border-[#22C55E]/40 shadow-lg shadow-[#22C55E]/5 space-y-3"
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-xs px-2 py-0.5 rounded bg-[#22C55E]/15 text-[#22C55E] font-bold border border-[#22C55E]/30 flex items-center gap-1">
                       <CheckCircle2 className="w-3 h-3" />
                       <span>{item.meta.codigo}</span>
                     </span>
-                    <span className="text-[10px] text-[#666]">
+                    <span className="text-[10px] text-ctx-666666">
                       {new Date(item.dataConclusao).toLocaleDateString('pt-BR')}
                     </span>
                   </div>
 
                   <div>
-                    <h4 className="text-sm font-bold text-white leading-snug">
+                    <h4 className="text-sm font-bold text-ctx-fg leading-snug">
                       {item.meta.titulo}
                     </h4>
-                    <p className="text-[11px] text-[#9CA3AF] mt-1">{projetoNome}</p>
+                    <p className="text-[11px] text-ctx-9ca3af mt-1">{projetoNome}</p>
                   </div>
 
                   {responsaveisList.length > 0 && (
-                    <div className="flex items-center gap-1.5 text-xs text-[#D1D5DB] pt-1 border-t border-[#222]">
-                      <Users className="w-3.5 h-3.5 text-[#FFD400] shrink-0" />
+                    <div className="flex items-center gap-1.5 text-xs text-ctx-d1d5db pt-1 border-t border-ctx-222222">
+                      <Users className="w-3.5 h-3.5 text-ctx-brand shrink-0" />
                       <span className="truncate">
                         {responsaveisList.map((r) => r.nome).join(', ')}
                       </span>
@@ -500,7 +500,7 @@ export default function PulsoCTX() {
                         href={item.evidenciaLink}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-xs text-[#FFD400] hover:underline inline-flex items-center gap-1"
+                        className="text-xs text-ctx-brand hover:underline inline-flex items-center gap-1"
                       >
                         <span>Ver evidência entregue</span>
                       </a>

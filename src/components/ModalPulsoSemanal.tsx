@@ -99,25 +99,25 @@ export function ModalPulsoSemanal({ ciclo, metas, onClose, onSuccess }: ModalPul
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
       <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative w-full max-w-xl max-h-[90vh] bg-[#111111] border border-[#2B2B2B] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-150">
+      <div className="relative w-full max-w-xl max-h-[90vh] bg-ctx-111111 border border-ctx-2b2b2b rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-[#262626] bg-[#141414] flex items-center justify-between">
+        <div className="p-4 sm:p-5 border-b border-ctx-262626 bg-ctx-141414 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-[#FFD400] text-black font-black flex items-center justify-center text-xs">
               1m
             </div>
             <div>
-              <h2 className="text-sm font-extrabold text-white tracking-tight flex items-center gap-1.5">
+              <h2 className="text-sm font-extrabold text-ctx-fg tracking-tight flex items-center gap-1.5">
                 Pulso Semanal — {ciclo.titulo || ciclo.referencia}
               </h2>
-              <p className="text-[11px] text-[#9CA3AF]">
+              <p className="text-[11px] text-ctx-9ca3af">
                 Check-in ultrarrápido (1 toque por meta) para manter o ritmo da CTX
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-[#9CA3AF] hover:text-white hover:bg-[#1F1F1F] transition-colors"
+            className="p-1.5 rounded-lg text-ctx-9ca3af hover:text-ctx-fg hover:bg-ctx-1f1f1f transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -136,23 +136,23 @@ export function ModalPulsoSemanal({ ciclo, metas, onClose, onSuccess }: ModalPul
             return (
               <div
                 key={meta.id}
-                className="p-4 rounded-xl bg-[#161616] border border-[#262626] space-y-3"
+                className="p-4 rounded-xl bg-ctx-161616 border border-ctx-262626 space-y-3"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="space-y-0.5">
                     <div className="flex items-center gap-1.5">
-                      <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-[#202020] text-[#FFD400] font-bold">
+                      <span className="font-mono text-[10px] px-1.5 py-0.2 rounded bg-ctx-202020 text-ctx-brand font-bold">
                         {meta.codigo}
                       </span>
                       {meta.expand?.projeto && (
-                        <span className="text-[10px] text-[#9CA3AF]">
+                        <span className="text-[10px] text-ctx-9ca3af">
                           {meta.expand.projeto.codigo}
                         </span>
                       )}
                     </div>
-                    <h3 className="text-xs font-bold text-white leading-snug">{meta.titulo}</h3>
+                    <h3 className="text-xs font-bold text-ctx-fg leading-snug">{meta.titulo}</h3>
                   </div>
-                  <span className="text-[10px] font-mono text-[#666]">
+                  <span className="text-[10px] font-mono text-ctx-666666">
                     #{idx + 1} de {metas.length}
                   </span>
                 </div>
@@ -165,7 +165,7 @@ export function ModalPulsoSemanal({ ciclo, metas, onClose, onSuccess }: ModalPul
                     className={`py-2 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                       current.resposta === 'avancei'
                         ? 'bg-[#22C55E] text-black shadow-md shadow-[#22C55E]/20'
-                        : 'bg-[#1F1F1F] text-[#9CA3AF] hover:text-white hover:bg-[#282828] border border-[#333]'
+                        : 'bg-ctx-1f1f1f text-ctx-9ca3af hover:text-ctx-fg hover:bg-ctx-282828 border border-ctx-333333'
                     }`}
                   >
                     <span>👍</span>
@@ -178,7 +178,7 @@ export function ModalPulsoSemanal({ ciclo, metas, onClose, onSuccess }: ModalPul
                     className={`py-2 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                       current.resposta === 'sem_avanco'
                         ? 'bg-[#EAB308] text-black shadow-md shadow-[#EAB308]/20'
-                        : 'bg-[#1F1F1F] text-[#9CA3AF] hover:text-white hover:bg-[#282828] border border-[#333]'
+                        : 'bg-ctx-1f1f1f text-ctx-9ca3af hover:text-ctx-fg hover:bg-ctx-282828 border border-ctx-333333'
                     }`}
                   >
                     <span>⏸️</span>
@@ -191,7 +191,7 @@ export function ModalPulsoSemanal({ ciclo, metas, onClose, onSuccess }: ModalPul
                     className={`py-2 px-2 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
                       current.resposta === 'travado'
                         ? 'bg-[#EF4444] text-white shadow-md shadow-[#EF4444]/20'
-                        : 'bg-[#1F1F1F] text-[#9CA3AF] hover:text-white hover:bg-[#282828] border border-[#333]'
+                        : 'bg-ctx-1f1f1f text-ctx-9ca3af hover:text-ctx-fg hover:bg-ctx-282828 border border-ctx-333333'
                     }`}
                   >
                     <span>🚨</span>
@@ -201,7 +201,7 @@ export function ModalPulsoSemanal({ ciclo, metas, onClose, onSuccess }: ModalPul
 
                 {/* Campo opcional "Algo te travando?" */}
                 <div className="pt-1">
-                  <label className="block text-[11px] font-medium text-[#9CA3AF] mb-1">
+                  <label className="block text-[11px] font-medium text-ctx-9ca3af mb-1">
                     {isTravado
                       ? 'O que está te travando? (opcional)'
                       : 'Algo te travando? (opcional)'}
@@ -215,21 +215,21 @@ export function ModalPulsoSemanal({ ciclo, metas, onClose, onSuccess }: ModalPul
                         ? 'Descreva o que te impede de avançar...'
                         : 'Descreva eventuais impedimentos...'
                     }
-                    className="w-full bg-[#111111] border border-[#2B2B2B] focus:border-[#FFD400] rounded-lg px-3 py-1.5 text-xs text-white placeholder-[#555] outline-none transition-colors"
+                    className="w-full bg-ctx-111111 border border-ctx-2b2b2b focus:border-[#FFD400] rounded-lg px-3 py-1.5 text-xs text-ctx-fg placeholder-ctx-555555 outline-none transition-colors"
                   />
                 </div>
 
                 {/* Pergunta opcional: "Algum feedback?" */}
                 <div className="pt-1">
-                  <label className="block text-[11px] font-medium text-[#9CA3AF] mb-1">
-                    Algum feedback? <span className="text-[#666] font-normal">(opcional)</span>
+                  <label className="block text-[11px] font-medium text-ctx-9ca3af mb-1">
+                    Algum feedback? <span className="text-ctx-666666 font-normal">(opcional)</span>
                   </label>
                   <input
                     type="text"
                     value={current.feedback_texto}
                     onChange={(e) => handleFeedbackChange(meta.id, e.target.value)}
                     placeholder="Feedbacks adicionais, sugestões ou observações..."
-                    className="w-full bg-[#111111] border border-[#2B2B2B] focus:border-[#FFD400] rounded-lg px-3 py-1.5 text-xs text-white placeholder-[#555] outline-none transition-colors"
+                    className="w-full bg-ctx-111111 border border-ctx-2b2b2b focus:border-[#FFD400] rounded-lg px-3 py-1.5 text-xs text-ctx-fg placeholder-ctx-555555 outline-none transition-colors"
                   />
                 </div>
               </div>

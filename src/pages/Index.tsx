@@ -485,12 +485,12 @@ export default function Index() {
     <div className="space-y-6 pb-12 animate-fade-in">
       {/* Banner de Modo Somente Leitura para Administrador */}
       {isReadOnlyMode && (
-        <div className="p-3.5 rounded-xl bg-[#FFD400]/10 border border-[#FFD400]/40 flex items-center justify-between text-xs text-[#FFD400]">
+        <div className="p-3.5 rounded-xl bg-[#FFD400]/10 border border-[#FFD400]/40 flex items-center justify-between text-xs text-ctx-brand">
           <div className="flex items-center gap-2">
-            <Eye className="w-4 h-4 shrink-0 text-[#FFD400]" />
+            <Eye className="w-4 h-4 shrink-0 text-ctx-brand" />
             <span>
               <strong>Modo de Leitura (Admin):</strong> Visualizando painel de{' '}
-              <strong className="text-white underline">{activeColaborador?.nome}</strong>.
+              <strong className="text-ctx-fg underline">{activeColaborador?.nome}</strong>.
             </span>
           </div>
           <button
@@ -503,36 +503,36 @@ export default function Index() {
       )}
 
       {/* 1. CABEÇALHO: Saudação com Nome, Cargo e Área */}
-      <div className="border-b border-[#262626] pb-5">
+      <div className="border-b border-ctx-262626 pb-5">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#FFD400]/10 border border-[#FFD400]/30 text-[#FFD400] text-xs font-semibold mb-2">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#FFD400]/10 border border-[#FFD400]/30 text-ctx-brand text-xs font-semibold mb-2">
               <Sparkles className="w-3.5 h-3.5" />
               <span>Planejamento Estratégico CTX 2.0</span>
             </div>
-            <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">
+            <h1 className="text-2xl md:text-3xl font-black text-ctx-fg tracking-tight">
               Olá, {activeColaborador?.nome || user?.name || 'Colaborador'}
             </h1>
-            <p className="text-xs md:text-sm text-[#9CA3AF] mt-1 flex flex-wrap items-center gap-2">
+            <p className="text-xs md:text-sm text-ctx-9ca3af mt-1 flex flex-wrap items-center gap-2">
               <span>{activeColaborador?.cargo || 'Colaborador'}</span>
               <span>•</span>
-              <span className="text-[#FFD400] font-semibold">{nomeAreaColab}</span>
+              <span className="text-ctx-brand font-semibold">{nomeAreaColab}</span>
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
             {isAdmin && allColabs.length > 0 && (
-              <div className="flex items-center gap-2 bg-[#141414] border border-[#2B2B2B] px-3 py-1.5 rounded-xl">
-                <span className="text-xs text-[#9CA3AF] font-medium whitespace-nowrap">
+              <div className="flex items-center gap-2 bg-ctx-141414 border border-ctx-2b2b2b px-3 py-1.5 rounded-xl">
+                <span className="text-xs text-ctx-9ca3af font-medium whitespace-nowrap">
                   Ver painel de:
                 </span>
                 <select
                   value={viewingColabId}
                   onChange={(e) => setViewingColabId(e.target.value)}
-                  className="bg-transparent text-xs text-white font-bold outline-none cursor-pointer pr-1"
+                  className="bg-transparent text-xs text-ctx-fg font-bold outline-none cursor-pointer pr-1"
                 >
                   {allColabs.map((c) => (
-                    <option key={c.id} value={c.id} className="bg-[#1A1A1A] text-white">
+                    <option key={c.id} value={c.id} className="bg-ctx-1a1a1a text-ctx-fg">
                       {c.nome} {c.id === colaboradorLogado?.id ? '(Você)' : ''}
                     </option>
                   ))}
@@ -561,7 +561,7 @@ export default function Index() {
           </div>
           <button
             onClick={() => abrirFormularioAcompanhamento(pendenciaAtual)}
-            className="px-4 py-2.5 rounded-xl bg-black hover:bg-[#1A1A1A] text-[#FFD400] font-black text-xs flex items-center justify-center gap-2 transition-all shrink-0 shadow-md"
+            className="px-4 py-2.5 rounded-xl bg-black hover:bg-ctx-1a1a1a text-ctx-brand font-black text-xs flex items-center justify-center gap-2 transition-all shrink-0 shadow-md"
           >
             <span>Preencher agora</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -573,12 +573,12 @@ export default function Index() {
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Compass className="w-4 h-4 text-[#FFD400]" />
-            <h2 className="text-xs uppercase font-extrabold tracking-wider text-white">
+            <Compass className="w-4 h-4 text-ctx-brand" />
+            <h2 className="text-xs uppercase font-extrabold tracking-wider text-ctx-fg">
               Projetos Estratégicos CTX 2.0
             </h2>
           </div>
-          <span className="text-[11px] text-[#9CA3AF]">
+          <span className="text-[11px] text-ctx-9ca3af">
             {canAccessProjects
               ? 'Clique para ver metas e andamento do projeto'
               : 'Andamento dos projetos estratégicos'}
@@ -613,14 +613,14 @@ export default function Index() {
                   canAccessProjects ? 'cursor-pointer' : 'cursor-default'
                 } ${
                   participa
-                    ? 'border-[#FFD400] bg-[#141414] shadow-md shadow-[#FFD400]/5'
-                    : 'border-[#242424] bg-[#0E0E0E] opacity-60 grayscale hover:opacity-100 hover:grayscale-0'
+                    ? 'border-[#FFD400] bg-ctx-141414 shadow-md shadow-[#FFD400]/5'
+                    : 'border-ctx-242424 bg-ctx-0e0e0e opacity-60 grayscale hover:opacity-100 hover:grayscale-0'
                 }`}
               >
                 <div>
                   {/* Badges de Contribuição & Sponsor */}
                   <div className="flex flex-wrap items-center gap-1.5 mb-2">
-                    <span className="font-mono text-xs px-2 py-0.5 rounded bg-[#1C1C1C] border border-[#333] text-[#FFD400] font-extrabold">
+                    <span className="font-mono text-xs px-2 py-0.5 rounded bg-ctx-1c1c1c border border-ctx-333333 text-ctx-brand font-extrabold">
                       {proj.codigo}
                     </span>
                     {isSponsor && (
@@ -629,31 +629,31 @@ export default function Index() {
                       </span>
                     )}
                     {metasQtd > 0 && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#FFD400]/15 text-[#FFD400] border border-[#FFD400]/30 font-bold">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#FFD400]/15 text-ctx-brand border border-[#FFD400]/30 font-bold">
                         Você: {metasQtd} meta{metasQtd > 1 ? 's' : ''}
                       </span>
                     )}
                   </div>
 
-                  <h3 className="text-sm font-bold text-white group-hover:text-[#FFD400] transition-colors leading-snug truncate">
+                  <h3 className="text-sm font-bold text-ctx-fg group-hover:text-ctx-brand transition-colors leading-snug truncate">
                     {proj.nome}
                   </h3>
-                  <p className="text-[11px] text-[#9CA3AF] line-clamp-1 mt-0.5">
+                  <p className="text-[11px] text-ctx-9ca3af line-clamp-1 mt-0.5">
                     Sponsor: {proj.expand?.sponsor?.nome || 'Não definido'}
                   </p>
                 </div>
 
                 {/* Barra Segmentada de Faróis da Empresa */}
-                <div className="space-y-1.5 pt-2 border-t border-[#222]">
-                  <div className="flex justify-between items-center text-[10px] text-[#888]">
+                <div className="space-y-1.5 pt-2 border-t border-ctx-222222">
+                  <div className="flex justify-between items-center text-[10px] text-ctx-888888">
                     <span>{counts.total} metas</span>
-                    <span className="font-mono text-[#D1D5DB]">
+                    <span className="font-mono text-ctx-d1d5db">
                       {Math.round((counts.concluida / total) * 100)}% concl.
                     </span>
                   </div>
 
                   {/* Barra Segmentada */}
-                  <div className="h-2 w-full bg-[#1C1C1C] rounded-full overflow-hidden flex border border-[#2B2B2B]">
+                  <div className="h-2 w-full bg-ctx-1c1c1c rounded-full overflow-hidden flex border border-ctx-2b2b2b">
                     {counts.concluida > 0 && (
                       <div
                         style={{ width: `${(counts.concluida / total) * 100}%` }}
@@ -685,7 +685,7 @@ export default function Index() {
                     {counts.sem_atualizacao > 0 && (
                       <div
                         style={{ width: `${(counts.sem_atualizacao / total) * 100}%` }}
-                        className="bg-[#333333]"
+                        className="bg-ctx-333333"
                         title={`Sem atualização: ${counts.sem_atualizacao}`}
                       />
                     )}
@@ -705,15 +705,15 @@ export default function Index() {
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Target className="w-4 h-4 text-[#FFD400]" />
-              <h2 className="text-xs uppercase font-extrabold tracking-wider text-white">
+              <Target className="w-4 h-4 text-ctx-brand" />
+              <h2 className="text-xs uppercase font-extrabold tracking-wider text-ctx-fg">
                 Minhas Metas ({metas.length})
               </h2>
             </div>
             {pendenciaAtual && (
               <button
                 onClick={() => abrirFormularioAcompanhamento(pendenciaAtual)}
-                className="text-xs text-[#FFD400] hover:underline flex items-center gap-1 font-bold"
+                className="text-xs text-ctx-brand hover:underline flex items-center gap-1 font-bold"
               >
                 <span>Responder ciclo</span>
                 <ArrowRight className="w-3 h-3" />
@@ -726,17 +726,17 @@ export default function Index() {
               {[1, 2, 3, 4].map((i) => (
                 <div
                   key={i}
-                  className="h-44 bg-[#111111] border border-[#262626] rounded-2xl animate-pulse p-4"
+                  className="h-44 bg-ctx-111111 border border-ctx-262626 rounded-2xl animate-pulse p-4"
                 />
               ))}
             </div>
           ) : metas.length === 0 ? (
-            <div className="bg-[#111111] border border-[#262626] rounded-2xl p-8 text-center space-y-3">
-              <div className="w-12 h-12 rounded-xl bg-[#1A1A1A] flex items-center justify-center text-[#FFD400] mx-auto">
+            <div className="bg-ctx-111111 border border-ctx-262626 rounded-2xl p-8 text-center space-y-3">
+              <div className="w-12 h-12 rounded-xl bg-ctx-1a1a1a flex items-center justify-center text-ctx-brand mx-auto">
                 <Target className="w-6 h-6" />
               </div>
-              <h3 className="text-sm font-bold text-white">Nenhuma meta atribuída</h3>
-              <p className="text-xs text-[#9CA3AF] max-w-sm mx-auto leading-relaxed">
+              <h3 className="text-sm font-bold text-ctx-fg">Nenhuma meta atribuída</h3>
+              <p className="text-xs text-ctx-9ca3af max-w-sm mx-auto leading-relaxed">
                 {semMetas
                   ? 'Você está configurado como participante sem metas diretas no planejamento.'
                   : 'Nenhuma meta vinculada a este colaborador no momento.'}
@@ -771,12 +771,12 @@ export default function Index() {
                   <div
                     key={goal.id}
                     onClick={() => setSelectedGoal(goal)}
-                    className="group bg-[#111111] border border-[#262626] hover:border-[#FFD400] rounded-2xl p-5 cursor-pointer transition-all flex flex-col justify-between space-y-3 hover:shadow-xl hover:shadow-[#FFD400]/5"
+                    className="group bg-ctx-111111 border border-ctx-262626 hover:border-[#FFD400] rounded-2xl p-5 cursor-pointer transition-all flex flex-col justify-between space-y-3 hover:shadow-xl hover:shadow-[#FFD400]/5"
                   >
                     <div className="space-y-2.5">
                       {/* Topo: Código + Projeto */}
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="font-mono text-xs px-2 py-0.5 rounded bg-[#1C1C1C] border border-[#333] text-[#FFD400] font-bold">
+                        <span className="font-mono text-xs px-2 py-0.5 rounded bg-ctx-1c1c1c border border-ctx-333333 text-ctx-brand font-bold">
                           {goal.codigo}
                         </span>
 
@@ -787,21 +787,21 @@ export default function Index() {
                         )}
 
                         {goal.expand?.projeto_secundario && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full border border-[#FFD400]/70 text-[#FFD400] font-bold">
+                          <span className="text-[10px] px-2 py-0.5 rounded-full border border-[#FFD400]/70 text-ctx-brand font-bold">
                             {formatProjectLabel(goal.expand.projeto_secundario)}
                           </span>
                         )}
                       </div>
 
                       {/* Título da Meta */}
-                      <h3 className="text-sm font-bold text-white group-hover:text-[#FFD400] transition-colors leading-snug line-clamp-2">
+                      <h3 className="text-sm font-bold text-ctx-fg group-hover:text-ctx-brand transition-colors leading-snug line-clamp-2">
                         {goal.titulo}
                       </h3>
 
                       {/* Prazo */}
                       {goal.prazo && (
-                        <div className="flex items-center gap-1 text-[11px] text-[#9CA3AF]">
-                          <Calendar className="w-3.5 h-3.5 text-[#FFD400]" />
+                        <div className="flex items-center gap-1 text-[11px] text-ctx-9ca3af">
+                          <Calendar className="w-3.5 h-3.5 text-ctx-brand" />
                           <span>
                             Prazo:{' '}
                             {new Date(goal.prazo).toLocaleDateString('pt-BR', {
@@ -813,23 +813,23 @@ export default function Index() {
 
                       {/* Próximo passo informado na última avaliação */}
                       {av?.proximo_passo ? (
-                        <div className="p-2.5 rounded-xl bg-[#161616] border border-[#242424] text-xs">
-                          <span className="text-[10px] uppercase font-bold text-[#FFD400] block mb-0.5">
+                        <div className="p-2.5 rounded-xl bg-ctx-161616 border border-ctx-242424 text-xs">
+                          <span className="text-[10px] uppercase font-bold text-ctx-brand block mb-0.5">
                             Próximo passo:
                           </span>
-                          <p className="text-[#D1D5DB] text-[11px] line-clamp-2 leading-relaxed">
+                          <p className="text-ctx-d1d5db text-[11px] line-clamp-2 leading-relaxed">
                             {av.proximo_passo}
                           </p>
                         </div>
                       ) : (
-                        <div className="text-[11px] text-[#666] italic">
+                        <div className="text-[11px] text-ctx-666666 italic">
                           Nenhum próximo passo registrado ainda.
                         </div>
                       )}
                     </div>
 
                     {/* Rodapé: Farol da última avaliação mensal OU "Sem atualização" */}
-                    <div className="pt-3 border-t border-[#262626] flex items-center justify-between text-xs">
+                    <div className="pt-3 border-t border-ctx-262626 flex items-center justify-between text-xs">
                       {farol && farolColor ? (
                         <div className="flex items-center gap-2">
                           <span
@@ -843,16 +843,16 @@ export default function Index() {
                             {getFarolLabel(farol)}
                           </span>
                           {dataAvaliacao && (
-                            <span className="text-[10px] text-[#666]">em {dataAvaliacao}</span>
+                            <span className="text-[10px] text-ctx-666666">em {dataAvaliacao}</span>
                           )}
                         </div>
                       ) : (
-                        <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#1C1C1C] border border-[#2B2B2B] text-[#9CA3AF] font-bold">
+                        <span className="text-xs px-2.5 py-0.5 rounded-full bg-ctx-1c1c1c border border-ctx-2b2b2b text-ctx-9ca3af font-bold">
                           Sem atualização
                         </span>
                       )}
 
-                      <span className="text-[11px] text-[#888] group-hover:text-white flex items-center gap-1 transition-colors">
+                      <span className="text-[11px] text-ctx-888888 group-hover:text-ctx-fg flex items-center gap-1 transition-colors">
                         <span>Ver detalhes</span>
                         <ArrowRight className="w-3 h-3" />
                       </span>
@@ -870,15 +870,15 @@ export default function Index() {
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Workflow className="w-4 h-4 text-[#FFD400]" />
-              <h2 className="text-xs uppercase font-extrabold tracking-wider text-white">
+              <Workflow className="w-4 h-4 text-ctx-brand" />
+              <h2 className="text-xs uppercase font-extrabold tracking-wider text-ctx-fg">
                 Processos da Área — {nomeAreaColab}
               </h2>
             </div>
             {/* Mobile: Toggle para recolher */}
             <button
               onClick={() => setProcessosExpandedMobile(!processosExpandedMobile)}
-              className="lg:hidden p-1 rounded-lg text-[#9CA3AF] hover:text-white bg-[#161616]"
+              className="lg:hidden p-1 rounded-lg text-ctx-9ca3af hover:text-ctx-fg bg-ctx-161616"
             >
               {processosExpandedMobile ? (
                 <ChevronUp className="w-4 h-4" />
@@ -890,17 +890,17 @@ export default function Index() {
 
           <div className={`space-y-4 ${processosExpandedMobile ? 'block' : 'hidden lg:block'}`}>
             {/* 5.a Bloco "Minha área na cadeia": Recebe de / Entrega para */}
-            <div className="p-4 rounded-2xl bg-[#141414] border border-[#262626] space-y-3">
+            <div className="p-4 rounded-2xl bg-ctx-141414 border border-ctx-262626 space-y-3">
               <div className="flex items-center gap-2">
-                <ArrowRightLeft className="w-4 h-4 text-[#FFD400]" />
-                <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+                <ArrowRightLeft className="w-4 h-4 text-ctx-brand" />
+                <h3 className="text-xs font-bold text-ctx-fg uppercase tracking-wider">
                   Minha Área na Cadeia
                 </h3>
               </div>
 
               {/* Recebe de */}
               <div className="space-y-1.5">
-                <span className="text-[10px] uppercase font-bold text-[#9CA3AF] block">
+                <span className="text-[10px] uppercase font-bold text-ctx-9ca3af block">
                   Recebe de:
                 </span>
                 <div className="flex flex-wrap gap-1.5">
@@ -908,13 +908,13 @@ export default function Index() {
                     recebeDe.map((area, i) => (
                       <span
                         key={i}
-                        className="text-[11px] px-2 py-0.5 rounded-md bg-[#1C1C1C] border border-[#2F2F2F] text-[#D1D5DB] font-medium"
+                        className="text-[11px] px-2 py-0.5 rounded-md bg-ctx-1c1c1c border border-ctx-2f2f2f text-ctx-d1d5db font-medium"
                       >
                         {area}
                       </span>
                     ))
                   ) : (
-                    <span className="text-[11px] text-[#666] italic">
+                    <span className="text-[11px] text-ctx-666666 italic">
                       Início da cadeia ou sem conexões registradas
                     </span>
                   )}
@@ -922,8 +922,8 @@ export default function Index() {
               </div>
 
               {/* Entrega para */}
-              <div className="space-y-1.5 pt-1 border-t border-[#222]">
-                <span className="text-[10px] uppercase font-bold text-[#9CA3AF] block">
+              <div className="space-y-1.5 pt-1 border-t border-ctx-222222">
+                <span className="text-[10px] uppercase font-bold text-ctx-9ca3af block">
                   Entrega para:
                 </span>
                 <div className="flex flex-wrap gap-1.5">
@@ -931,13 +931,13 @@ export default function Index() {
                     entregaPara.map((area, i) => (
                       <span
                         key={i}
-                        className="text-[11px] px-2 py-0.5 rounded-md bg-[#1C1C1C] border border-[#2F2F2F] text-[#D1D5DB] font-medium"
+                        className="text-[11px] px-2 py-0.5 rounded-md bg-ctx-1c1c1c border border-ctx-2f2f2f text-ctx-d1d5db font-medium"
                       >
                         {area}
                       </span>
                     ))
                   ) : (
-                    <span className="text-[11px] text-[#666] italic">
+                    <span className="text-[11px] text-ctx-666666 italic">
                       Final da cadeia ou sem conexões registradas
                     </span>
                   )}
@@ -946,17 +946,17 @@ export default function Index() {
             </div>
 
             {/* 5.b Lista de Processos da Área */}
-            <div className="p-4 rounded-2xl bg-[#141414] border border-[#262626] space-y-2">
-              <div className="flex items-center justify-between pb-2 border-b border-[#222]">
-                <span className="text-xs font-bold text-white">
+            <div className="p-4 rounded-2xl bg-ctx-141414 border border-ctx-262626 space-y-2">
+              <div className="flex items-center justify-between pb-2 border-b border-ctx-222222">
+                <span className="text-xs font-bold text-ctx-fg">
                   Processos ({processosDaArea.length})
                 </span>
-                <span className="text-[10px] text-[#666]">Ponto amarelo = com meta</span>
+                <span className="text-[10px] text-ctx-666666">Ponto amarelo = com meta</span>
               </div>
 
-              <div className="max-h-96 overflow-y-auto space-y-1.5 pr-1 divide-y divide-[#1F1F1F]">
+              <div className="max-h-96 overflow-y-auto space-y-1.5 pr-1 divide-y divide-ctx-1f1f1f">
                 {processosDaArea.length === 0 ? (
-                  <p className="text-xs text-[#666] py-3 text-center">
+                  <p className="text-xs text-ctx-666666 py-3 text-center">
                     Nenhum processo cadastrado para esta área.
                   </p>
                 ) : (
@@ -968,7 +968,7 @@ export default function Index() {
                         onClick={() =>
                           navigate(`/fluxograma?processo=${encodeURIComponent(p.codigo)}`)
                         }
-                        className="py-2 px-2 hover:bg-[#1C1C1C] rounded-lg transition-colors cursor-pointer flex items-center justify-between gap-2 group"
+                        className="py-2 px-2 hover:bg-ctx-1c1c1c rounded-lg transition-colors cursor-pointer flex items-center justify-between gap-2 group"
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           {temMeta && (
@@ -977,14 +977,14 @@ export default function Index() {
                               title="Vinculado às suas metas"
                             />
                           )}
-                          <span className="font-mono text-xs font-bold text-[#FFD400] shrink-0">
+                          <span className="font-mono text-xs font-bold text-ctx-brand shrink-0">
                             {p.codigo}
                           </span>
-                          <span className="text-xs text-[#D1D5DB] group-hover:text-white truncate">
+                          <span className="text-xs text-ctx-d1d5db group-hover:text-ctx-fg truncate">
                             {p.nome}
                           </span>
                         </div>
-                        <ExternalLink className="w-3 h-3 text-[#555] group-hover:text-white shrink-0" />
+                        <ExternalLink className="w-3 h-3 text-ctx-555555 group-hover:text-ctx-fg shrink-0" />
                       </div>
                     )
                   })
@@ -996,14 +996,14 @@ export default function Index() {
       </div>
 
       {/* 6. RODAPÉ DO PAINEL: "Sua constância" */}
-      <div className="p-4 rounded-2xl bg-[#111111] border border-[#262626] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+      <div className="p-4 rounded-2xl bg-ctx-111111 border border-ctx-262626 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-[#FFD400]/10 border border-[#FFD400]/30 flex items-center justify-center text-[#FFD400] font-bold">
+          <div className="w-8 h-8 rounded-lg bg-[#FFD400]/10 border border-[#FFD400]/30 flex items-center justify-center text-ctx-brand font-bold">
             <CheckCircle2 className="w-4 h-4" />
           </div>
           <div>
-            <p className="font-bold text-white">Sua Constância no CTX 2.0</p>
-            <p className="text-[#9CA3AF] text-[11px]">
+            <p className="font-bold text-ctx-fg">Sua Constância no CTX 2.0</p>
+            <p className="text-ctx-9ca3af text-[11px]">
               Avaliações entregues no prazo sobre o total de ciclos desde o início da rotina
             </p>
           </div>
@@ -1011,10 +1011,10 @@ export default function Index() {
 
         <div className="flex items-center gap-3">
           <div className="text-right">
-            <span className="text-sm font-mono font-black text-[#FFD400]">
+            <span className="text-sm font-mono font-black text-ctx-brand">
               {constancia.entregues} de {constancia.total} ciclos
             </span>
-            <span className="block text-[10px] text-[#666]">
+            <span className="block text-[10px] text-ctx-666666">
               {constancia.total > 0
                 ? `${Math.round((constancia.entregues / constancia.total) * 100)}% de pontualidade`
                 : 'Nenhum ciclo fechado'}

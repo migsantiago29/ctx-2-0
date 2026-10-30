@@ -6,7 +6,7 @@ Contexto para novas sessões do Claude Code. Leia junto com `CLAUDE.md` e `HOSPE
 - O CTX 2.0 foi criado no Skip (Adapta) e saiu de lá em 27–28/out/2026 para cortar o custo de R$ 250/mês.
 - Hoje roda no **Fly.io**, app `ctx-2-0`, região São Paulo, 1 máquina 512 MB sempre ligada + volume `pb_data` de 1 GB (~US$ 4/mês).
 - Endereço: https://ctx-2-0.fly.dev (painel técnico do PocketBase em `/_/`).
-- Publicação: integração GitHub do próprio Fly.io (o Miguel conectou pelo dashboard). IPs públicos atribuídos manualmente: IPv4 compartilhado + IPv6 dedicado (ambos gratuitos).
+- Publicação: GitHub Actions (`.github/workflows/publicar.yml`) a cada push na `main`, com o segredo `FLY_API_TOKEN` (deploy token do Fly). A integração do dashboard do Fly só publicou no Launch (v1) e não republica a cada push; por isso o PR 2 não foi ao ar sozinho. IPs públicos atribuídos manualmente: IPv4 compartilhado + IPv6 dedicado (ambos gratuitos).
 - Superusuário do painel criado no primeiro boot a partir das variáveis `PB_ADMIN_EMAIL` / `PB_ADMIN_PASSWORD` (variáveis de ambiente no Fly, visíveis no dashboard — trocar a senha pelo painel).
 - O app está no ar e o login funciona, mas **o banco está vazio**: os dados ainda não foram importados.
 - **Prazo: o Skip renova em 31/10/2026 — cancelar até sexta, 30/10.** Ninguém da equipe usa o app ainda.
@@ -26,7 +26,7 @@ Tudo testado localmente com PocketBase 0.40.6 (exceto o build do frontend, testa
 3. Administração → Importação: Etapa 1 (`01_areas`, `02_colaboradores`, `04_processos`) e Etapa 2 (`03_projetos_estrategicos`, `05_metas`, `06_indicadores`). Os CSVs estão no computador do Miguel, pastas `Skip_Etapa_B1` e `Skip_Etapa_B2`. Conferir o relatório: 14 áreas, 22 colaboradores/contas, 181 processos, 217 conexões, 5 projetos, 80 metas, 225 indicadores, 84 vínculos meta-responsável, 86 meta-processo.
 4. Testes (só depois que a `0011` estiver publicada; conferir em `/_/` → Collections → users → API Rules que *Create rule* é só `@request.auth.role = 'admin'`): login de 2 colegas com `CTX@2027` (troca obrigatória), Meu Painel, Fluxograma, Organograma, Projetos, Pulso CTX; painel → Settings → Crons → rodar `rotina_ciclos_automation`; instalar no celular.
 5. Pergunta em aberto: o Miguel organizou à mão as posições das caixas do Fluxograma no Skip? Se sim, baixar a "Exportação completa" do Skip antes de cancelar e restaurar `fluxograma_posicoes`.
-6. Limpeza: apagar os 3 segredos antigos do GitHub (FLY_API_TOKEN, PB_ADMIN_EMAIL, PB_ADMIN_PASSWORD) e o token criado no Fly; apagar a branch `flyio-new-files`; conferir em Fly → Activity se um push na `main` gera nova publicação.
+6. Limpeza: apagar os segredos antigos do GitHub `PB_ADMIN_EMAIL` e `PB_ADMIN_PASSWORD` (o `FLY_API_TOKEN` fica: é ele que publica) e tokens antigos do Fly que não sejam o deploy token em uso; apagar a branch `flyio-new-files`.
 7. Cancelar o Skip (renova em 31/10).
 
 ## Melhorias para depois (não bloqueiam o cancelamento)

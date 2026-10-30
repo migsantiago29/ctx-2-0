@@ -4,7 +4,8 @@ Tudo roda numa única máquina pequena no Fly.io (região `gru`, São Paulo): o 
 responde à API, executa a rotina diária e entrega as telas do app. Endereço: https://ctx-2-0.fly.dev
 
 - `fly.toml` — 1 máquina `shared-cpu-1x` 512 MB sempre ligada + volume `pb_data` de 1 GB em `/pb/pb_data`.
-- A publicação é feita pela integração do próprio Fly.io com o GitHub (dashboard → Launch → Deploy from GitHub).
+- A publicação é feita pelo GitHub Actions (`.github/workflows/publicar.yml`): cada alteração que entra na `main` é publicada sozinha (aba Actions do GitHub mostra o andamento). A ligação "Deploy from GitHub" do dashboard do Fly só publicou uma vez, no Launch, e não republica a cada push.
+- O GitHub precisa do segredo `FLY_API_TOKEN` (GitHub → Settings → Secrets and variables → Actions), com um deploy token criado em Fly.io → app `ctx-2-0` → Tokens.
 - Endereços públicos (dashboard → Overview → Networking): IPv4 compartilhado + IPv6 dedicado, ambos gratuitos. Sem eles o site não abre.
 
 ## Segredos (Fly.io → app → Secrets)

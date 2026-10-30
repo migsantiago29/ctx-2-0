@@ -1,0 +1,20 @@
+# Publica no Fly.io cada alteração que entra na branch main.
+# Também pode ser disparado à mão: aba Actions → "Publicar no Fly.io" → Run workflow.
+# Precisa do segredo FLY_API_TOKEN (GitHub → Settings → Secrets and variables → Actions),
+# com um deploy token criado em Fly.io → app ctx-2-0 → Tokens.
+name: Publicar no Fly.io
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    concurrency: deploy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - run: flyctl deploy --remote-only --ha=false
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}

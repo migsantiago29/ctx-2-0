@@ -20,6 +20,7 @@ import {
   Move,
   Loader2,
   Info,
+  Network,
 } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import pb from '@/lib/pocketbase/client'
@@ -36,6 +37,8 @@ import {
   NODE_HEIGHT,
   LANE_HEADER_WIDTH,
 } from '@/lib/diagramLayout'
+import { computeAreaLinks } from '@/lib/areaLinks'
+import { MapaAreas } from '@/components/MapaAreas'
 
 /**
  * Gera o path SVG cúbico (smooth bezier) entre os dois pontos da aresta
@@ -86,7 +89,7 @@ function buildSmoothPath(edge: EdgeConnection): string {
 
 export default function Fluxograma() {
   const { user } = useAuth()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const isAdmin = user?.role === 'admin'
 
@@ -123,7 +126,7 @@ export default function Fluxograma() {
   const hasMovedDuringDragRef = useRef(false)
 
   // Layout View Controls
-  const [viewMode, setViewMode] = useState<'diagram' | 'list'>('diagram')
+  const [viewMode, setViewMode] = useState<'diagram' | 'list' | 'areas'>('diagram')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedAreaFilter, setSelectedAreaFilter] = useState<string>('all')
   const [selectedNode, setSelectedNode] = useState<ProcessNode | null>(null)
@@ -229,6 +232,9 @@ export default function Fluxograma() {
   const layout: DiagramLayout = useMemo(() => {
     return computeDiagramLayout(areas, processos, activePositionsMap)
   }, [areas, processos, activePositionsMap])
+
+  // Ligações entre áreas (marcos atravessados), usadas nas etiquetas das caixas
+  const areaLinks = useMemo(() => computeAreaLinks(processos), [processos])
 
   // Identificar conexões ativas do nó selecionado
   const activeConnectionIds = useMemo(() => {
@@ -673,6 +679,17 @@ export default function Fluxograma() {
               <List className="w-3.5 h-3.5" />
               <span>Lista</span>
             </button>
+            <button
+              onClick={() => setViewMode('areas')}
+              className={`px-3 py-1.5 rounded-md font-semibold transition-all flex items-center gap-1.5 ${
+                viewMode === 'areas'
+                  ? 'bg-[#FFD400] text-black shadow-sm'
+                  : 'text-ctx-9ca3af hover:text-ctx-fg'
+              }`}
+            >
+              <Network className="w-3.5 h-3.5" />
+              <span>Mapa de Áreas</span>
+            </button>
           </div>
 
           {/* Filtro rápido por área (destaca caixas da área selecionada sem ocultar conexões) */}
@@ -876,6 +893,18 @@ export default function Fluxograma() {
         </div>
       )}
 
+      {/* MODO 3: MAPA DE ÁREAS (quem entrega o quê para quem) */}
+      {viewMode === 'areas' && (
+        <MapaAreas
+          areas={areas}
+          processos={processos}
+          onOpenProcess={(codigo) => {
+            setViewMode('diagram')
+            setSearchParams({ codigo })
+          }}
+        />
+      )}
+
       {/* MODO 1: DIAGRAMA INTERATIVO COM RAIAS HORIZONTAIS POR ÁREA */}
       {viewMode === 'diagram' && layout.nodes.length > 0 && (
         <div
@@ -1043,6 +1072,19 @@ export default function Fluxograma() {
                   <path d="M 0 1.5 L 10 5 L 0 8.5 z" style={{ fill: 'rgb(var(--ctx-2e2e2e))' }} />
                 </marker>
 
+                {/* Marcador de seta de passagem entre áreas (azul) */}
+                <marker
+                  id="arrow-cross-area"
+                  viewBox="0 0 10 10"
+                  refX="9"
+                  refY="5"
+                  markerWidth="7"
+                  markerHeight="7"
+                  orient="auto-start-reverse"
+                >
+                  <path d="M 0 1.5 L 10 5 L 0 8.5 z" fill="#3B82F6" />
+                </marker>
+
                 {/* Marcador de seta de retorno / ciclo não selecionado (laranja suave) */}
                 <marker
                   id="arrow-backward"
@@ -1061,20 +1103,27 @@ export default function Fluxograma() {
               {layout.edges.map((edge) => {
                 const isSelectedEdge = activeConnectionIds.has(edge.id)
                 const isAnySelected = selectedNode !== null
+                // Passagem entre áreas: origem e destino em raias diferentes
+                const isCrossArea =
+                  layout.nodeMap.get(edge.fromId)?.area !== layout.nodeMap.get(edge.toId)?.area
 
                 // Opacidade: setas não selecionadas ficam bem esmaecidas (0.05), a selecionada brilha em 1.0
                 const opacity = isAnySelected ? (isSelectedEdge ? 1 : 0.05) : 0.65
 
                 // Cor: se selecionada (inclusive retorno), TODAS as conexões ativas ficam em AMARELO marca (#FFD400)
-                // Se não selecionada: retornos em #FF9900 e fluxo normal em cinza #737373
+                // Se não selecionada: passagem entre áreas em azul (mesmo quando volta para trás,
+                // o tracejado indica o retorno), retornos dentro da área em #FF9900 e fluxo
+                // dentro da mesma área em cinza #737373
                 const strokeColor = isSelectedEdge
                   ? '#FFD400'
-                  : edge.isBackward
-                    ? '#FF9900'
-                    : '#737373'
+                  : isCrossArea
+                    ? '#3B82F6'
+                    : edge.isBackward
+                      ? '#FF9900'
+                      : '#737373'
 
-                // Espessura: aumentada para 3.5 quando destacada (vs 1.6 normal)
-                const strokeWidth = isSelectedEdge ? 3.5 : 1.6
+                // Espessura: 3.5 quando destacada; passagem entre áreas 2.4; dentro da área 1.4
+                const strokeWidth = isSelectedEdge ? 3.5 : isCrossArea ? 2.4 : 1.4
 
                 // Marcador no fim da seta:
                 // - Se a aresta estiver selecionada: arrow-highlighted (amarela, tamanho 8)
@@ -1084,9 +1133,11 @@ export default function Fluxograma() {
                   ? 'url(#arrow-highlighted)'
                   : isAnySelected
                     ? 'url(#arrow-dimmed)'
-                    : edge.isBackward
-                      ? 'url(#arrow-backward)'
-                      : 'url(#arrow-default)'
+                    : isCrossArea
+                      ? 'url(#arrow-cross-area)'
+                      : edge.isBackward
+                        ? 'url(#arrow-backward)'
+                        : 'url(#arrow-default)'
 
                 // Curva de Bézier suave
                 const pathData = buildSmoothPath(edge)
@@ -1440,10 +1491,39 @@ export default function Fluxograma() {
 
                   {/* Rodapé: contadores de dependência anterior/sucessora e etiquetas */}
                   <div className="flex items-center justify-between text-[9px] font-mono text-ctx-777777 pt-1.5 border-t border-ctx-202020 shrink-0">
-                    <span>
-                      &larr; {node.etapasAnterioresIds.length} | &rarr;{' '}
-                      {node.etapasSucessorasIds.length}
-                    </span>
+                    {(() => {
+                      const cross = areaLinks.byProcess.get(node.id)
+                      if (!cross) {
+                        return (
+                          <span>
+                            &larr; {node.etapasAnterioresIds.length} | &rarr;{' '}
+                            {node.etapasSucessorasIds.length}
+                          </span>
+                        )
+                      }
+                      const resumo = (lista: string[]) =>
+                        lista.length > 1 ? `${lista[0]} +${lista.length - 1}` : lista[0]
+                      return (
+                        <span
+                          className="flex items-center gap-1.5 min-w-0 font-sans font-semibold text-[#3B82F6]"
+                          title={[
+                            cross.recebeDe.length ? `Recebe de: ${cross.recebeDe.join(', ')}` : '',
+                            cross.entregaPara.length
+                              ? `Entrega para: ${cross.entregaPara.join(', ')}`
+                              : '',
+                          ]
+                            .filter(Boolean)
+                            .join(' • ')}
+                        >
+                          {cross.recebeDe.length > 0 && (
+                            <span className="truncate">&larr; {resumo(cross.recebeDe)}</span>
+                          )}
+                          {cross.entregaPara.length > 0 && (
+                            <span className="truncate">&rarr; {resumo(cross.entregaPara)}</span>
+                          )}
+                        </span>
+                      )
+                    })()}
                     <div className="flex items-center gap-1">
                       {isEditMode ? (
                         <span className="text-[8px] font-bold text-ctx-brand uppercase font-sans">
@@ -1472,6 +1552,19 @@ export default function Fluxograma() {
                 </div>
               )
             })}
+          </div>
+
+          {/* Legenda das setas */}
+          <div className="absolute top-3 left-3 z-30 pointer-events-none flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1.5 rounded-lg bg-ctx-111111/90 border border-ctx-262626 text-[10px] text-ctx-9ca3af">
+            <span className="flex items-center gap-1.5">
+              <span className="w-5 h-[3px] rounded bg-[#3B82F6]" /> Passagem entre áreas
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-5 h-[2px] rounded bg-ctx-737373" /> Mesma área
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-5 border-t-2 border-dashed border-[#FF9900]" /> Tracejado = volta para trás
+            </span>
           </div>
 
           {/* Botão flutuante "Ver detalhes" fixado no canto inferior esquerdo */}

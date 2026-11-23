@@ -38,6 +38,7 @@ import {
   LANE_HEADER_WIDTH,
 } from '@/lib/diagramLayout'
 import { computeAreaLinks } from '@/lib/areaLinks'
+import { computeFlowLayout, type FlowBand } from '@/lib/flowLayout'
 import { MapaAreas } from '@/components/MapaAreas'
 
 /**
@@ -45,9 +46,10 @@ import { MapaAreas } from '@/components/MapaAreas'
  * considerando os lados de origem e destino para máxima fluidez.
  */
 function buildSmoothPath(edge: EdgeConnection): string {
-  const { fromX, fromY, toX, toY, fromSide, toSide, isBackward } = edge
+  const { fromX, fromY, toX, toY, fromSide, toSide } = edge
 
-  if (isBackward) {
+  // Qualquer seta que não sai pela direita e entra pela esquerda faz curva (retorno ou continuação)
+  if (!(fromSide === 'right' && toSide === 'left')) {
     if (fromSide === 'right' && toSide === 'right') {
       // Loop pelo lado direito
       const loopWidth = 45
@@ -127,6 +129,8 @@ export default function Fluxograma() {
 
   // Layout View Controls
   const [viewMode, setViewMode] = useState<'diagram' | 'list' | 'areas'>('diagram')
+  // Organização do diagrama: por fluxo (trechos, padrão) ou por código (uma raia por área)
+  const [ordenacao, setOrdenacao] = useState<'fluxo' | 'codigo'>('fluxo')
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedAreaFilter, setSelectedAreaFilter] = useState<string>('all')
   const [selectedNode, setSelectedNode] = useState<ProcessNode | null>(null)
@@ -229,9 +233,11 @@ export default function Fluxograma() {
   }, [isEditMode, editingPositions, savedPositions])
 
   // DIAGRAM LAYOUT CALCULATION (respeitando posições salvas/editadas e fallback automático)
-  const layout: DiagramLayout = useMemo(() => {
-    return computeDiagramLayout(areas, processos, activePositionsMap)
-  }, [areas, processos, activePositionsMap])
+  const layout: DiagramLayout & { bands?: FlowBand[] } = useMemo(() => {
+    return ordenacao === 'fluxo'
+      ? computeFlowLayout(areas, processos, activePositionsMap)
+      : computeDiagramLayout(areas, processos, activePositionsMap)
+  }, [areas, processos, activePositionsMap, ordenacao])
 
   // Ligações entre áreas (marcos atravessados), usadas nas etiquetas das caixas
   const areaLinks = useMemo(() => computeAreaLinks(processos), [processos])
@@ -754,6 +760,19 @@ export default function Fluxograma() {
             )}
           </div>
 
+          {/* Organização do diagrama */}
+          {viewMode === 'diagram' && (
+            <select
+              value={ordenacao}
+              onChange={(e) => setOrdenacao(e.target.value as 'fluxo' | 'codigo')}
+              title="Como as caixas são organizadas no diagrama"
+              className="bg-ctx-141414 border border-ctx-262626 rounded-lg px-2.5 py-1.5 text-xs text-ctx-d1d5db focus:outline-none focus:border-[#FFD400] transition-colors cursor-pointer"
+            >
+              <option value="fluxo">Ordem: fluxo em trechos</option>
+              <option value="codigo">Ordem: por código</option>
+            </select>
+          )}
+
           {/* Zoom Controls */}
           {viewMode === 'diagram' && (
             <div className="flex items-center gap-1 bg-ctx-141414 border border-ctx-262626 rounded-lg p-0.5">
@@ -931,6 +950,22 @@ export default function Fluxograma() {
           >
             {/* CAMADA DE RAIAS HORIZONTAIS (SWIMLANES POR ÁREA) */}
             <div className="absolute inset-0 pointer-events-none z-0">
+              {/* Trechos do fluxo (ordem por fluxo): título acima das raias de cada trecho */}
+              {layout.bands?.map((band) => (
+                <div
+                  key={band.id}
+                  style={{ position: 'absolute', top: band.y, left: 24, width: layout.width - 48, height: band.height + 16 }}
+                  className="rounded-3xl border border-dashed border-ctx-2b2b2b pointer-events-none"
+                >
+                  <div className="flex items-baseline gap-3 px-5 pt-4">
+                    <span className="text-[13px] font-black uppercase tracking-wider text-ctx-brand">
+                      {band.titulo}
+                    </span>
+                    <span className="text-sm font-semibold text-ctx-d1d5db">{band.subtitulo}</span>
+                  </div>
+                </div>
+              ))}
+
               {layout.lanes.map((lane) => {
                 const isUserLane =
                   loggedUserArea && lane.nome.trim().toLowerCase() === loggedUserArea

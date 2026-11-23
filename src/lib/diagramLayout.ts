@@ -301,9 +301,52 @@ export function computeDiagramLayout(
   })
 
   // 3. Construir conexões / arestas com portas inteligentes
-  // Regra padrão: do lado direito (Right) da origem para o lado esquerdo (Left) do destino
-  // Em caso de retorno / ciclo / destino à esquerda (toNode.x <= fromNode.x):
-  // curvas suaves inteligentes pelo topo ou pela base para evitar sobreposição
+  const edges = buildEdges(nodes, nodeMap)
+
+  // 4. Determinar dimensões totais do canvas
+  let maxX = 0
+  let maxY = 0
+  nodes.forEach((n) => {
+    if (n.x + n.width > maxX) maxX = n.x + n.width
+    if (n.y + n.height > maxY) maxY = n.y + n.height
+  })
+
+  const autoTotalWidth =
+    CANVAS_PADDING_X * 2 +
+    LANE_HEADER_WIDTH +
+    HORIZONTAL_GAP +
+    maxColCount * (NODE_WIDTH + HORIZONTAL_GAP) +
+    200
+
+  const autoTotalHeight = currentY + CANVAS_PADDING_Y
+
+  const totalWidth = Math.max(autoTotalWidth, maxX + CANVAS_PADDING_X + 150, 2400)
+  const totalHeight = Math.max(autoTotalHeight, maxY + CANVAS_PADDING_Y + 100, 1200)
+
+  return {
+    nodes,
+    edges,
+    lanes,
+    width: totalWidth,
+    height: totalHeight,
+    nodeMap,
+    totalCols: maxColCount,
+    totalRows: lanes.length,
+  }
+}
+
+/**
+ * Constrói as setas entre as caixas, escolhendo os lados de saída e entrada:
+ * - padrão: do lado direito da origem para o lado esquerdo do destino;
+ * - destino à esquerda e bem abaixo (continuação em outro trecho): de baixo para cima;
+ * - demais destinos à esquerda (retorno / ciclo): curvas pelo topo ou pela base.
+ * `opts.isReturn` define quais setas são retornos (tracejadas); sem ele, toda seta para a esquerda é retorno.
+ */
+export function buildEdges(
+  nodes: ProcessNode[],
+  nodeMap: Map<string, ProcessNode>,
+  opts?: { isReturn?: (from: ProcessNode, to: ProcessNode) => boolean },
+): EdgeConnection[] {
   const edges: EdgeConnection[] = []
 
   nodes.forEach((fromNode) => {
@@ -311,7 +354,11 @@ export function computeDiagramLayout(
       const toNode = nodeMap.get(toId)
       if (!toNode) return
 
-      const isBackward = toNode.x <= fromNode.x + 30
+      const goesLeft = toNode.x <= fromNode.x + 30
+      // Destino bem abaixo e à esquerda (ex.: continuação no trecho seguinte): sai por baixo e entra por cima
+      const goesDown = toNode.y > fromNode.y + fromNode.height + 20
+      // Retorno de verdade: definido pelo chamador; senão, qualquer seta que volta para a esquerda
+      const isBackward = opts?.isReturn ? opts.isReturn(fromNode, toNode) : goesLeft
 
       // Identificar rótulo Sim / Não se origem for decisão
       let label: string | undefined = undefined
@@ -336,7 +383,14 @@ export function computeDiagramLayout(
       let fromSide: 'right' | 'left' | 'top' | 'bottom'
       let toSide: 'right' | 'left' | 'top' | 'bottom'
 
-      if (isBackward) {
+      if (goesLeft && goesDown && Math.abs(toNode.x - fromNode.x) >= 40) {
+        fromX = fromNode.x + fromNode.width / 2
+        fromY = fromNode.y + fromNode.height
+        toX = toNode.x + toNode.width / 2
+        toY = toNode.y
+        fromSide = 'bottom'
+        toSide = 'top'
+      } else if (goesLeft) {
         // Conexão de retorno / ciclo de correção:
         if (Math.abs(toNode.x - fromNode.x) < 40) {
           if (toNode.y > fromNode.y) {
@@ -402,34 +456,5 @@ export function computeDiagramLayout(
     })
   })
 
-  // 4. Determinar dimensões totais do canvas
-  let maxX = 0
-  let maxY = 0
-  nodes.forEach((n) => {
-    if (n.x + n.width > maxX) maxX = n.x + n.width
-    if (n.y + n.height > maxY) maxY = n.y + n.height
-  })
-
-  const autoTotalWidth =
-    CANVAS_PADDING_X * 2 +
-    LANE_HEADER_WIDTH +
-    HORIZONTAL_GAP +
-    maxColCount * (NODE_WIDTH + HORIZONTAL_GAP) +
-    200
-
-  const autoTotalHeight = currentY + CANVAS_PADDING_Y
-
-  const totalWidth = Math.max(autoTotalWidth, maxX + CANVAS_PADDING_X + 150, 2400)
-  const totalHeight = Math.max(autoTotalHeight, maxY + CANVAS_PADDING_Y + 100, 1200)
-
-  return {
-    nodes,
-    edges,
-    lanes,
-    width: totalWidth,
-    height: totalHeight,
-    nodeMap,
-    totalCols: maxColCount,
-    totalRows: lanes.length,
-  }
+  return edges
 }
